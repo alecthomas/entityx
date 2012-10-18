@@ -15,7 +15,7 @@ ALL_O=$(ALL_SOURCES:.cc=.o)
 
 ALL_DEPS=$(patsubst %.cc,.%.cc.dep,$(ALL_SOURCES))
 
-LDFLAGS+=-L. -lentity 
+LDFLAGS+=libentity.a
 CXXFLAGS+=-I..
 
 .PHONY: all clean distclean test cleantests
