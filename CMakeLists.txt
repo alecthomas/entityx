@@ -28,6 +28,11 @@ macro(create_test TARGET_NAME SOURCE)
     add_test(${TARGET_NAME} ${TARGET_NAME})
 endmacro()
 
+if (NOT CMAKE_BUILD_TYPE)
+    message("-- Defaulting to release build (use -DCMAKE_BUILD_TYPE:STRING=Debug for debug build)")
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 message("-- Checking C++ features")
 require(HAS_CXX11_AUTO "C++11 auto support")
 require(HAS_CXX11_NULLPTR "C++11 nullptr support")
@@ -47,20 +52,14 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.48.0 REQUIRED COMPONENTS signals)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -std=c++11")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
-set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 
-add_library(
-    entityx
-    STATIC SHARED
-    entityx/Components.cc
-    entityx/System.cc
-    entityx/Event.cc
-    entityx/Entity.cc
-    entityx/World.cc
-    )
+set(sources entityx/Components.cc entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/World.cc)
+add_library(entityx STATIC ${sources})
+add_library(entityx_shared SHARED ${sources})
 
 include_directories(
     ${Boost_INCLUDE_DIR}
@@ -73,9 +72,14 @@ create_test(event_test entityx/Event_test.cc)
 create_test(system_test entityx/System_test.cc)
 
 file(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/entityx/*.h")
-install(FILES ${headers} DESTINATION "include/entityx")
 
-install(TARGETS entityx
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-)
+install(
+    FILES ${headers}
+    DESTINATION "include/entityx"
+    )
+
+install(
+    TARGETS entityx entityx_shared
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    )
