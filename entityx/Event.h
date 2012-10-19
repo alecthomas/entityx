@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <inttypes.h>
+#include <stdint.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -139,7 +139,7 @@ class EventManager : boost::noncopyable {
     return it->second;
   } 
 
-  // Functor used as a event signal callback that casts to E.
+  // Functor used as an event signal callback that casts to E.
   template <typename E>
   struct EventCallbackWrapper {
     EventCallbackWrapper(boost::function<void (const E &)> callback) : callback(callback) {}

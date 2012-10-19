@@ -11,7 +11,7 @@
 #pragma once
 
 
-#include <inttypes.h>
+#include <stdint.h>
 #include <algorithm>
 #include <bitset>
 #include <cassert>
