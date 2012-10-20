@@ -38,7 +38,7 @@ class MovementSystem : public System<MovementSystem> {
   MovementSystem(string label = "") : label(label) {}
 
   void update(EntityManager &es, EventManager &events, double) override {
-    auto entities = es.entities_with_components<Position, Direction>();
+    EntityManager::View entities = es.entities_with_components<Position, Direction>();
     Position *position;
     Direction *direction;
     for (auto entity : entities) {

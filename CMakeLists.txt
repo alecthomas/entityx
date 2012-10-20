@@ -6,7 +6,7 @@ include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 # C++11 feature checks
 include(CheckCXX11Features.cmake)
 # Misc features
-CHECK_INCLUDE_FILE("stdint.h" CMAKE_HAVE_STDINT_H)
+CHECK_INCLUDE_FILE("stdint.h" HAVE_STDINT_H)
 
 macro(require FEATURE_NAME MESSAGE_STRING)
     if (NOT ${${FEATURE_NAME}})
@@ -42,7 +42,7 @@ require(HAS_CXX11_VARIADIC_TEMPLATES "C++11 variadic templates")
 require(HAS_CXX11_RVALUE_REFERENCES "C++11 rvalue references")
 
 message("-- Checking misc features")
-require(CMAKE_HAVE_STDINT_H "stdint.h")
+require(HAVE_STDINT_H "stdint.h")
 
 enable_testing()
 find_package(GTest REQUIRED)
