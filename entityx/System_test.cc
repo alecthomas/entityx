@@ -39,8 +39,8 @@ class MovementSystem : public System<MovementSystem> {
 
   void update(EntityManager &es, EventManager &events, double) override {
     EntityManager::View entities = es.entities_with_components<Position, Direction>();
-    Position *position;
-    Direction *direction;
+    shared_ptr<Position> position;
+    shared_ptr<Direction> direction;
     for (auto entity : entities) {
       es.unpack<Position, Direction>(entity, position, direction);
       position->x += direction->x;
@@ -102,8 +102,8 @@ TEST_F(SystemManagerTest, TestApplySystem) {
   world.sm().configure();
 
   world.sm().update<MovementSystem>(0.0);
-  Position *position;
-  Direction *direction;
+  shared_ptr<Position> position;
+  shared_ptr<Direction> direction;
   for (auto entity : world.entities) {
     world.em().unpack<Position, Direction>(entity, position, direction);
     if (position && direction) {

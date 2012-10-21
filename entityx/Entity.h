@@ -379,13 +379,13 @@ class EntityManager : boost::noncopyable {
    *
    * Useful for fast bulk iterations.
    *
-   * Position *p;
-   * Direction *d;
+   * boost::shared_ptr<Position> p;
+   * boost::shared_ptr<Direction> d;
    * unpack<Position, Direction>(e, p, d);
    */
   template <typename A>
-  void unpack(Entity id, A *&a) {
-    a = component<A>(id).get();
+  void unpack(Entity id, boost::shared_ptr<A> &a) {
+    a = component<A>(id);
   }
 
   /**
@@ -395,12 +395,12 @@ class EntityManager : boost::noncopyable {
    *
    * Useful for fast bulk iterations.
    *
-   * Position *p;
-   * Direction *d;
+   * boost::shared_ptr<Position> p;
+   * boost::shared_ptr<Direction> d;
    * unpack<Position, Direction>(e, p, d);
    */
   template <typename A, typename B, typename ... Args>
-  void unpack(Entity id, A *&a, B *&b, Args *& ... args) {
+  void unpack(Entity id, boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args & ... args) {
     unpack<A>(id, a);
     unpack<B, Args ...>(id, b, args ...);
   }

@@ -155,7 +155,7 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
   Entity e = em.create();
   Entity f = em.create();
   Entity g = em.create();
-  std::vector<std::pair<boost::shared_ptr<Position>, boost::shared_ptr<Direction>>> position_directions;
+  std::vector<std::pair<shared_ptr<Position>, shared_ptr<Direction>>> position_directions;
   position_directions.push_back(std::make_pair(
           em.assign<Position>(e, 1.0f, 2.0f),
           em.assign<Direction>(e, 3.0f, 4.0f)));
@@ -183,23 +183,23 @@ TEST_F(EntityManagerTest, TestUnpack) {
   auto p = em.assign<Position>(e);
   auto d = em.assign<Direction>(e);
 
-  Position *up;
-  Direction *ud;
+  shared_ptr<Position> up;
+  shared_ptr<Direction> ud;
   em.unpack<Position, Direction>(e, up, ud);
-  ASSERT_EQ(p.get(), up);
-  ASSERT_EQ(d.get(), ud);
+  ASSERT_EQ(p, up);
+  ASSERT_EQ(d, ud);
 }
 
 TEST_F(EntityManagerTest, TestUnpackNullMissing) {
   Entity e = em.create();
   auto p = em.assign<Position>(e);
 
-  Position *up = reinterpret_cast<Position*>(0Xdeadbeef);
-  Direction *ud = reinterpret_cast<Direction*>(0Xdeadbeef);
-  ASSERT_EQ(reinterpret_cast<Direction*>(0xdeadbeef), ud);
+  struct NullDeleter {template<typename T> void operator()(T*) {} };
+  shared_ptr<Position> up(reinterpret_cast<Position*>(0Xdeadbeef), NullDeleter());
+  shared_ptr<Direction> ud(reinterpret_cast<Direction*>(0Xdeadbeef), NullDeleter());
   em.unpack<Position, Direction>(e, up, ud);
-  ASSERT_EQ(p.get(), up);
-  ASSERT_EQ(nullptr, ud);
+  ASSERT_EQ(p, up);
+  ASSERT_EQ(shared_ptr<Direction>(), ud);
 }
 
 TEST_F(EntityManagerTest, TestComponentIdsDiffer) {
