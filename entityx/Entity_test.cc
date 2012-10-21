@@ -33,14 +33,31 @@ int size(const T &t) {
 struct Position : Component<Position> {
   Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
+  bool operator == (const Position &other) const { return x == other.x && y == other.y; }
+
   float x, y;
 };
+
+
+ostream &operator << (ostream &out, const Position &position) {
+  out << "Position(" << position.x << ", " << position.y << ")";
+  return out;
+}
+
 
 struct Direction : Component<Direction> {
   Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
+  bool operator == (const Direction &other) const { return x == other.x && y == other.y; }
+
   float x, y;
 };
+
+
+ostream &operator << (ostream &out, const Direction &direction) {
+  out << "Direction(" << direction.x << ", " << direction.y << ")";
+  return out;
+}
 
 
 class EntityManagerTest : public ::testing::Test {
@@ -133,6 +150,34 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithIntersectionOfComponents) {
   ASSERT_EQ(25, size(em.entities_with_components<Direction, Position>()));
 }
 
+TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
+  vector<Entity> entities;
+  Entity e = em.create();
+  Entity f = em.create();
+  Entity g = em.create();
+  std::vector<std::pair<boost::shared_ptr<Position>, boost::shared_ptr<Direction>>> position_directions;
+  position_directions.push_back(std::make_pair(
+          em.assign<Position>(e, 1.0f, 2.0f),
+          em.assign<Direction>(e, 3.0f, 4.0f)));
+  em.assign<Position>(f, 5.0f, 6.0f);
+  position_directions.push_back(std::make_pair(
+          em.assign<Position>(g, 7.0f, 8.0f),
+          em.assign<Direction>(g, 9.0f, 10.0f)));
+  Position *position;
+  Direction *direction;
+  int i = 0;
+  for (auto unused_entity : em.entities_with_components(position, direction)) {
+    (void)unused_entity;
+    ASSERT_TRUE(position != nullptr);
+    ASSERT_TRUE(direction != nullptr);
+    auto pd = position_directions.at(i);
+    ASSERT_EQ(*position, *pd.first);
+    ASSERT_EQ(*direction, *pd.second);
+    ++i;
+  }
+  ASSERT_EQ(2, i);
+}
+
 TEST_F(EntityManagerTest, TestUnpack) {
   Entity e = em.create();
   auto p = em.assign<Position>(e);
@@ -161,7 +206,6 @@ TEST_F(EntityManagerTest, TestComponentIdsDiffer) {
   ASSERT_NE(Position::family(), Direction::family());
 }
 
-
 TEST_F(EntityManagerTest, TestEntityCreatedEvent) {
   struct EntityCreatedEventReceiver : public Receiver<EntityCreatedEventReceiver> {
     void receive(const EntityCreatedEvent &event) {
@@ -180,7 +224,6 @@ TEST_F(EntityManagerTest, TestEntityCreatedEvent) {
   }
   ASSERT_EQ(10, receiver.created.size());
 };
-
 
 TEST_F(EntityManagerTest, TestEntityDestroyedEvent) {
   struct EntityDestroyedEventReceiver : public Receiver<EntityDestroyedEventReceiver> {
@@ -204,4 +247,28 @@ TEST_F(EntityManagerTest, TestEntityDestroyedEvent) {
     em.destroy(e);
   }
   ASSERT_TRUE(entities == receiver.destroyed);
+};
+
+TEST_F(EntityManagerTest, TestComponentAddedEvent) {
+  struct ComponentAddedEventReceiver : public Receiver<ComponentAddedEventReceiver> {
+    void receive(const ComponentAddedEvent<Position> &event) {
+      auto p = event.component;
+      float n = float(created.size());
+      ASSERT_EQ(p->x, n);
+      ASSERT_EQ(p->y, n);
+      created.push_back(event.entity);
+    }
+
+    vector<Entity> created;
+  };
+
+  ComponentAddedEventReceiver receiver;
+  ev.subscribe<ComponentAddedEvent<Position>>(receiver);
+
+  ASSERT_EQ(0, receiver.created.size());
+  for (int i = 0; i < 10; ++i) {
+    Entity e = em.create();
+    em.assign<Position>(e, float(i), float(i));
+  }
+  ASSERT_EQ(10, receiver.created.size());
 };

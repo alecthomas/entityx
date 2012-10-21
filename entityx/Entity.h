@@ -71,19 +71,6 @@ struct BaseComponent {
 template <typename Derived>
 struct Component : public BaseComponent {
  public:
-  /**
-   * Emitted when a component of this type is added to an entity.
-   */
-  class AddEvent : public Event<AddEvent> {
-   public:
-    AddEvent(Entity entity, boost::shared_ptr<Derived> component) :
-        entity(entity), component(component) {}
-
-    Entity entity;
-    boost::shared_ptr<Derived> component;
-  };
-
-
   /// Used internally for registration.
   static Family family() {
     static Family family = family_counter_++;
@@ -118,13 +105,14 @@ struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
 /**
  * Emitted when any component is added to an entity.
  */
-struct ComponentAddedEvent : public Event<ComponentAddedEvent> {
-  ComponentAddedEvent(EntityManager &manager, Entity entity, boost::shared_ptr<BaseComponent> component) :
+template <typename T>
+struct ComponentAddedEvent : public Event<ComponentAddedEvent<T>> {
+  ComponentAddedEvent(EntityManager &manager, Entity entity, boost::shared_ptr<T> component) :
       manager(manager), entity(entity), component(component) {}
 
   EntityManager &manager;
   Entity entity;
-  boost::shared_ptr<BaseComponent> component;
+  boost::shared_ptr<T> component;
 };
 
 
@@ -148,8 +136,7 @@ class EntityManager : boost::noncopyable {
  public:
   EntityManager(EventManager &event_manager) : event_manager_(event_manager) {}
 
-  class View  {
-   private:
+  class View {
    public:
     typedef boost::function<bool (EntityManager &, Entity)> Predicate;
 
@@ -183,13 +170,24 @@ class EntityManager : boost::noncopyable {
      private:
       friend class View;
 
-      Iterator(EntityManager &manager, const std::vector<Predicate> &predicates, Entity entity) : manager_(manager), predicates_(predicates), i_(entity) {
+      Iterator(EntityManager &manager, const std::vector<Predicate> &predicates,
+               const std::vector<boost::function<void (Entity)>> &unpackers, Entity entity)
+          : manager_(manager), predicates_(predicates), unpackers_(unpackers), i_(entity) {
         next();
       }
 
       void next() {
         while (i_ < manager_.size() && !predicate()) {
           ++i_;
+        }
+        if (i_ < manager_.size()) {
+          unpack();
+        }
+      }
+
+      void unpack() {
+        for (auto unpacker : unpackers_) {
+          unpacker(i_);
         }
       }
 
@@ -204,6 +202,7 @@ class EntityManager : boost::noncopyable {
 
       EntityManager &manager_; 
       const std::vector<Predicate> predicates_;
+      std::vector<boost::function<void (Entity)>> unpackers_;
       Entity i_;
     };
 
@@ -212,11 +211,25 @@ class EntityManager : boost::noncopyable {
       predicates_.push_back(predicate);
     }
 
-    Iterator begin() { return Iterator(manager_, predicates_, 0); }
-    Iterator end() { return Iterator(manager_, predicates_, manager_.size()); }
-    const Iterator begin() const { return Iterator(manager_, predicates_, 0); }
-    const Iterator end() const { return Iterator(manager_, predicates_, manager_.size()); }
+    Iterator begin() { return Iterator(manager_, predicates_, unpackers_, 0); }
+    Iterator end() { return Iterator(manager_, predicates_, unpackers_, manager_.size()); }
+    const Iterator begin() const { return Iterator(manager_, predicates_, unpackers_, 0); }
+    const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_.size()); }
 
+    // It's a bit less than ideal to mix this int othe View, but I couldn't find a way to separate concerns without
+    // vastly increasing the amount of code that had to be written.
+    template <typename A>
+    void unpack_to(A *&a) {
+      unpackers_.push_back([&] (Entity id) {
+        a = manager_.component<A>(id).get();
+      });
+    }
+
+    template <typename A, typename B, typename ... Args>
+    void unpack_to(A *&a, B *&b, Args *& ... args) {
+      unpack_to<A>(a);
+      unpack_to<B, Args ...>(b, args ...);
+    }
    private:
     friend class EntityManager;
 
@@ -226,6 +239,7 @@ class EntityManager : boost::noncopyable {
 
     EntityManager &manager_;
     std::vector<Predicate> predicates_;
+    std::vector<boost::function<void (Entity)>> unpackers_;
   };
 
   /**
@@ -287,9 +301,7 @@ class EntityManager : boost::noncopyable {
     entity_components_.at(C::family()).at(entity) = base;
     entity_component_mask_.at(entity) |= uint64_t(1) << C::family();
 
-    // TODO(alec): Figure out why this doesn't compile...gets an odd error about AddEvent not being a value.
-    //event_manager_.emit<C::AddEvent>(entity, component);
-    event_manager_.emit<ComponentAddedEvent>(*this, entity, base);
+    event_manager_.emit<ComponentAddedEvent<C>>(*this, entity, component);
     return component;
   }
 
@@ -339,6 +351,28 @@ class EntityManager : boost::noncopyable {
   }
 
   /**
+   * Get all entities with the given component.
+   */
+  template <typename C>
+  View entities_with_components(C *&c) {
+    auto mask = component_mask<C>();
+    auto view = View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask));
+    view.unpack_to<C>(c);
+    return view;
+  }
+
+  /**
+   * Find Entities that have all of the specified Components.
+   */
+  template <typename C1, typename C2, typename ... Components>
+  View entities_with_components(C1 *&c1, C2 *&c2, Components *& ... args) {
+    auto mask = component_mask<C1, C2, Components ...>();
+    auto view = View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask));
+    view.unpack_to<C1, C2, Components...>(c1, c2, args...);
+    return view;
+  }
+
+  /**
    * Unpack components directly into pointers.
    *
    * Components missing from the entity will be set to nullptr.
@@ -348,11 +382,6 @@ class EntityManager : boost::noncopyable {
    * Position *p;
    * Direction *d;
    * unpack<Position, Direction>(e, p, d);
-   *
-   * Ideally this process would be more like:
-   *
-   * for (auto components : em.unpack_entities<Position, Direction>()) {
-   * }
    */
   template <typename A>
   void unpack(Entity id, A *&a) {
@@ -372,7 +401,7 @@ class EntityManager : boost::noncopyable {
    */
   template <typename A, typename B, typename ... Args>
   void unpack(Entity id, A *&a, B *&b, Args *& ... args) {
-    a = component<A>(id).get();
+    unpack<A>(id, a);
     unpack<B, Args ...>(id, b, args ...);
   }
 

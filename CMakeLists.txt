@@ -40,6 +40,8 @@ require(HAS_CXX11_RVALUE_REFERENCES "C++11 rvalue reference support")
 #require(HAS_CXX11_CSTDINT_H "C++11 stdint support")
 require(HAS_CXX11_VARIADIC_TEMPLATES "C++11 variadic templates")
 require(HAS_CXX11_RVALUE_REFERENCES "C++11 rvalue references")
+require(HAS_CXX11_LONG_LONG "C++11 long long")
+require(HAS_CXX11_LONG_LONG "C++11 lambdas")
 
 message("-- Checking misc features")
 require(HAVE_STDINT_H "stdint.h")

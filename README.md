@@ -6,17 +6,27 @@ EntityX is an EC system that uses C++11 features to provide type-safe component 
 
 ## Overview
 
-In EntityX, data is associated with entities through components. This data is then used by systems to implement behavior. Behavior systems can utilize as many types of data as necessary. As an example, a physics system might need *position* and *mass* data, while a collision system might only need *position* - the data would be logically separated, but usable by any system.
+In EntityX, data is associated with entities via components. Systems then use component data to implement behavior. Systems can utilize as many components as necessary. As an example, a physics system might need *position* and *mass* data, while a collision system might only need *position* - the data would be logically separated, but usable by any system.
 
-Finally, an event system ties behavior systems together, allowing them to interact without tight coupling.
+Finally, an event system ties systems together, allowing them to interact without being tightly coupled.
 
 ### Entities
 
-Entities are simply 64-bit numeric identifiers with which behaviors are associated. Entity IDs are allocated by the `EntityManager`, and all entities assigned particular types of data can be retrieved.
+Entities are simply 64-bit numeric identifiers with which component data is associated. Entity IDs are allocated by the `EntityManager`. Data can then be associated with an entity, and queried or retrieved directly.
+
+Creating an entity is as simple as:
+
+```
+EntityManager entities;
+
+Entity entity = entities.create();
+```
 
 ### Components (entity data)
 
-Components are typically POD types containing self-contained sets of related data. Implementations are [CRTP](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) subclasses of `Component<T>`.
+Components are typically POD types containing self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
+
+#### Creating components
 
 As an example, position and direction information might be represented as:
 
@@ -32,26 +42,57 @@ struct Direction : Component<Direction> {
 
   float x, y;
 };
+```
 
+#### Assigning components to entities
+
+To associate a component with a previously created entity call ``EntityManager::assign<C>()`` with the component type, the entity, and any component constructor arguments:
+
+```
+// Assign a Position with x=1.0f and y=2.0f to "entity"
+entities.assign<Position>(entity, 1.0f, 2.0f);
+```
+
+You can also assign existing instances of components:
+
+```
+boost::shared_ptr<Position> position = boost::make_shared<Position>(1.0f, 2.0f);
+entities.assign(entity, position);
+```
+
+#### Querying entities and components
+
+To retrieve a component associated with an entity use ``EntityManager::component()``:
+
+```
+boost::shared_ptr<Position> position = entities.component<Position>();
+if (position) {
+  // Do stuff with position
+}
+```
+
+To query all components with a set of components assigned use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning the component pointer to the corresponding component pointer:
+
+```
+Position *position;
+Direction *direction;
+for (auto entity : entities.entities_with_components(position, direction)) {
+  // Do things with entity ID, position and direction.
+}
 ```
 
 ### Systems (implementing behavior)
 
-Systems implement behavior using one or more components. Implementations are [CRTP](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) subclasses of `System<T>`. 
+Systems implement behavior using one or more components. Implementations are [CRTP](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) subclasses of `System<T>` and *must* implement the `update()` method, as shown below.
 
 A basic movement system might be implemented with something like the following:
 
 ```
-class MovementSystem : public System<MovementSystem> {
- public:
-  MovementSystem() {}
-
-  void update(EntityManager &es, EventManager &events, double) override {
-    auto entities = es.entities_with_components<Position, Direction>();
+struct MovementSystem : public System<MovementSystem> {
+  void update(EntityManager &es, EventManager &events, double dt) override {
     Position *position;
     Direction *direction;
-    for (auto entity : entities) {
-      es.unpack<Position, Direction>(entity, position, direction);
+    for (auto entity : es.entities_with_components(position, direction)) {
       position->x += direction->x;
       position->y += direction->y;
     }
@@ -80,26 +121,16 @@ Next we implement our collision system, which emits ``Collision`` objects via an
 ```
 class CollisionSystem : public System<CollisionSystem> {
  public:
-  CollisionSystem(EventManager &events) : events_(events) {}
-
   void update(EntityManager &es, EventManager &events, double dt) override {
     Position *left_position, *right_position;
-    auto left_entities = es.entities_with_components<Position>(),
-         right_entities = es.entities_with_components<Position>();
-
-    for (auto left_entity : left_entities) {
-      es.unpack<Position>(left_entity, left_position);
-      for (auto right_entity : right_entities) {
-        es.unpack<Position>(right_entity, right_position);
+    for (auto left_entity : es.entities_with_components(left_position)) {
+      for (auto right_entity : es.entities_with_components(right_position)) {
         if (collide(left_position, right_position)) {
-          events_.emit<Collision>(left_entity, right_entity);
+          events.emit<Collision>(left_entity, right_entity);
         }
       }
     }
   }
-  
- private:
-  EventManager &events_;
 };
 ```
 
@@ -124,6 +155,8 @@ DebugCollisions debug_collisions;
 // Subscribe to collisions
 events.subscribe<Collision>(debug_collisions);
 ```
+
+### World (tying it all together)
 
 ## Installation
 

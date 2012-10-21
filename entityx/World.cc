@@ -21,6 +21,7 @@ void World::start() {
 void World::run() {
   running_ = true;
   double dt;
+  timer_.restart();
   while (running_) {
     dt = timer_.elapsed();
     timer_.restart();

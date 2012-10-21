@@ -92,6 +92,13 @@ class SystemManager : boost::noncopyable {
     return s;
   }
 
+  /**
+   * Retrieve the registered System instance, if any.
+   *
+   *   boost::shared_ptr<CollisionSystem> collisions = systems.system<CollisionSystem>();
+   *
+   * @return System instance or empty shared_ptr<S>.
+   */
   template <typename S>
   boost::shared_ptr<S> system() {
     auto it = systems_.find(S::family());
