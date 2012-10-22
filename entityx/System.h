@@ -83,12 +83,26 @@ class SystemManager : boost::noncopyable {
    * Must be called before Systems can be used.
    *
    * eg.
-   * auto movement = system.add<MovementSystem>()
+   * boost::shared_ptr<MovementSystem> movement = boost::make_shared<MovementSystem>();
+   * system.add(movement);
+   */
+  template <typename S>
+  void add(boost::shared_ptr<S> system) {
+    systems_.insert(std::make_pair(S::family(), system));
+  }
+
+  /**
+   * Add a System to the SystemManager.
+   *
+   * Must be called before Systems can be used.
+   *
+   * eg.
+   * auto movement = system.add<MovementSystem>();
    */
   template <typename S, typename ... Args>
   boost::shared_ptr<S> add(Args && ... args) {
-    boost::shared_ptr<S> s(new S(args ...));
-    systems_.insert(std::make_pair(S::family(), s));
+    boost::shared_ptr<S> s = boost::make_shared<S>(args ...);
+    add(s);
     return s;
   }
 

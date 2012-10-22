@@ -12,6 +12,8 @@ As an example, a physics system might need *position* and *mass* data, while a c
 
 ## Tutorial
 
+
+
 ### Entities
 
 Entities are simply 64-bit numeric identifiers with which components are associated. Entity IDs are allocated by the `EntityManager`. Components are then associated with the entity, and can be queried or retrieved directly.
@@ -167,6 +169,34 @@ events.subscribe<Collision>(debug_collisions);
 ```
 
 ### World (tying it all together)
+
+Managing systems, components and entities can be streamlined by subclassing `World`. It is not necessary, but it provides callbacks for configuring systems, initializing entities and the world, and so on.
+
+To use it, subclass `World` and implement `configure()`, `initialize()` and `update()`:
+
+```
+class GameWorld : public World {
+ protected:
+  void configure() {
+    system_manager.add<MovementSystem>();
+    system_manager.add<CollisionSystem>();
+  }
+  
+  void initialize() {
+    // Create some entities in random locations heading in random directions
+    for (int i = 0; i < 100; ++i) {
+      Entity entity = entity_manager.create();
+      entity_manager.assign<Position>(entity, rand() % 100, rand() % 100);
+      entity_manager.assign<Direction>(entity, (rand() % 10) - 5, (rand() % 10) - 5);
+    }
+  }
+  
+  void update(double dt) {
+    system_manager.update<MovementSystem>(dt);
+    system_manager.update<CollisionSystem>(dt);
+  }
+};
+```
 
 ## Installation
 
