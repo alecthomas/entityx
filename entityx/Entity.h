@@ -127,7 +127,7 @@ struct ComponentAddedEvent : public Event<ComponentAddedEvent<T>> {
  * e.assign<Movable>(player);
  * e.assign<Physical>(player);
  * e.assign<Scriptable>(player);
- * Controllable *controllable = e.assign<Controllable>(player);
+ * shared_ptr<Controllable> controllable = e.assign<Controllable>(player);
  */
 class EntityManager : boost::noncopyable {
  private:
@@ -216,19 +216,18 @@ class EntityManager : boost::noncopyable {
     const Iterator begin() const { return Iterator(manager_, predicates_, unpackers_, 0); }
     const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_.size()); }
 
-    // It's a bit less than ideal to mix this int othe View, but I couldn't find a way to separate concerns without
-    // vastly increasing the amount of code that had to be written.
     template <typename A>
-    void unpack_to(A *&a) {
+    View &unpack_to(boost::shared_ptr<A> &a) {
       unpackers_.push_back([&] (Entity id) {
-        a = manager_.component<A>(id).get();
+        a = manager_.component<A>(id);
       });
+      return *this;
     }
 
     template <typename A, typename B, typename ... Args>
-    void unpack_to(A *&a, B *&b, Args *& ... args) {
+    View &unpack_to(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args *& ... args) {
       unpack_to<A>(a);
-      unpack_to<B, Args ...>(b, args ...);
+      return unpack_to<B, Args ...>(b, args ...);
     }
    private:
     friend class EntityManager;
@@ -308,7 +307,7 @@ class EntityManager : boost::noncopyable {
   /**
    * Assign a Component to an Entity, optionally passing through Component constructor arguments.
    *
-   *   Position *position = em.assign<Position>(e, x, y);
+   *   shared_ptr<Position> position = em.assign<Position>(e, x, y);
    *
    * @returns Newly created component.
    */
@@ -328,7 +327,7 @@ class EntityManager : boost::noncopyable {
     if (C::family() >= entity_components_.size()) {
       return boost::shared_ptr<C>();
     }
-    auto &c = entity_components_.at(C::family()).at(id);
+    boost::shared_ptr<BaseComponent> c = entity_components_.at(C::family()).at(id);
     return boost::static_pointer_cast<C>(c);
   }
 
@@ -354,22 +353,22 @@ class EntityManager : boost::noncopyable {
    * Get all entities with the given component.
    */
   template <typename C>
-  View entities_with_components(C *&c) {
+  View entities_with_components(boost::shared_ptr<C> &c) {
     auto mask = component_mask<C>();
-    auto view = View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask));
-    view.unpack_to<C>(c);
-    return view;
+    return
+        View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask))
+        .unpack_to<C>(c);
   }
 
   /**
    * Find Entities that have all of the specified Components.
    */
   template <typename C1, typename C2, typename ... Components>
-  View entities_with_components(C1 *&c1, C2 *&c2, Components *& ... args) {
+  View entities_with_components(boost::shared_ptr<C1> &c1, boost::shared_ptr<C2> &c2, Components *& ... args) {
     auto mask = component_mask<C1, C2, Components ...>();
-    auto view = View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask));
-    view.unpack_to<C1, C2, Components...>(c1, c2, args...);
-    return view;
+    return
+        View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask))
+        .unpack_to<C1, C2, Components...>(c1, c2, args...);
   }
 
   /**

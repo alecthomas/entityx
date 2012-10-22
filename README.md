@@ -1,18 +1,20 @@
 # EntityX - A fast, type-safe C++ Entity-Component system
 
-Entity-Component (EC) systems decouple entity behavior from the entity objects themselves. The [Evolve your Hierarchy](http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/) article provides a solid overview of EC systems.
+Entity-Component (EC) systems are a form of decomposition that completely decouple entity logic and data from the entity "objects" themselves. The [Evolve your Hierarchy](http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/) article provides a solid overview of EC systems.
 
 EntityX is an EC system that uses C++11 features to provide type-safe component management, event delivery, etc.
 
 ## Overview
 
-In EntityX, data is associated with entities via components. Systems then use component data to implement behavior. Systems can utilize as many components as necessary. As an example, a physics system might need *position* and *mass* data, while a collision system might only need *position* - the data would be logically separated, but usable by any system.
+In EntityX data associated with an entity is called a `Component`. `Systems` use components to implement behavior and can utilize as many components as necessary. An `EventManager` allows systems to interact without being tightly coupled. Finally, a `World` object ties all of the systems together for convenience.
 
-Finally, an event system ties systems together, allowing them to interact without being tightly coupled.
+As an example, a physics system might need *position* and *mass* data, while a collision system might only need *position* - the data would be logically separated into two components, but usable by any system. The physics system might emit *collision* events whenever two entities collide.
+
+## Tutorial
 
 ### Entities
 
-Entities are simply 64-bit numeric identifiers with which component data is associated. Entity IDs are allocated by the `EntityManager`. Data can then be associated with an entity, and queried or retrieved directly.
+Entities are simply 64-bit numeric identifiers with which components are associated. Entity IDs are allocated by the `EntityManager`. Components are then associated with the entity, and can be queried or retrieved directly.
 
 Creating an entity is as simple as:
 
@@ -60,7 +62,7 @@ boost::shared_ptr<Position> position = boost::make_shared<Position>(1.0f, 2.0f);
 entities.assign(entity, position);
 ```
 
-#### Querying entities and components
+#### Querying entities and their components
 
 To retrieve a component associated with an entity use ``EntityManager::component()``:
 
@@ -71,11 +73,11 @@ if (position) {
 }
 ```
 
-To query all components with a set of components assigned use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning the component pointer to the corresponding component pointer:
+To query all components with a set of components assigned use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
 
 ```
-Position *position;
-Direction *direction;
+boost::shared_ptr<Position> position;
+boost::shared_ptr<Direction> direction;
 for (auto entity : entities.entities_with_components(position, direction)) {
   // Do things with entity ID, position and direction.
 }
@@ -83,7 +85,7 @@ for (auto entity : entities.entities_with_components(position, direction)) {
 
 ### Systems (implementing behavior)
 
-Systems implement behavior using one or more components. Implementations are [CRTP](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) subclasses of `System<T>` and *must* implement the `update()` method, as shown below.
+Systems implement behavior using one or more components. Implementations are subclasses of `System<T>` and *must* implement the `update()` method, as shown below.
 
 A basic movement system might be implemented with something like the following:
 
@@ -106,6 +108,8 @@ Events are objects emitted by systems, typically when some condition is met. Lis
 
 As an example, we might want to implement a very basic collision system using our ``Position` data from above.
 
+#### Creating event types
+
 First, we define the event type, which for our example is simply the two entities that collided:
 
 ```
@@ -116,13 +120,15 @@ struct Collision : public Event<Collision> {
 };
 ```
 
+#### Emitting events
+
 Next we implement our collision system, which emits ``Collision`` objects via an ``EventManager`` instance whenever two entities collide.
 
 ```
 class CollisionSystem : public System<CollisionSystem> {
  public:
   void update(EntityManager &es, EventManager &events, double dt) override {
-    Position *left_position, *right_position;
+    boost::shared_ptr<Position> left_position, right_position;
     for (auto left_entity : es.entities_with_components(left_position)) {
       for (auto right_entity : es.entities_with_components(right_position)) {
         if (collide(left_position, right_position)) {
@@ -134,7 +140,9 @@ class CollisionSystem : public System<CollisionSystem> {
 };
 ```
 
-Objects interested in receiving collision can subscribe to ``Collision`` events by first subclassing the CRTP class ``Receiver<T>``:
+#### Subscribing to events
+
+Objects interested in receiving collision information can subscribe to ``Collision`` events by first subclassing the CRTP class ``Receiver<T>``:
 
 ```
 struct DebugCollisions : public Receiver<DebugCollisions> {
@@ -143,6 +151,8 @@ struct DebugCollisions : public Receiver<DebugCollisions> {
   }
 };
 ```
+
+Note that a single class can receive any number of types of events by implementing a ``receive(const EventType &)`` method for each event type.
 
 Finally, we subscribe our receiver to collision events:
 

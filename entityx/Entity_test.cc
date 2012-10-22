@@ -159,20 +159,20 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
   position_directions.push_back(std::make_pair(
           em.assign<Position>(e, 1.0f, 2.0f),
           em.assign<Direction>(e, 3.0f, 4.0f)));
-  em.assign<Position>(f, 5.0f, 6.0f);
   position_directions.push_back(std::make_pair(
-          em.assign<Position>(g, 7.0f, 8.0f),
-          em.assign<Direction>(g, 9.0f, 10.0f)));
-  Position *position;
-  Direction *direction;
+          em.assign<Position>(f, 7.0f, 8.0f),
+          em.assign<Direction>(f, 9.0f, 10.0f)));
+  em.assign<Position>(g, 5.0f, 6.0f);
   int i = 0;
+  shared_ptr<Position> position;
+  shared_ptr<Direction> direction;
   for (auto unused_entity : em.entities_with_components(position, direction)) {
     (void)unused_entity;
-    ASSERT_TRUE(position != nullptr);
-    ASSERT_TRUE(direction != nullptr);
+    ASSERT_TRUE(position);
+    ASSERT_TRUE(direction);
     auto pd = position_directions.at(i);
-    ASSERT_EQ(*position, *pd.first);
-    ASSERT_EQ(*direction, *pd.second);
+    ASSERT_EQ(position, pd.first);
+    ASSERT_EQ(direction, pd.second);
     ++i;
   }
   ASSERT_EQ(2, i);
@@ -253,22 +253,38 @@ TEST_F(EntityManagerTest, TestComponentAddedEvent) {
   struct ComponentAddedEventReceiver : public Receiver<ComponentAddedEventReceiver> {
     void receive(const ComponentAddedEvent<Position> &event) {
       auto p = event.component;
-      float n = float(created.size());
+      float n = float(position_events);
       ASSERT_EQ(p->x, n);
       ASSERT_EQ(p->y, n);
-      created.push_back(event.entity);
+      position_events++;
     }
 
-    vector<Entity> created;
+    void receive(const ComponentAddedEvent<Direction> &event) {
+      auto p = event.component;
+      float n = float(direction_events);
+      ASSERT_EQ(p->x, -n);
+      ASSERT_EQ(p->y, -n);
+      direction_events++;
+    }
+
+    int position_events = 0;
+    int direction_events = 0;
   };
 
   ComponentAddedEventReceiver receiver;
   ev.subscribe<ComponentAddedEvent<Position>>(receiver);
+  ev.subscribe<ComponentAddedEvent<Direction>>(receiver);
 
-  ASSERT_EQ(0, receiver.created.size());
+  ASSERT_NE(ComponentAddedEvent<Position>::family(),
+            ComponentAddedEvent<Direction>::family());
+
+  ASSERT_EQ(0, receiver.position_events);
+  ASSERT_EQ(0, receiver.direction_events);
   for (int i = 0; i < 10; ++i) {
     Entity e = em.create();
     em.assign<Position>(e, float(i), float(i));
+    em.assign<Direction>(e, float(-i), float(-i));
   }
-  ASSERT_EQ(10, receiver.created.size());
+  ASSERT_EQ(10, receiver.position_events);
+  ASSERT_EQ(10, receiver.direction_events);
 };
