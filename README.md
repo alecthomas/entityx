@@ -1,18 +1,18 @@
 # EntityX - A fast, type-safe C++ Entity-Component system
 
-Entity-Component (EC) systems are a form of decomposition that completely decouple entity logic and data from the entity "objects" themselves. The [Evolve your Hierarchy](http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/) article provides a solid overview of EC systems.
+Entity-Component (EC) systems are a form of decomposition that completely decouples entity logic and data from the entity "objects" themselves. The [Evolve your Hierarchy](http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/) article provides a solid overview of EC systems and why you should use them.
 
-EntityX is an EC system that uses C++11 features to provide type-safe component management, event delivery, etc.
+EntityX is an EC system that uses C++11 features to provide type-safe component management, event delivery, etc. It was built during the creation of a 2D space shooter.
 
 ## Overview
 
-In EntityX data associated with an entity is called a `Component`. `Systems` use components to implement behavior and can utilize as many components as necessary. An `EventManager` allows systems to interact without being tightly coupled. Finally, a `World` object ties all of the systems together for convenience.
+In EntityX data associated with an entity is called a `Component`. `Systems` encapsulate logic and can use as many component types as necessary. An `EventManager` allows systems to interact without being tightly coupled. Finally, a `Manager` object ties all of the systems together for convenience.
 
 As an example, a physics system might need *position* and *mass* data, while a collision system might only need *position* - the data would be logically separated into two components, but usable by any system. The physics system might emit *collision* events whenever two entities collide.
 
 ## Tutorial
 
-
+Following is some skeleton code that implements `Position` and `Direction` components, a `MovementSystem` using these data components, and a `CollisionSystem` that emits `Collision` events when two entities collide.
 
 ### Entities
 
@@ -66,15 +66,6 @@ entities.assign(entity, position);
 
 #### Querying entities and their components
 
-To retrieve a component associated with an entity use ``EntityManager::component()``:
-
-```
-boost::shared_ptr<Position> position = entities.component<Position>();
-if (position) {
-  // Do stuff with position
-}
-```
-
 To query all components with a set of components assigned use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
 
 ```
@@ -82,6 +73,15 @@ boost::shared_ptr<Position> position;
 boost::shared_ptr<Direction> direction;
 for (auto entity : entities.entities_with_components(position, direction)) {
   // Do things with entity ID, position and direction.
+}
+```
+
+To retrieve a component associated with an entity use ``EntityManager::component()``:
+
+```
+boost::shared_ptr<Position> position = entities.component<Position>();
+if (position) {
+  // Do stuff with position
 }
 ```
 
@@ -94,8 +94,8 @@ A basic movement system might be implemented with something like the following:
 ```
 struct MovementSystem : public System<MovementSystem> {
   void update(EntityManager &es, EventManager &events, double dt) override {
-    Position *position;
-    Direction *direction;
+    boost::shared_ptr<Position> position;
+    boost::shared_ptr<Direction> direction;
     for (auto entity : es.entities_with_components(position, direction)) {
       position->x += direction->x;
       position->y += direction->y;
@@ -154,7 +154,7 @@ struct DebugCollisions : public Receiver<DebugCollisions> {
 };
 ```
 
-Note that a single class can receive any number of types of events by implementing a ``receive(const EventType &)`` method for each event type.
+***Note:** a single class can receive any number of types of events by implementing a ``receive(const EventType &)`` method for each event type.*
 
 Finally, we subscribe our receiver to collision events:
 
@@ -168,14 +168,14 @@ DebugCollisions debug_collisions;
 events.subscribe<Collision>(debug_collisions);
 ```
 
-### World (tying it all together)
+### Manager (tying it all together)
 
-Managing systems, components and entities can be streamlined by subclassing `World`. It is not necessary, but it provides callbacks for configuring systems, initializing entities and the world, and so on.
+Managing systems, components and entities can be streamlined by subclassing `Manager`. It is not necessary, but it provides callbacks for configuring systems, initializing entities, and so on.
 
-To use it, subclass `World` and implement `configure()`, `initialize()` and `update()`:
+To use it, subclass `Manager` and implement `configure()`, `initialize()` and `update()`:
 
 ```
-class GameWorld : public World {
+class GameManager : public Manager {
  protected:
   void configure() {
     system_manager.add<MovementSystem>();
@@ -202,7 +202,7 @@ class GameWorld : public World {
 
 EntityX has the following build and runtime requirements:
 
-- A C++ compiler that supports a basic set of C++11 features (eg. recent clang, recent gcc).
+- A C++ compiler that supports a basic set of C++11 features (ie. recent clang, recent gcc, but **NOT** Visual C++).
 - [CMake](http://cmake.org/)
 - [Boost](http://boost.org) `1.48.0` or higher (links against `boost::signals`).
 - [Glog](http://code.google.com/p/google-glog/) (tested with `0.3.2`).

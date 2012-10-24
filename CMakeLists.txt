@@ -59,7 +59,7 @@ set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 
-set(sources entityx/Components.cc entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/World.cc)
+set(sources entityx/Components.cc entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/Manager.cc)
 add_library(entityx STATIC ${sources})
 add_library(entityx_shared SHARED ${sources})
 

@@ -17,10 +17,10 @@
 
 namespace entity {
 
-class World {
+class Manager {
  public:
-  World() : entity_manager(event_manager), system_manager(entity_manager, event_manager) {}
-  virtual ~World() {}
+  Manager() : entity_manager(event_manager), system_manager(entity_manager, event_manager) {}
+  virtual ~Manager() {}
 
   void start();
   void run();
@@ -30,7 +30,7 @@ class World {
   /**
    * Configure the world.
    *
-   * This is called once on World initialization. It is typically used to add Systems to the world, load permanent
+   * This is called once on Manager initialization. It is typically used to add Systems to the world, load permanent
    * resources, global configuration, etc.
    */
   virtual void configure() = 0;

@@ -12,7 +12,7 @@
 #include <vector>
 #include <glog/logging.h>
 #include <gtest/gtest.h>
-#include "entityx/World.h"
+#include "entityx/Manager.h"
 #include "entityx/System.h"
 
 
@@ -52,7 +52,7 @@ class MovementSystem : public System<MovementSystem> {
 };
 
 
-class TestWorld : public entity::World {
+class TestManager : public entity::Manager {
  public:
   std::vector<Entity> entities;
 
@@ -81,31 +81,31 @@ class TestWorld : public entity::World {
 
 class SystemManagerTest : public ::testing::Test {
  protected:
-  TestWorld world;
+  TestManager manager;
 
   virtual void SetUp() override {
-    world.start();
+    manager.start();
   }
 };
 
 
 TEST_F(SystemManagerTest, TestConstructSystemWithArgs) {
-  world.sm().add<MovementSystem>("movement");
-  world.sm().configure();
+  manager.sm().add<MovementSystem>("movement");
+  manager.sm().configure();
 
-  ASSERT_EQ("movement", world.sm().system<MovementSystem>()->label);
+  ASSERT_EQ("movement", manager.sm().system<MovementSystem>()->label);
 }
 
 
 TEST_F(SystemManagerTest, TestApplySystem) {
-  world.sm().add<MovementSystem>();
-  world.sm().configure();
+  manager.sm().add<MovementSystem>();
+  manager.sm().configure();
 
-  world.sm().update<MovementSystem>(0.0);
+  manager.sm().update<MovementSystem>(0.0);
   shared_ptr<Position> position;
   shared_ptr<Direction> direction;
-  for (auto entity : world.entities) {
-    world.em().unpack<Position, Direction>(entity, position, direction);
+  for (auto entity : manager.entities) {
+    manager.em().unpack<Position, Direction>(entity, position, direction);
     if (position && direction) {
       ASSERT_FLOAT_EQ(2.0, position->x);
       ASSERT_FLOAT_EQ(3.0, position->y);

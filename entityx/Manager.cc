@@ -8,17 +8,17 @@
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
-#include "World.h"
+#include "Manager.h"
 
 namespace entity {
 
-void World::start() {
+void Manager::start() {
   configure();
   system_manager.configure();
   initialize();
 }
 
-void World::run() {
+void Manager::run() {
   running_ = true;
   double dt;
   timer_.restart();
@@ -29,7 +29,7 @@ void World::run() {
   }
 }
 
-void World::stop() {
+void Manager::stop() {
   running_ = false;
 }
 
