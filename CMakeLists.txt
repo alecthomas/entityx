@@ -62,6 +62,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 set(sources entityx/Components.cc entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/Manager.cc)
 add_library(entityx STATIC ${sources})
 add_library(entityx_shared SHARED ${sources})
+set_target_properties(entityx_shared PROPERTIES OUTPUT_NAME entityx)
 
 include_directories(
     ${Boost_INCLUDE_DIR}
