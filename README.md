@@ -20,7 +20,7 @@ Entities are simply 64-bit numeric identifiers with which components are associa
 
 Creating an entity is as simple as:
 
-```
+```c++
 EntityManager entities;
 
 Entity entity = entities.create();
@@ -34,7 +34,7 @@ Components are typically POD types containing self-contained sets of related dat
 
 As an example, position and direction information might be represented as:
 
-```
+```c++
 struct Position : Component<Position> {
   Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
@@ -52,14 +52,14 @@ struct Direction : Component<Direction> {
 
 To associate a component with a previously created entity call ``EntityManager::assign<C>()`` with the component type, the entity, and any component constructor arguments:
 
-```
+```c++
 // Assign a Position with x=1.0f and y=2.0f to "entity"
 entities.assign<Position>(entity, 1.0f, 2.0f);
 ```
 
 You can also assign existing instances of components:
 
-```
+```c++
 boost::shared_ptr<Position> position = boost::make_shared<Position>(1.0f, 2.0f);
 entities.assign(entity, position);
 ```
@@ -68,7 +68,7 @@ entities.assign(entity, position);
 
 To query all components with a set of components assigned use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
 
-```
+```c++
 boost::shared_ptr<Position> position;
 boost::shared_ptr<Direction> direction;
 for (auto entity : entities.entities_with_components(position, direction)) {
@@ -78,7 +78,7 @@ for (auto entity : entities.entities_with_components(position, direction)) {
 
 To retrieve a component associated with an entity use ``EntityManager::component()``:
 
-```
+```c++
 boost::shared_ptr<Position> position = entities.component<Position>();
 if (position) {
   // Do stuff with position
@@ -91,7 +91,7 @@ Systems implement behavior using one or more components. Implementations are sub
 
 A basic movement system might be implemented with something like the following:
 
-```
+```c++
 struct MovementSystem : public System<MovementSystem> {
   void update(EntityManager &es, EventManager &events, double dt) override {
     boost::shared_ptr<Position> position;
@@ -114,7 +114,7 @@ As an example, we might want to implement a very basic collision system using ou
 
 First, we define the event type, which for our example is simply the two entities that collided:
 
-```
+```c++
 struct Collision : public Event<Collision> {
   Collision(Entity left, Entity right) : left(left), right(right) {}
   
@@ -126,7 +126,7 @@ struct Collision : public Event<Collision> {
 
 Next we implement our collision system, which emits ``Collision`` objects via an ``EventManager`` instance whenever two entities collide.
 
-```
+```c++
 class CollisionSystem : public System<CollisionSystem> {
  public:
   void update(EntityManager &es, EventManager &events, double dt) override {
@@ -146,7 +146,7 @@ class CollisionSystem : public System<CollisionSystem> {
 
 Objects interested in receiving collision information can subscribe to ``Collision`` events by first subclassing the CRTP class ``Receiver<T>``:
 
-```
+```c++
 struct DebugCollisions : public Receiver<DebugCollisions> {
   void receive(const Collision &collision) {
     LOG(DEBUG) << "entities collided: " << collision.left << " and " << collision.right << endl;
@@ -154,11 +154,11 @@ struct DebugCollisions : public Receiver<DebugCollisions> {
 };
 ```
 
-***Note:** a single class can receive any number of types of events by implementing a ``receive(const EventType &)`` method for each event type.*
+**Note:** a single class can receive any number of types of events by implementing a ``receive(const EventType &)`` method for each event type.
 
 Finally, we subscribe our receiver to collision events:
 
-```
+```c++
 // Setup code (typically global)
 EventManager events;
 CollisionSystem collisions(events);
@@ -174,7 +174,7 @@ Managing systems, components and entities can be streamlined by subclassing `Man
 
 To use it, subclass `Manager` and implement `configure()`, `initialize()` and `update()`:
 
-```
+```c++
 class GameManager : public Manager {
  protected:
   void configure() {
@@ -210,7 +210,7 @@ EntityX has the following build and runtime requirements:
 
 Once these dependencies are installed you should be able to build and install EntityX with:
 
-```
+```c++
 mkdir build && cd build && cmake .. && make && make test && make install
 ```
 
