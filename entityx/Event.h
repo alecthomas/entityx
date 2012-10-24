@@ -19,7 +19,7 @@
 #include <boost/unordered_map.hpp>
 
 
-namespace entity {
+namespace entityx {
 
 
 /// Used internally by the EventManager.

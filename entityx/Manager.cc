@@ -10,7 +10,7 @@
 
 #include "Manager.h"
 
-namespace entity {
+namespace entityx {
 
 void Manager::start() {
   configure();

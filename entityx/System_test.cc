@@ -18,7 +18,7 @@
 
 using namespace std;
 using namespace boost;
-using namespace entity;
+using namespace entityx;
 
 struct Position : Component<Position> {
   Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
@@ -52,7 +52,7 @@ class MovementSystem : public System<MovementSystem> {
 };
 
 
-class TestManager : public entity::Manager {
+class TestManager : public entityx::Manager {
  public:
   std::vector<Entity> entities;
 

@@ -15,7 +15,7 @@
 #include "entityx/Event.h"
 #include "entityx/System.h"
 
-namespace entity {
+namespace entityx {
 
 class Manager {
  public:

@@ -11,7 +11,7 @@
 #include <algorithm>
 #include "entityx/Entity.h"
 
-namespace entity {
+namespace entityx {
 
 BaseComponent::Family BaseComponent::family_counter_ = 0;
 

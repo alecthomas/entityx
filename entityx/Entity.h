@@ -25,7 +25,7 @@
 #include <glog/logging.h>
 #include "entityx/Event.h"
 
-namespace entity {
+namespace entityx {
 
 /**
  * Entity handle.

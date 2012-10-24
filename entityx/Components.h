@@ -14,7 +14,7 @@
 #include <boost/unordered_set.hpp>
 #include "entityx/Entity.h"
 
-namespace entity {
+namespace entityx {
 
 /**
  * Allow entities to be tagged with strings.

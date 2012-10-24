@@ -20,7 +20,7 @@
 #include "entityx/Event.h"
 
 
-namespace entity {
+namespace entityx {
 
 /**
  * Base System class. Generally should not be directly used, instead see System<Derived>.

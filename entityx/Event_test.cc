@@ -14,7 +14,7 @@
 #include <gtest/gtest.h>
 #include "entityx/Event.h"
 
-using namespace entity;
+using namespace entityx;
 using namespace boost;
 
 struct Explosion : public Event<Explosion> {

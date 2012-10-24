@@ -13,7 +13,7 @@
 
 using namespace std;
 using namespace boost;
-using namespace entity;
+using namespace entityx;
 
 
 struct Position : public Component<Position> {};

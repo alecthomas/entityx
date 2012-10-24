@@ -10,7 +10,7 @@
 
 #include "entityx/Event.h"
 
-namespace entity {
+namespace entityx {
 
 BaseEvent::Family BaseEvent::family_counter_ = 0;
 

@@ -10,7 +10,7 @@
 
 #include "entityx/System.h"
 
-namespace entity {
+namespace entityx {
 
 BaseSystem::Family BaseSystem::family_counter_;
 
