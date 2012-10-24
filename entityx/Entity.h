@@ -27,13 +27,42 @@
 
 namespace entityx {
 
-/**
- * Entity handle.
- */
-typedef uint64_t Entity;
-
 
 class EntityManager;
+
+
+/**
+ * A convenience handle around an Entity::Id.
+ */
+class Entity {
+ public:
+  typedef uint64_t Id;
+
+  Id id() const { return id_; }
+
+  operator Id () { return id_; }
+
+  template <typename C>
+  boost::shared_ptr<C> assign(boost::shared_ptr<C> component);
+  template <typename C, typename ... Args>
+  boost::shared_ptr<C> assign(Args && ... args);
+
+  template <typename C>
+  boost::shared_ptr<C> component();
+
+  template <typename A>
+  void unpack(boost::shared_ptr<A> &a);
+  template <typename A, typename B, typename ... Args>
+  void unpack(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args);
+
+ private:
+  friend class EntityManager;
+
+  Entity(EntityManager &entities, Entity::Id id) : entities_(entities), id_(id) {}
+
+  EntityManager &entities_;
+  Entity::Id id_;
+};
 
 
 /**
@@ -54,7 +83,7 @@ struct BaseComponent {
  * Component implementations should inherit from this.
  *
  * Components MUST provide a no-argument constructor.
- * Components SHOULD provide convenience constructors for initializing on assignment to an Entity.
+ * Components SHOULD provide convenience constructors for initializing on assignment to an Entity::Id.
  *
  * This is a struct to imply that components should be data-only.
  *
@@ -85,20 +114,20 @@ struct Component : public BaseComponent {
  * Emitted when an entity is added to the system.
  */
 struct EntityCreatedEvent : public Event<EntityCreatedEvent> {
-  EntityCreatedEvent(EntityManager &manager, Entity entity) :
+  EntityCreatedEvent(EntityManager &manager, Entity::Id entity) :
       manager(manager), entity(entity) {}
 
   EntityManager &manager;
-  Entity entity;
+  Entity::Id entity;
 };
 
 
 struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
-  EntityDestroyedEvent(EntityManager &manager, Entity entity) :
+  EntityDestroyedEvent(EntityManager &manager, Entity::Id entity) :
       manager(manager), entity(entity) {}
 
   EntityManager &manager;
-  Entity entity;
+  Entity::Id entity;
 };
 
 
@@ -107,27 +136,27 @@ struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
  */
 template <typename T>
 struct ComponentAddedEvent : public Event<ComponentAddedEvent<T>> {
-  ComponentAddedEvent(EntityManager &manager, Entity entity, boost::shared_ptr<T> component) :
+  ComponentAddedEvent(EntityManager &manager, Entity::Id entity, boost::shared_ptr<T> component) :
       manager(manager), entity(entity), component(component) {}
 
   EntityManager &manager;
-  Entity entity;
+  Entity::Id entity;
   boost::shared_ptr<T> component;
 };
 
 
 /**
- * Manages Entity creation and component assignment.
+ * Manages Entity::Id creation and component assignment.
  *
  * eg.
  * EntityManager e;
  *
  * Entity player = e.create();
  *
- * e.assign<Movable>(player);
- * e.assign<Physical>(player);
- * e.assign<Scriptable>(player);
- * shared_ptr<Controllable> controllable = e.assign<Controllable>(player);
+ * player.assign<Movable>();
+ * player.assign<Physical>();
+ * player.assign<Scriptable>();
+ * shared_ptr<Controllable> controllable = player.assign<Controllable>();
  */
 class EntityManager : boost::noncopyable {
  private:
@@ -138,14 +167,14 @@ class EntityManager : boost::noncopyable {
 
   class View {
    public:
-    typedef boost::function<bool (EntityManager &, Entity)> Predicate;
+    typedef boost::function<bool (EntityManager &, Entity::Id)> Predicate;
 
     /// A predicate that excludes entities that don't match the given component mask.
     class ComponentMaskPredicate {
      public:
       ComponentMaskPredicate(const std::vector<uint64_t> &entity_bits, uint64_t mask) : entity_bits_(entity_bits), mask_(mask) {}
 
-      bool operator () (EntityManager &, Entity entity) {
+      bool operator () (EntityManager &, Entity::Id entity) {
         return (entity_bits_.at(entity) & mask_) == mask_;
       }
 
@@ -155,7 +184,7 @@ class EntityManager : boost::noncopyable {
     };
 
     /// An iterator over a view of the entities in an EntityManager.
-    class Iterator : public std::iterator<std::input_iterator_tag, Entity> {
+    class Iterator : public std::iterator<std::input_iterator_tag, Entity::Id> {
      public:
       Iterator &operator ++ () {
         ++i_;
@@ -164,14 +193,14 @@ class EntityManager : boost::noncopyable {
       }
       bool operator == (const Iterator& rhs) const { return i_ == rhs.i_; }
       bool operator != (const Iterator& rhs) const { return i_ != rhs.i_; }
-      Entity & operator * () { return i_; }
-      const Entity & operator * () const { return i_; }
+      Entity operator * () { return Entity(manager_, i_); }
+      const Entity operator * () const { return Entity(manager_, i_); }
 
      private:
       friend class View;
 
       Iterator(EntityManager &manager, const std::vector<Predicate> &predicates,
-               const std::vector<boost::function<void (Entity)>> &unpackers, Entity entity)
+               const std::vector<boost::function<void (Entity::Id)>> &unpackers, Entity::Id entity)
           : manager_(manager), predicates_(predicates), unpackers_(unpackers), i_(entity) {
         next();
       }
@@ -198,8 +227,8 @@ class EntityManager : boost::noncopyable {
 
       EntityManager &manager_; 
       const std::vector<Predicate> predicates_;
-      std::vector<boost::function<void (Entity)>> unpackers_;
-      Entity i_;
+      std::vector<boost::function<void (Entity::Id)>> unpackers_;
+      Entity::Id i_;
     };
 
     // Create a sub-view with an additional predicate.
@@ -216,7 +245,7 @@ class EntityManager : boost::noncopyable {
     View &unpack_to(boost::shared_ptr<A> &a) {
       unpackers_.push_back(Unpacker<A>(manager_, a));
       // This resulted in a segfault under clang 4.1 on OSX. No idea why. 
-      /*unpackers_.push_back([&a, this](Entity id) {
+      /*unpackers_.push_back([&a, this](Entity::Id id) {
         a = manager_.component<A>(id);
       });*/
       return *this;
@@ -234,7 +263,7 @@ class EntityManager : boost::noncopyable {
     struct Unpacker {
       Unpacker(EntityManager &manager, boost::shared_ptr<T> &c) : manager(manager), c(c) {}
 
-      void operator () (Entity id) {
+      void operator () (Entity::Id id) {
         c = manager.component<T>(id);
       }
 
@@ -249,7 +278,7 @@ class EntityManager : boost::noncopyable {
 
     EntityManager &manager_;
     std::vector<Predicate> predicates_;
-    std::vector<boost::function<void (Entity)>> unpackers_;
+    std::vector<boost::function<void (Entity::Id)>> unpackers_;
   };
 
   /**
@@ -258,12 +287,12 @@ class EntityManager : boost::noncopyable {
   size_t size() const { return entity_component_mask_.size(); }
 
   /**
-   * Create a new Entity.
+   * Create a new Entity::Id.
    *
    * Emits EntityCreatedEvent.
    */
   Entity create() {
-    Entity id;
+    Entity::Id id;
     if (free_list_.empty()) {
       id = id_counter_++;
       accomodate_entity(id);
@@ -271,16 +300,16 @@ class EntityManager : boost::noncopyable {
       id = *free_list_.erase(free_list_.begin());
     }
     event_manager_.emit<EntityCreatedEvent>(*this, id);
-    return id;
+    return Entity(*this, id);
   }
 
   /**
-   * Destroy an existing Entity and its associated Components.
+   * Destroy an existing Entity::Id and its associated Components.
    *
    * Emits EntityDestroyedEvent.
    */
-  void destroy(Entity entity) {
-    CHECK(entity < entity_component_mask_.size()) << "Entity ID outside entity vector range";
+  void destroy(Entity::Id entity) {
+    CHECK(entity < entity_component_mask_.size()) << "Entity::Id ID outside entity vector range";
     event_manager_.emit<EntityDestroyedEvent>(*this, entity);
     for (auto &components : entity_components_) {
       components.at(entity).reset();
@@ -290,9 +319,9 @@ class EntityManager : boost::noncopyable {
   }
 
   /**
-   * Check if an Entity is registered.
+   * Check if an Entity::Id is registered.
    */
-  bool exists(Entity entity) {
+  bool exists(Entity::Id entity) {
     if (entity_component_mask_.empty() || entity >= id_counter_) {
       return false;
     }
@@ -300,12 +329,12 @@ class EntityManager : boost::noncopyable {
   }
 
   /**
-   * Assigns a previously constructed Component to an Entity.
+   * Assigns a previously constructed Component to an Entity::Id.
    *
    * @returns component
    */
   template <typename C>
-  boost::shared_ptr<C> assign(Entity entity, boost::shared_ptr<C> component) {
+  boost::shared_ptr<C> assign(Entity::Id entity, boost::shared_ptr<C> component) {
     boost::shared_ptr<BaseComponent> base = boost::static_pointer_cast<BaseComponent>(component);
     accomodate_component(C::family());
     entity_components_.at(C::family()).at(entity) = base;
@@ -316,24 +345,24 @@ class EntityManager : boost::noncopyable {
   }
 
   /**
-   * Assign a Component to an Entity, optionally passing through Component constructor arguments.
+   * Assign a Component to an Entity::Id, optionally passing through Component constructor arguments.
    *
    *   shared_ptr<Position> position = em.assign<Position>(e, x, y);
    *
    * @returns Newly created component.
    */
   template <typename C, typename ... Args>
-  boost::shared_ptr<C> assign(Entity entity, Args && ... args) {
+  boost::shared_ptr<C> assign(Entity::Id entity, Args && ... args) {
     return assign<C>(entity, boost::make_shared<C>(args ...));
   }
 
   /**
-   * Retrieve a Component assigned to an Entity.
+   * Retrieve a Component assigned to an Entity::Id.
    *
-   * @returns Component instance, or empty shared_ptr<> if the Entity does not have that Component.
+   * @returns Component instance, or empty shared_ptr<> if the Entity::Id does not have that Component.
    */
   template <typename C>
-  boost::shared_ptr<C> component(Entity id) {
+  boost::shared_ptr<C> component(Entity::Id id) {
     // We don't bother checking the component mask, as we return a nullptr anyway.
     if (C::family() >= entity_components_.size()) {
       return boost::shared_ptr<C>();
@@ -374,7 +403,7 @@ class EntityManager : boost::noncopyable {
    * unpack<Position, Direction>(e, p, d);
    */
   template <typename A>
-  void unpack(Entity id, boost::shared_ptr<A> &a) {
+  void unpack(Entity::Id id, boost::shared_ptr<A> &a) {
     a = component<A>(id);
   }
 
@@ -390,7 +419,7 @@ class EntityManager : boost::noncopyable {
    * unpack<Position, Direction>(e, p, d);
    */
   template <typename A, typename B, typename ... Args>
-  void unpack(Entity id, boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args) {
+  void unpack(Entity::Id id, boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args) {
     unpack<A>(id, a);
     unpack<B, Args ...>(id, b, args ...);
   }
@@ -416,7 +445,7 @@ class EntityManager : boost::noncopyable {
     return component_mask<C1>(c1) | component_mask<C2, Components ...>(c2, args...);
   }
 
-  inline void accomodate_entity(Entity entity) {
+  inline void accomodate_entity(Entity::Id entity) {
     if (entity_component_mask_.size() <= entity) {
       entity_component_mask_.resize(entity + 1);
       for (auto &components : entity_components_) {
@@ -434,15 +463,40 @@ class EntityManager : boost::noncopyable {
     }
   }
 
-  Entity id_counter_ = 0;
+  Entity::Id id_counter_ = 0;
 
   EventManager &event_manager_;
   // A nested array of: components = entity_components_[family][entity]
   std::vector<EntitiesComponent> entity_components_;
-  // Bitmask of components associated with each entity. Index into the vector is the Entity.
+  // Bitmask of components associated with each entity. Index into the vector is the Entity::Id.
   std::vector<uint64_t> entity_component_mask_;
-  // List of available Entity IDs.
-  boost::unordered_set<Entity> free_list_;
+  // List of available Entity::Id IDs.
+  boost::unordered_set<Entity::Id> free_list_;
 };
+
+template <typename C>
+boost::shared_ptr<C> Entity::assign(boost::shared_ptr<C> component) {
+  return entities_.assign<C>(id_, component);
+}
+
+template <typename C, typename ... Args>
+boost::shared_ptr<C> Entity::assign(Args && ... args) {
+  return entities_.assign<C>(id_, args ...);
+}
+
+template <typename C>
+boost::shared_ptr<C> Entity::component() {
+  return entities_.component<C>(id_);
+}
+
+template <typename A>
+void Entity::unpack(boost::shared_ptr<A> &a) {
+  entities_.unpack(id_, a);
+}
+
+template <typename A, typename B, typename ... Args>
+void Entity::unpack(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args) {
+  entities_.unpack(id_, a, b, args ...);
+}
 
 }

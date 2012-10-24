@@ -50,18 +50,18 @@ struct Direction : Component<Direction> {
 
 #### Assigning components to entities
 
-To associate a component with a previously created entity call ``EntityManager::assign<C>()`` with the component type, the entity, and any component constructor arguments:
+To associate a component with a previously created entity call ``Entity::assign<C>()`` with the component type, and any component constructor arguments:
 
 ```c++
 // Assign a Position with x=1.0f and y=2.0f to "entity"
-entities.assign<Position>(entity, 1.0f, 2.0f);
+entity.assign<Position>(1.0f, 2.0f);
 ```
 
 You can also assign existing instances of components:
 
 ```c++
 boost::shared_ptr<Position> position = boost::make_shared<Position>(1.0f, 2.0f);
-entities.assign(entity, position);
+entity.assign(position);
 ```
 
 #### Querying entities and their components
@@ -76,10 +76,10 @@ for (auto entity : entities.entities_with_components(position, direction)) {
 }
 ```
 
-To retrieve a component associated with an entity use ``EntityManager::component()``:
+To retrieve a component associated with an entity use ``Entity::component<C>()``:
 
 ```c++
-boost::shared_ptr<Position> position = entities.component<Position>();
+boost::shared_ptr<Position> position = entity.component<Position>();
 if (position) {
   // Do stuff with position
 }
@@ -186,8 +186,8 @@ class GameManager : public Manager {
     // Create some entities in random locations heading in random directions
     for (int i = 0; i < 100; ++i) {
       Entity entity = entity_manager.create();
-      entity_manager.assign<Position>(entity, rand() % 100, rand() % 100);
-      entity_manager.assign<Direction>(entity, (rand() % 10) - 5, (rand() % 10) - 5);
+      entity.assign<Position>(rand() % 100, rand() % 100);
+      entity.assign<Direction>((rand() % 10) - 5, (rand() % 10) - 5);
     }
   }
   

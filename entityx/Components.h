@@ -23,7 +23,7 @@ class TagsComponent : public Component<TagsComponent> {
   struct TagsPredicate {
     TagsPredicate(const std::string &tag) : tag(tag) {}
 
-    bool operator () (EntityManager &manager, Entity id) {
+    bool operator () (EntityManager &manager, Entity::Id id) {
       auto tags = manager.component<TagsComponent>(id);
       return tags != nullptr && tags->tags.find(tag) != tags->tags.end();
     }

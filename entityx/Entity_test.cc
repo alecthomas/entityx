@@ -79,8 +79,9 @@ TEST_F(EntityManagerTest, TestCreateEntity) {
 
 TEST_F(EntityManagerTest, TestComponentConstruction) {
   auto e = em.create();
-  auto p = em.assign<Position>(e, 1, 2);
-  auto cp = em.component<Position>(e);
+  auto p = e.assign<Position>(1, 2);
+  //auto p = em.assign<Position>(e, 1, 2);
+  auto cp = e.component<Position>();
   ASSERT_EQ(p, cp);
   ASSERT_FLOAT_EQ(1.0, cp->x);
   ASSERT_FLOAT_EQ(2.0, cp->y);
@@ -88,8 +89,8 @@ TEST_F(EntityManagerTest, TestComponentConstruction) {
 
 TEST_F(EntityManagerTest, TestComponentCreationWithObject) {
   auto e = em.create();
-  auto p = em.assign(e, make_shared<Position>(1.0, 2.0));
-  auto cp = em.component<Position>(e);
+  auto p = e.assign(make_shared<Position>(1.0, 2.0));
+  auto cp = e.component<Position>();
   ASSERT_EQ(p, cp);
   ASSERT_FLOAT_EQ(1.0, cp->x);
   ASSERT_FLOAT_EQ(2.0, cp->y);
@@ -98,27 +99,27 @@ TEST_F(EntityManagerTest, TestComponentCreationWithObject) {
 TEST_F(EntityManagerTest, TestDestroyEntity) {
   Entity e = em.create();
   Entity f = em.create();
-  auto ep = em.assign<Position>(e);
-  em.assign<Position>(f);
-  em.assign<Direction>(e);
-  em.assign<Direction>(f);
+  auto ep = e.assign<Position>();
+  f.assign<Position>();
+  e.assign<Direction>(e);
+  f.assign<Direction>();
 
   ASSERT_EQ(2, ep.use_count());
   ASSERT_TRUE(em.exists(e));
   ASSERT_TRUE(em.exists(f));
-  ASSERT_TRUE(em.component<Position>(e));
-  ASSERT_TRUE(em.component<Direction>(e));
-  ASSERT_TRUE(em.component<Position>(f));
-  ASSERT_TRUE(em.component<Direction>(f));
+  ASSERT_TRUE(e.component<Position>());
+  ASSERT_TRUE(e.component<Direction>());
+  ASSERT_TRUE(f.component<Position>());
+  ASSERT_TRUE(f.component<Direction>());
 
   em.destroy(e);
 
   ASSERT_FALSE(em.exists(e));
   ASSERT_TRUE(em.exists(f));
-  ASSERT_FALSE(em.component<Position>(e));
-  ASSERT_FALSE(em.component<Direction>(e));
-  ASSERT_TRUE(em.component<Position>(f));
-  ASSERT_TRUE(em.component<Direction>(f));
+  ASSERT_FALSE(e.component<Position>());
+  ASSERT_FALSE(e.component<Direction>());
+  ASSERT_TRUE(f.component<Position>());
+  ASSERT_TRUE(f.component<Direction>());
   ASSERT_EQ(1, ep.use_count());
 }
 
@@ -126,23 +127,23 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponent) {
   Entity e = em.create();
   Entity f = em.create();
   Entity g = em.create();
-  em.assign<Position>(e);
-  em.assign<Direction>(e);
-  em.assign<Position>(f);
-  em.assign<Position>(g);
+  e.assign<Position>();
+  e.assign<Direction>();
+  f.assign<Position>();
+  g.assign<Position>();
   ASSERT_EQ(3, size(em.entities_with_components<Position>()));
   ASSERT_EQ(1, size(em.entities_with_components<Direction>()));
 }
 
 TEST_F(EntityManagerTest, TestGetEntitiesWithIntersectionOfComponents) {
-  vector<Entity> entities;
+  vector<Entity::Id> entities;
   for (int i = 0; i < 150; ++i) {
     Entity e = em.create();
     entities.push_back(e);
     if (i % 2 == 0)
-      em.assign<Position>(e);
+      e.assign<Position>();
     if (i % 3 == 0)
-      em.assign<Direction>(e);
+      e.assign<Direction>();
 
   }
   ASSERT_EQ(50, size(em.entities_with_components<Direction>()));
@@ -151,10 +152,10 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithIntersectionOfComponents) {
 }
 
 TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
-  vector<Entity> entities;
-  Entity e = em.create();
-  Entity f = em.create();
-  Entity g = em.create();
+  vector<Entity::Id> entities;
+  Entity::Id e = em.create();
+  Entity::Id f = em.create();
+  Entity::Id g = em.create();
   std::vector<std::pair<shared_ptr<Position>, shared_ptr<Direction>>> position_directions;
   position_directions.push_back(std::make_pair(
           em.assign<Position>(e, 1.0f, 2.0f),
@@ -180,7 +181,7 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
 }
 
 TEST_F(EntityManagerTest, TestUnpack) {
-  Entity e = em.create();
+  Entity::Id e = em.create();
   auto p = em.assign<Position>(e);
   auto d = em.assign<Direction>(e);
 
@@ -192,7 +193,7 @@ TEST_F(EntityManagerTest, TestUnpack) {
 }
 
 TEST_F(EntityManagerTest, TestUnpackNullMissing) {
-  Entity e = em.create();
+  Entity::Id e = em.create();
   auto p = em.assign<Position>(e);
 
   struct NullDeleter {template<typename T> void operator()(T*) {} };
@@ -213,7 +214,7 @@ TEST_F(EntityManagerTest, TestEntityCreatedEvent) {
       created.push_back(event.entity);
     }
 
-    vector<Entity> created;
+    vector<Entity::Id> created;
   };
 
   EntityCreatedEventReceiver receiver;
@@ -232,14 +233,14 @@ TEST_F(EntityManagerTest, TestEntityDestroyedEvent) {
       destroyed.push_back(event.entity);
     }
 
-    vector<Entity> destroyed;
+    vector<Entity::Id> destroyed;
   };
 
   EntityDestroyedEventReceiver receiver;
   ev.subscribe<EntityDestroyedEvent>(receiver);
 
   ASSERT_EQ(0, receiver.destroyed.size());
-  vector<Entity> entities;
+  vector<Entity::Id> entities;
   for (int i = 0; i < 10; ++i) {
     entities.push_back(em.create());
   }
@@ -282,7 +283,7 @@ TEST_F(EntityManagerTest, TestComponentAddedEvent) {
   ASSERT_EQ(0, receiver.position_events);
   ASSERT_EQ(0, receiver.direction_events);
   for (int i = 0; i < 10; ++i) {
-    Entity e = em.create();
+    Entity::Id e = em.create();
     em.assign<Position>(e, float(i), float(i));
     em.assign<Direction>(e, float(-i), float(-i));
   }

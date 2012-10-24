@@ -54,7 +54,7 @@ class MovementSystem : public System<MovementSystem> {
 
 class TestManager : public entityx::Manager {
  public:
-  std::vector<Entity> entities;
+  std::vector<Entity::Id> entities;
 
   SystemManager &sm() { return system_manager; }
   EntityManager &em() { return entity_manager; }
@@ -65,7 +65,7 @@ class TestManager : public entityx::Manager {
 
   void initialize() override {
     for (int i = 0; i < 150; ++i) {
-      Entity e = entity_manager.create();
+      Entity::Id e = entity_manager.create();
       entities.push_back(e);
       if (i % 2 == 0)
         entity_manager.assign<Position>(e, 1, 2);
