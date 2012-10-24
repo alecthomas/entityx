@@ -180,14 +180,10 @@ class EntityManager : boost::noncopyable {
         while (i_ < manager_.size() && !predicate()) {
           ++i_;
         }
-        if (i_ < manager_.size()) {
-          unpack();
-        }
-      }
-
-      void unpack() {
-        for (auto unpacker : unpackers_) {
-          unpacker(i_);
+        if (i_ < manager_.size() && !unpackers_.empty()) {
+          for (auto unpacker : unpackers_) {
+            unpacker(i_);
+          }
         }
       }
 
@@ -218,19 +214,34 @@ class EntityManager : boost::noncopyable {
 
     template <typename A>
     View &unpack_to(boost::shared_ptr<A> &a) {
-      unpackers_.push_back([&] (Entity id) {
+      unpackers_.push_back(Unpacker<A>(manager_, a));
+      // This resulted in a segfault under clang 4.1 on OSX. No idea why. 
+      /*unpackers_.push_back([&a, this](Entity id) {
         a = manager_.component<A>(id);
-      });
+      });*/
       return *this;
     }
 
     template <typename A, typename B, typename ... Args>
-    View &unpack_to(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args *& ... args) {
+    View &unpack_to(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args) {
       unpack_to<A>(a);
       return unpack_to<B, Args ...>(b, args ...);
     }
    private:
     friend class EntityManager;
+
+    template <typename T>
+    struct Unpacker {
+      Unpacker(EntityManager &manager, boost::shared_ptr<T> &c) : manager(manager), c(c) {}
+
+      void operator () (Entity id) {
+        c = manager.component<T>(id);
+      }
+
+     private:
+      EntityManager &manager;
+      boost::shared_ptr<T> &c;
+    };
 
     View(EntityManager &manager, Predicate predicate) : manager_(manager) {
       predicates_.push_back(predicate);
@@ -332,43 +343,23 @@ class EntityManager : boost::noncopyable {
   }
 
   /**
-   * Get all entities with the given component.
+   * Find Entities that have all of the specified Components.
    */
-  template <typename C>
+  template <typename C, typename ... Components>
   View entities_with_components() {
-    auto mask = component_mask<C>();
+    uint64_t mask = component_mask<C, Components ...>();
     return View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask));
   }
 
   /**
    * Find Entities that have all of the specified Components.
    */
-  template <typename C1, typename C2, typename ... Components>
-  View entities_with_components() {
-    auto mask = component_mask<C1, C2, Components ...>();
-    return View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask));
-  }
-
-  /**
-   * Get all entities with the given component.
-   */
-  template <typename C>
-  View entities_with_components(boost::shared_ptr<C> &c) {
-    auto mask = component_mask<C>();
+  template <typename C, typename ... Components>
+  View entities_with_components(boost::shared_ptr<C> &c, Components && ... args) {
+    uint64_t mask = component_mask(c, args ...);
     return
         View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask))
-        .unpack_to<C>(c);
-  }
-
-  /**
-   * Find Entities that have all of the specified Components.
-   */
-  template <typename C1, typename C2, typename ... Components>
-  View entities_with_components(boost::shared_ptr<C1> &c1, boost::shared_ptr<C2> &c2, Components *& ... args) {
-    auto mask = component_mask<C1, C2, Components ...>();
-    return
-        View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask))
-        .unpack_to<C1, C2, Components...>(c1, c2, args...);
+        .unpack_to(c, args ...);
   }
 
   /**
@@ -399,7 +390,7 @@ class EntityManager : boost::noncopyable {
    * unpack<Position, Direction>(e, p, d);
    */
   template <typename A, typename B, typename ... Args>
-  void unpack(Entity id, boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args & ... args) {
+  void unpack(Entity id, boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args) {
     unpack<A>(id, a);
     unpack<B, Args ...>(id, b, args ...);
   }
@@ -413,6 +404,16 @@ class EntityManager : boost::noncopyable {
   template <typename C1, typename C2, typename ... Components>
   uint64_t component_mask() {
     return component_mask<C1>() | component_mask<C2, Components ...>();
+  }
+
+  template <typename C>
+  uint64_t component_mask(const boost::shared_ptr<C> &c) {
+    return uint64_t(1) << C::family();
+  }
+
+  template <typename C1, typename C2, typename ... Components>
+  uint64_t component_mask(const boost::shared_ptr<C1> &c1, const boost::shared_ptr<C2> &c2, Components && ... args) {
+    return component_mask<C1>(c1) | component_mask<C2, Components ...>(c2, args...);
   }
 
   inline void accomodate_entity(Entity entity) {

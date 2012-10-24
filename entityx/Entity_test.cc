@@ -164,6 +164,7 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
           em.assign<Direction>(f, 9.0f, 10.0f)));
   em.assign<Position>(g, 5.0f, 6.0f);
   int i = 0;
+
   shared_ptr<Position> position;
   shared_ptr<Direction> direction;
   for (auto unused_entity : em.entities_with_components(position, direction)) {
