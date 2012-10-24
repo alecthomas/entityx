@@ -8,4 +8,4 @@
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
-#include "Components.h"
+#include "entityx/Components.h"
