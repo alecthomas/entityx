@@ -42,6 +42,8 @@ class Entity {
 
   operator Id () { return id_; }
 
+  bool exists() const;
+
   template <typename C>
   boost::shared_ptr<C> assign(boost::shared_ptr<C> component);
   template <typename C, typename ... Args>
@@ -326,6 +328,10 @@ class EntityManager : boost::noncopyable {
       return false;
     }
     return free_list_.find(entity) == free_list_.end();
+  }
+
+  Entity get(Entity::Id id) {
+    return Entity(*this, id);
   }
 
   /**

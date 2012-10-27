@@ -15,4 +15,8 @@ namespace entityx {
 
 BaseComponent::Family BaseComponent::family_counter_ = 0;
 
+bool Entity::exists() const {
+  return entities_.exists(id_);
+}
+
 }
