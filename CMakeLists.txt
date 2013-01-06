@@ -46,8 +46,6 @@ require(HAS_CXX11_LONG_LONG "C++11 lambdas")
 message("-- Checking misc features")
 require(HAVE_STDINT_H "stdint.h")
 
-enable_testing()
-find_package(GTest REQUIRED)
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
@@ -69,10 +67,14 @@ include_directories(
     ${GTest_INCLUDE_DIR}
     )
 
-create_test(entity_test entityx/Entity_test.cc)
-create_test(component_test entityx/Components_test.cc)
-create_test(event_test entityx/Event_test.cc)
-create_test(system_test entityx/System_test.cc)
+if (BUILD_TESTING)
+    enable_testing()
+    find_package(GTest REQUIRED)
+    create_test(entity_test entityx/Entity_test.cc)
+    create_test(component_test entityx/Components_test.cc)
+    create_test(event_test entityx/Event_test.cc)
+    create_test(system_test entityx/System_test.cc)
+endif (BUILD_TESTING)
 
 file(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/entityx/*.h")
 
