@@ -4,7 +4,7 @@
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution.
- * 
+ *
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
@@ -16,10 +16,12 @@
 #include <gtest/gtest.h>
 #include "entityx/Entity.h"
 
-using namespace std;
+// using namespace std; // This will give name space conflicts with boost
 using namespace boost;
 using namespace entityx;
 
+using std::ostream;
+using std::vector;
 
 template <typename T>
 int size(const T &t) {
@@ -192,11 +194,13 @@ TEST_F(EntityManagerTest, TestUnpack) {
   ASSERT_EQ(d, ud);
 }
 
+// gcc 4.7.2 does not allow this struct to be declared locally inside the TEST_F.
+struct NullDeleter {template<typename T> void operator()(T*) {} };
+
 TEST_F(EntityManagerTest, TestUnpackNullMissing) {
   Entity::Id e = em.create();
   auto p = em.assign<Position>(e);
 
-  struct NullDeleter {template<typename T> void operator()(T*) {} };
   shared_ptr<Position> up(reinterpret_cast<Position*>(0Xdeadbeef), NullDeleter());
   shared_ptr<Direction> ud(reinterpret_cast<Direction*>(0Xdeadbeef), NullDeleter());
   em.unpack<Position, Direction>(e, up, ud);
@@ -225,7 +229,7 @@ TEST_F(EntityManagerTest, TestEntityCreatedEvent) {
     em.create();
   }
   ASSERT_EQ(10, receiver.created.size());
-};
+}
 
 TEST_F(EntityManagerTest, TestEntityDestroyedEvent) {
   struct EntityDestroyedEventReceiver : public Receiver<EntityDestroyedEventReceiver> {
@@ -249,7 +253,7 @@ TEST_F(EntityManagerTest, TestEntityDestroyedEvent) {
     em.destroy(e);
   }
   ASSERT_TRUE(entities == receiver.destroyed);
-};
+}
 
 TEST_F(EntityManagerTest, TestComponentAddedEvent) {
   struct ComponentAddedEventReceiver : public Receiver<ComponentAddedEventReceiver> {
@@ -289,4 +293,4 @@ TEST_F(EntityManagerTest, TestComponentAddedEvent) {
   }
   ASSERT_EQ(10, receiver.position_events);
   ASSERT_EQ(10, receiver.direction_events);
-};
+}
