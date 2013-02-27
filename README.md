@@ -28,7 +28,7 @@ Entity entity = entities.create();
 
 ### Components (entity data)
 
-Components are typically POD types containing self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
+Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) containing self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
 
 #### Creating components
 
@@ -66,7 +66,7 @@ entity.assign(position);
 
 #### Querying entities and their components
 
-To query all components with a set of components assigned use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
+To query all entities with a set of components assigned, use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
 
 ```c++
 boost::shared_ptr<Position> position;
