@@ -51,7 +51,7 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.48.0 REQUIRED COMPONENTS signals)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=unused-but-set-variable -Wno-error=sign-compare -std=c++11")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
@@ -67,9 +67,11 @@ include_directories(
     ${GTest_INCLUDE_DIR}
     )
 
+set(BUILD_TESTING false CACHE BOOL "Enable building of tests")
 if (BUILD_TESTING)
     enable_testing()
     find_package(GTest REQUIRED)
+    include_directories(${GTEST_INCLUDE_DIRS})
     create_test(entity_test entityx/Entity_test.cc)
     create_test(component_test entityx/Components_test.cc)
     create_test(event_test entityx/Event_test.cc)

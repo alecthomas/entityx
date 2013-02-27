@@ -4,7 +4,7 @@
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution.
- * 
+ *
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
@@ -16,9 +16,10 @@
 #include "entityx/System.h"
 
 
-using namespace std;
+// using namespace std; // This will give name space conflicts with boost
 using namespace boost;
 using namespace entityx;
+using std::string;
 
 struct Position : Component<Position> {
   Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}

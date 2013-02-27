@@ -28,7 +28,7 @@ Entity entity = entities.create();
 
 ### Components (entity data)
 
-Components are typically POD types containing self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
+Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) containing self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
 
 #### Creating components
 
@@ -66,7 +66,7 @@ entity.assign(position);
 
 #### Querying entities and their components
 
-To query all components with a set of components assigned use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
+To query all entities with a set of components assigned, use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
 
 ```c++
 boost::shared_ptr<Position> position;
@@ -117,7 +117,7 @@ First, we define the event type, which for our example is simply the two entitie
 ```c++
 struct Collision : public Event<Collision> {
   Collision(Entity left, Entity right) : left(left), right(right) {}
-  
+
   Entity left, right;
 };
 ```
@@ -181,7 +181,7 @@ class GameManager : public Manager {
     system_manager.add<MovementSystem>();
     system_manager.add<CollisionSystem>();
   }
-  
+
   void initialize() {
     // Create some entities in random locations heading in random directions
     for (int i = 0; i < 100; ++i) {
@@ -190,7 +190,7 @@ class GameManager : public Manager {
       entity.assign<Direction>((rand() % 10) - 5, (rand() % 10) - 5);
     }
   }
-  
+
   void update(double dt) {
     system_manager.update<MovementSystem>(dt);
     system_manager.update<CollisionSystem>(dt);
@@ -206,12 +206,16 @@ EntityX has the following build and runtime requirements:
 - [CMake](http://cmake.org/)
 - [Boost](http://boost.org) `1.48.0` or higher (links against `boost::signals`).
 - [Glog](http://code.google.com/p/google-glog/) (tested with `0.3.2`).
-- [GTest](http://code.google.com/p/googletest/)
+- [GTest](http://code.google.com/p/googletest/) (needed for testing only)
 
-Once these dependencies are installed you should be able to build and install EntityX with:
+Once these dependencies are installed you should be able to build and install EntityX as follows. BUILD_TESTING is false by default.
 
 ```c++
-mkdir build && cd build && cmake .. && make && make test && make install
+mkdir build
+cd build
+cmake [-DBUILD_TESTING=true] ..
+make
+make install
 ```
 
-EntityX has currently only been tested on Mac OSX (Lion and Mountain Lion). Reports and patches for builds on other platforms are welcome.
+EntityX has currently only been tested on Mac OSX (Lion and Mountain Lion), and Linux Debian. Reports and patches for builds on other platforms are welcome.
