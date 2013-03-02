@@ -1,10 +1,10 @@
 /**
  * Copyright (C) 2012 Alec Thomas <alec@swapoff.org>
  * All rights reserved.
- * 
+ *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution.
- * 
+ *
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
@@ -227,7 +227,7 @@ class EntityManager : boost::noncopyable {
         return true;
       }
 
-      EntityManager &manager_; 
+      EntityManager &manager_;
       const std::vector<Predicate> predicates_;
       std::vector<boost::function<void (Entity::Id)>> unpackers_;
       Entity::Id i_;
@@ -246,7 +246,7 @@ class EntityManager : boost::noncopyable {
     template <typename A>
     View &unpack_to(boost::shared_ptr<A> &a) {
       unpackers_.push_back(Unpacker<A>(manager_, a));
-      // This resulted in a segfault under clang 4.1 on OSX. No idea why. 
+      // This resulted in a segfault under clang 4.1 on OSX. No idea why.
       /*unpackers_.push_back([&a, this](Entity::Id id) {
         a = manager_.component<A>(id);
       });*/
@@ -299,7 +299,9 @@ class EntityManager : boost::noncopyable {
       id = id_counter_++;
       accomodate_entity(id);
     } else {
-      id = *free_list_.erase(free_list_.begin());
+      auto it = free_list_.begin();
+      id = *it;
+      free_list_.erase(it);
     }
     event_manager_.emit<EntityCreatedEvent>(*this, id);
     return Entity(*this, id);
