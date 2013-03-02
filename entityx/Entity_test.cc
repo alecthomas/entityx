@@ -75,8 +75,19 @@ class EntityManagerTest : public ::testing::Test {
 
 
 TEST_F(EntityManagerTest, TestCreateEntity) {
+  ASSERT_TRUE(em.size() == 0);
   Entity e = em.create();
   ASSERT_TRUE(em.exists(e));
+  ASSERT_TRUE(em.size() == 1);
+}
+
+TEST_F(EntityManagerTest, TestEntityReuse) {
+  Entity e1 = em.create();
+  auto id = e1.id();
+  em.destroy(e1);
+  ASSERT_TRUE(!em.exists(e1));
+  Entity e2 = em.create();
+  ASSERT_EQ(e2.id(), id);
 }
 
 TEST_F(EntityManagerTest, TestComponentConstruction) {
