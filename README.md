@@ -208,6 +208,8 @@ EntityX has the following build and runtime requirements:
 - [Glog](http://code.google.com/p/google-glog/) (tested with `0.3.2`).
 - [GTest](http://code.google.com/p/googletest/) (needed for testing only)
 
+**Note:** GTest is no longer installable directly through Homebrew. You can use [this formula](https://raw.github.com/mxcl/homebrew/2bf506e3d90254f81a669a0216f33b2f09589028/Library/Formula/gtest.rb) to install it manually.
+
 Once these dependencies are installed you should be able to build and install EntityX as follows. BUILD_TESTING is false by default.
 
 ```c++

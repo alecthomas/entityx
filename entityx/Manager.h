@@ -1,10 +1,10 @@
 /**
  * Copyright (C) 2012 Alec Thomas <alec@swapoff.org>
  * All rights reserved.
- * 
+ *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution.
- * 
+ *
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
@@ -38,12 +38,14 @@ class Manager {
   /**
    * Initialize the entities and events in the world.
    *
-   * Typically used when 
+   * Typically used to create initial entities, setup event handlers, and so on.
    */
   virtual void initialize() = 0;
 
   /**
    * Update the world.
+   *
+   * Typically this is where you would call update() on all Systems in the world.
    */
   virtual void update(double dt) = 0;
 
