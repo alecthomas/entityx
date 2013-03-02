@@ -87,6 +87,7 @@ TEST_F(EntityManagerTest, TestEntityReuse) {
   em.destroy(e1);
   ASSERT_TRUE(!em.exists(e1));
   Entity e2 = em.create();
+  // It is assumed that the allocation will reuse the same entity id.
   ASSERT_EQ(e2.id(), id);
 }
 
