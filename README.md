@@ -28,7 +28,8 @@ Entity entity = entities.create();
 
 ### Components (entity data)
 
-Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) containing self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
+Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) containing self-contained sets of related data.Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
+The current implementation can handle up to 64 components in total.
 
 #### Creating components
 
@@ -209,6 +210,7 @@ EntityX has the following build and runtime requirements:
 - [GTest](http://code.google.com/p/googletest/) (needed for testing only)
 
 **Note:** GTest is no longer installable directly through Homebrew. You can use [this formula](https://raw.github.com/mxcl/homebrew/2bf506e3d90254f81a669a0216f33b2f09589028/Library/Formula/gtest.rb) to install it manually.
+For Debian Linux, install libgtest-dev and then see /usr/share/doc/libgtest-dev/README.Debian.
 
 Once these dependencies are installed you should be able to build and install EntityX as follows. BUILD_TESTING is false by default.
 
