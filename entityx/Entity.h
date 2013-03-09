@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <bitset>
 #include <cassert>
+#include <iostream>
 #include <iterator>
 #include <set>
 #include <string>
@@ -38,6 +39,28 @@ class Entity {
  public:
   typedef uint64_t Id;
 
+  Entity(): entities_(nullptr) {}
+
+  /**
+   * Alias for exists().
+   */
+  bool operator ! () const {
+    return exists();
+  }
+
+  bool operator == (const Entity &other) const {
+    return other.entities_ == entities_ && other.id_ == id_;
+  }
+
+  bool operator != (const Entity &other) const {
+    return other.entities_ != entities_ || other.id_ != id_;
+  }
+
+  /**
+   * Detach entity from the EntityManager.
+   */
+  void detach();
+
   Id id() const { return id_; }
 
   operator Id () { return id_; }
@@ -60,11 +83,17 @@ class Entity {
  private:
   friend class EntityManager;
 
-  Entity(EntityManager &entities, Entity::Id id) : entities_(entities), id_(id) {}
+  Entity(EntityManager *entities, Entity::Id id) : entities_(entities), id_(id) {}
 
-  EntityManager &entities_;
+  EntityManager *entities_;
   Entity::Id id_;
 };
+
+
+inline std::ostream &operator << (std::ostream &out, const Entity &entity) {
+  out << "Entity(" << entity.id() << ")";
+  return out;
+}
 
 
 /**
@@ -201,17 +230,19 @@ class EntityManager : boost::noncopyable {
      private:
       friend class View;
 
-      Iterator(EntityManager &manager, const std::vector<Predicate> &predicates,
+      Iterator() : manager_(nullptr) {}
+
+      Iterator(EntityManager *manager, const std::vector<Predicate> &predicates,
                const std::vector<boost::function<void (Entity::Id)>> &unpackers, Entity::Id entity)
           : manager_(manager), predicates_(predicates), unpackers_(unpackers), i_(entity) {
         next();
       }
 
       void next() {
-        while (i_ < manager_.size() && !predicate()) {
+        while (i_ < manager_->size() && !predicate()) {
           ++i_;
         }
-        if (i_ < manager_.size() && !unpackers_.empty()) {
+        if (i_ < manager_->size() && !unpackers_.empty()) {
           for (auto unpacker : unpackers_) {
             unpacker(i_);
           }
@@ -220,14 +251,14 @@ class EntityManager : boost::noncopyable {
 
       bool predicate() {
         for (auto &p : predicates_) {
-          if (!p(manager_, i_)) {
+          if (!p(*manager_, i_)) {
             return false;
           }
         }
         return true;
       }
 
-      EntityManager &manager_;
+      EntityManager *manager_;
       const std::vector<Predicate> predicates_;
       std::vector<boost::function<void (Entity::Id)>> unpackers_;
       Entity::Id i_;
@@ -239,9 +270,9 @@ class EntityManager : boost::noncopyable {
     }
 
     Iterator begin() { return Iterator(manager_, predicates_, unpackers_, 0); }
-    Iterator end() { return Iterator(manager_, predicates_, unpackers_, manager_.size()); }
+    Iterator end() { return Iterator(manager_, predicates_, unpackers_, manager_->size()); }
     const Iterator begin() const { return Iterator(manager_, predicates_, unpackers_, 0); }
-    const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_.size()); }
+    const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_->size()); }
 
     template <typename A>
     View &unpack_to(boost::shared_ptr<A> &a) {
@@ -263,22 +294,22 @@ class EntityManager : boost::noncopyable {
 
     template <typename T>
     struct Unpacker {
-      Unpacker(EntityManager &manager, boost::shared_ptr<T> &c) : manager(manager), c(c) {}
+      Unpacker(EntityManager *manager, boost::shared_ptr<T> &c) : manager_(manager), c(c) {}
 
       void operator () (Entity::Id id) {
-        c = manager.component<T>(id);
+        c = manager_->component<T>(id);
       }
 
      private:
-      EntityManager &manager;
+      EntityManager *manager_;
       boost::shared_ptr<T> &c;
     };
 
-    View(EntityManager &manager, Predicate predicate) : manager_(manager) {
+    View(EntityManager *manager, Predicate predicate) : manager_(manager) {
       predicates_.push_back(predicate);
     }
 
-    EntityManager &manager_;
+    EntityManager *manager_;
     std::vector<Predicate> predicates_;
     std::vector<boost::function<void (Entity::Id)>> unpackers_;
   };
@@ -304,7 +335,7 @@ class EntityManager : boost::noncopyable {
       free_list_.erase(it);
     }
     event_manager_.emit<EntityCreatedEvent>(*this, id);
-    return Entity(*this, id);
+    return Entity(this, id);
   }
 
   /**
@@ -333,7 +364,7 @@ class EntityManager : boost::noncopyable {
   }
 
   Entity get(Entity::Id id) {
-    return Entity(*this, id);
+    return Entity(this, id);
   }
 
   /**
@@ -385,7 +416,7 @@ class EntityManager : boost::noncopyable {
   template <typename C, typename ... Components>
   View entities_with_components() {
     uint64_t mask = component_mask<C, Components ...>();
-    return View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask));
+    return View(this, View::ComponentMaskPredicate(entity_component_mask_, mask));
   }
 
   /**
@@ -395,7 +426,7 @@ class EntityManager : boost::noncopyable {
   View entities_with_components(boost::shared_ptr<C> &c, Components && ... args) {
     uint64_t mask = component_mask(c, args ...);
     return
-        View(*this, View::ComponentMaskPredicate(entity_component_mask_, mask))
+        View(this, View::ComponentMaskPredicate(entity_component_mask_, mask))
         .unpack_to(c, args ...);
   }
 
@@ -484,27 +515,27 @@ class EntityManager : boost::noncopyable {
 
 template <typename C>
 boost::shared_ptr<C> Entity::assign(boost::shared_ptr<C> component) {
-  return entities_.assign<C>(id_, component);
+  return entities_->assign<C>(id_, component);
 }
 
 template <typename C, typename ... Args>
 boost::shared_ptr<C> Entity::assign(Args && ... args) {
-  return entities_.assign<C>(id_, args ...);
+  return entities_->assign<C>(id_, args ...);
 }
 
 template <typename C>
 boost::shared_ptr<C> Entity::component() {
-  return entities_.component<C>(id_);
+  return entities_->component<C>(id_);
 }
 
 template <typename A>
 void Entity::unpack(boost::shared_ptr<A> &a) {
-  entities_.unpack(id_, a);
+  entities_->unpack(id_, a);
 }
 
 template <typename A, typename B, typename ... Args>
 void Entity::unpack(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args) {
-  entities_.unpack(id_, a, b, args ...);
+  entities_->unpack(id_, a, b, args ...);
 }
 
 }

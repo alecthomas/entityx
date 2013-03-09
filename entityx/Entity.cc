@@ -4,7 +4,7 @@
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution.
- * 
+ *
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
@@ -16,7 +16,11 @@ namespace entityx {
 BaseComponent::Family BaseComponent::family_counter_ = 0;
 
 bool Entity::exists() const {
-  return entities_.exists(id_);
+  return entities_ != nullptr && entities_->exists(id_);
+}
+
+void Entity::detach() {
+  entities_ = nullptr;
 }
 
 }

@@ -306,3 +306,13 @@ TEST_F(EntityManagerTest, TestComponentAddedEvent) {
   ASSERT_EQ(10, receiver.position_events);
   ASSERT_EQ(10, receiver.direction_events);
 }
+
+TEST_F(EntityManagerTest, TestEntityAssignment) {
+  Entity a, b;
+  a = em.create();
+  ASSERT_NE(a, b);
+  b = a;
+  ASSERT_EQ(a, b);
+  a.detach();
+  ASSERT_NE(a, b);
+}
