@@ -39,10 +39,14 @@ Test if it is valid with `entity.exists()`.
 
 ### Components (entity data)
 
-Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) containing self-contained sets of related data.Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
-The idea with ECS is to not have any functionality in the component.
-Components must provide a no-argument constructor.
-The current implementation can handle up to 64 components in total.
+The idea with ECS is to not have any functionality in the component. All logic should be contained in Systems.
+
+To that end Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) containing self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
+
+Implementation notes:
+
+- Components must provide a no-argument constructor.
+- The current implementation can handle up to 64 components in total.
 
 #### Creating components
 
