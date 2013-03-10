@@ -28,6 +28,7 @@ int size(const T &t) {
   int n = 0;
   for (auto i : t) {
     ++n;
+    (void)i; // Unused on purpose, suppress warning
   }
   return n;
 }
@@ -76,9 +77,34 @@ class EntityManagerTest : public ::testing::Test {
 
 TEST_F(EntityManagerTest, TestCreateEntity) {
   ASSERT_TRUE(em.size() == 0);
+
+  Entity e2;
+  ASSERT_FALSE(e2.exists());
+  ASSERT_FALSE(em.exists(e2));
+
+  Entity e = em.create();
+  ASSERT_TRUE(e.exists());
+  ASSERT_TRUE(em.exists(e));
+  ASSERT_TRUE(em.size() == 1);
+
+  e2 = e;
+  ASSERT_TRUE(e2.exists());
+  ASSERT_TRUE(em.exists(e2));
+}
+
+TEST_F(EntityManagerTest, TestEntityAsBoolean) {
+  ASSERT_TRUE(em.size() == 0);
   Entity e = em.create();
   ASSERT_TRUE(em.exists(e));
   ASSERT_TRUE(em.size() == 1);
+  ASSERT_FALSE(!e);
+
+  em.destroy(e);
+
+  ASSERT_TRUE(!e);
+
+  Entity e2; // Not initialized
+  ASSERT_TRUE(!e2);
 }
 
 TEST_F(EntityManagerTest, TestEntityReuse) {
