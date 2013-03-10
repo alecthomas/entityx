@@ -4,7 +4,7 @@
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution.
- * 
+ *
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
@@ -24,6 +24,7 @@ int size(const T &t) {
   int n = 0;
   for (auto i : t) {
     ++n;
+    (void)i; // Unused on purpose, suppress warning
   }
   return n;
 }

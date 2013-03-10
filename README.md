@@ -26,9 +26,23 @@ EntityManager entities;
 Entity entity = entities.create();
 ```
 
+And destroying an entity is done with:
+
+```c++
+entities.destroy(entity);
+```
+
+#### Testing for destroyed entities
+
+The Entity type can be seen as a safe pointer.
+Test if it is valid with `entity.exists()`.
+
 ### Components (entity data)
 
-Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) containing self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
+Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) containing self-contained sets of related data.Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
+The idea with ECS is to not have any functionality in the component.
+Components must provide a no-argument constructor.
+The current implementation can handle up to 64 components in total.
 
 #### Creating components
 
@@ -107,8 +121,9 @@ struct MovementSystem : public System<MovementSystem> {
 ### Events (communicating between systems)
 
 Events are objects emitted by systems, typically when some condition is met. Listeners subscribe to an event type and will receive a callback for each event object emitted. An ``EventManager`` coordinates subscription and delivery of events between subscribers and emitters. Typically subscribers will be other systems, but need not be.
+Events are not part of the original ECS pattern, but they are an efficient alternative to component flags for sending infrequent data.
 
-As an example, we might want to implement a very basic collision system using our ``Position` data from above.
+As an example, we might want to implement a very basic collision system using our ``Position`` data from above.
 
 #### Creating event types
 
@@ -168,6 +183,8 @@ DebugCollisions debug_collisions;
 events.subscribe<Collision>(debug_collisions);
 ```
 
+There can be more than one subscriber for an event; each one will be called.
+
 ### Manager (tying it all together)
 
 Managing systems, components and entities can be streamlined by subclassing `Manager`. It is not necessary, but it provides callbacks for configuring systems, initializing entities, and so on.
@@ -209,6 +226,7 @@ EntityX has the following build and runtime requirements:
 - [GTest](http://code.google.com/p/googletest/) (needed for testing only)
 
 **Note:** GTest is no longer installable directly through Homebrew. You can use [this formula](https://raw.github.com/mxcl/homebrew/2bf506e3d90254f81a669a0216f33b2f09589028/Library/Formula/gtest.rb) to install it manually.
+For Debian Linux, install libgtest-dev and then see /usr/share/doc/libgtest-dev/README.Debian.
 
 Once these dependencies are installed you should be able to build and install EntityX as follows. BUILD_TESTING is false by default.
 

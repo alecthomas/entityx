@@ -13,6 +13,8 @@
 
 namespace entityx {
 
+const Entity::Id Entity::INVALID = Entity::Id(-1);
+
 BaseComponent::Family BaseComponent::family_counter_ = 0;
 
 bool Entity::exists() const {
@@ -20,6 +22,7 @@ bool Entity::exists() const {
 }
 
 void Entity::detach() {
+  id_ = INVALID;
   entities_ = nullptr;
 }
 

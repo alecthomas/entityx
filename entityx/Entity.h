@@ -39,13 +39,18 @@ class Entity {
  public:
   typedef uint64_t Id;
 
-  Entity(): entities_(nullptr) {}
+  /**
+   * Id of an invalid Entity.
+   */
+  static const Id INVALID;
+
+  Entity() {}
 
   /**
    * Alias for exists().
    */
   bool operator ! () const {
-    return exists();
+    return !exists();
   }
 
   bool operator == (const Entity &other) const {
@@ -57,7 +62,7 @@ class Entity {
   }
 
   /**
-   * Detach entity from the EntityManager.
+   * Detach Entity handle from the EntityManager.
    */
   void detach();
 
@@ -85,8 +90,8 @@ class Entity {
 
   Entity(EntityManager *entities, Entity::Id id) : entities_(entities), id_(id) {}
 
-  EntityManager *entities_;
-  Entity::Id id_;
+  EntityManager *entities_ = nullptr;
+  Entity::Id id_ = INVALID;
 };
 
 
