@@ -39,7 +39,8 @@ class Entity {
  public:
   typedef uint64_t Id;
 
-  Entity(): entities_(nullptr) {}
+  // Initialize id to a value that will never be used
+  Entity(): entities_(nullptr), id_(uint64_t(-1)) {}
 
   /**
    * Alias for exists().
