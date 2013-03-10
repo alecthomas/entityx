@@ -45,7 +45,7 @@ class Entity {
    * Alias for exists().
    */
   bool operator ! () const {
-    return exists();
+    return !exists();
   }
 
   bool operator == (const Entity &other) const {
