@@ -11,17 +11,18 @@
 #pragma once
 
 
-#include <stdint.h>
 #include <algorithm>
 #include <bitset>
 #include <cassert>
 #include <iostream>
 #include <iterator>
+#include <list>
 #include <set>
+#include <stdint.h>
 #include <string>
 #include <utility>
 #include <vector>
-#include <boost/unordered_set.hpp>
+
 #include <boost/shared_ptr.hpp>
 #include <glog/logging.h>
 #include "entityx/Event.h"
@@ -210,9 +211,6 @@ struct ComponentAddedEvent : public Event<ComponentAddedEvent<T>> {
  * shared_ptr<Controllable> controllable = player.assign<Controllable>();
  */
 class EntityManager : boost::noncopyable {
- private:
-  typedef std::vector<boost::shared_ptr<BaseComponent>> EntitiesComponent;
-
  public:
   EntityManager(EventManager &event_manager) : event_manager_(event_manager) {}
 
@@ -350,9 +348,8 @@ class EntityManager : boost::noncopyable {
       id = id_counter_++;
       accomodate_entity(id);
     } else {
-      auto it = free_list_.begin();
-      id = *it;
-      free_list_.erase(it);
+      id = free_list_.front();
+      free_list_.pop_front();
     }
     event_manager_.emit<EntityCreatedEvent>(Entity(this, id));
     return Entity(this, id);
@@ -370,7 +367,7 @@ class EntityManager : boost::noncopyable {
       components.at(entity).reset();
     }
     entity_component_mask_.at(entity) = 0;
-    free_list_.insert(entity);
+    free_list_.push_back(entity);
   }
 
   Entity get(Entity::Id id) {
@@ -516,11 +513,11 @@ class EntityManager : boost::noncopyable {
 
   EventManager &event_manager_;
   // A nested array of: components = entity_components_[family][entity]
-  std::vector<EntitiesComponent> entity_components_;
+  std::vector<std::vector<boost::shared_ptr<BaseComponent>>> entity_components_;
   // Bitmask of components associated with each entity. Index into the vector is the Entity::Id.
   std::vector<uint64_t> entity_component_mask_;
   // List of available Entity::Id IDs.
-  boost::unordered_set<Entity::Id> free_list_;
+  std::list<Entity::Id> free_list_;
 };
 
 template <typename C>
