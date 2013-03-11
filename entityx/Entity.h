@@ -34,6 +34,12 @@ class EntityManager;
 
 /**
  * A convenience handle around an Entity::Id.
+ *
+ * NOTE: Because Entity IDs are recycled by the EntityManager, there is no way
+ * to determine if an Entity is still associated with the same logical entity.
+ *
+ * The only way to robustly track an Entity through its lifecycle is to
+ * subscribe to EntityDestroyedEvent.
  */
 class Entity {
  public:
@@ -47,30 +53,39 @@ class Entity {
   Entity() {}
 
   /**
-   * Alias for exists().
+   * Check if Entity handle is invalid.
    */
   bool operator ! () const {
-    return !exists();
+    return !valid();
   }
 
   bool operator == (const Entity &other) const {
-    return other.entities_ == entities_ && other.id_ == id_;
+    return other.manager_ == manager_ && other.id_ == id_;
   }
 
   bool operator != (const Entity &other) const {
-    return other.entities_ != entities_ || other.id_ != id_;
+    return other.manager_ != manager_ || other.id_ != id_;
   }
 
   /**
-   * Detach Entity handle from the EntityManager.
+   * Is this Entity handle valid?
+   *
+   * *NOTE:* This does *not* imply that the originally associated entity ID is
+   * the same, or is valid in any way.
    */
-  void detach();
+  bool valid() const {
+    return manager_ != nullptr && id_ != INVALID;
+  }
+
+  /**
+   * Invalidate Entity handle, disassociating it from an EntityManager and invalidating its ID.
+   *
+   * Note that this does *not* affect the underlying entity and its components.
+   */
+  void invalidate();
 
   Id id() const { return id_; }
-
-  operator Id () { return id_; }
-
-  bool exists() const;
+  EntityManager &manager() { return *manager_; }
 
   template <typename C>
   boost::shared_ptr<C> assign(boost::shared_ptr<C> component);
@@ -85,12 +100,17 @@ class Entity {
   template <typename A, typename B, typename ... Args>
   void unpack(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args);
 
+  /**
+   * Destroy and invalidate this Entity.
+   */
+  void destroy();
+
  private:
   friend class EntityManager;
 
-  Entity(EntityManager *entities, Entity::Id id) : entities_(entities), id_(id) {}
+  Entity(EntityManager *entities, Entity::Id id) : manager_(entities), id_(id) {}
 
-  EntityManager *entities_ = nullptr;
+  EntityManager *manager_ = nullptr;
   Entity::Id id_ = INVALID;
 };
 
@@ -150,20 +170,16 @@ struct Component : public BaseComponent {
  * Emitted when an entity is added to the system.
  */
 struct EntityCreatedEvent : public Event<EntityCreatedEvent> {
-  EntityCreatedEvent(EntityManager &manager, Entity::Id entity) :
-      manager(manager), entity(entity) {}
+  EntityCreatedEvent(Entity entity) : entity(entity) {}
 
-  EntityManager &manager;
-  Entity::Id entity;
+  Entity entity;
 };
 
 
 struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
-  EntityDestroyedEvent(EntityManager &manager, Entity::Id entity) :
-      manager(manager), entity(entity) {}
+  EntityDestroyedEvent(Entity entity) : entity(entity) {}
 
-  EntityManager &manager;
-  Entity::Id entity;
+  Entity entity;
 };
 
 
@@ -172,11 +188,10 @@ struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
  */
 template <typename T>
 struct ComponentAddedEvent : public Event<ComponentAddedEvent<T>> {
-  ComponentAddedEvent(EntityManager &manager, Entity::Id entity, boost::shared_ptr<T> component) :
-      manager(manager), entity(entity), component(component) {}
+  ComponentAddedEvent(Entity entity, boost::shared_ptr<T> component) :
+      entity(entity), component(component) {}
 
-  EntityManager &manager;
-  Entity::Id entity;
+  Entity entity;
   boost::shared_ptr<T> component;
 };
 
@@ -339,7 +354,7 @@ class EntityManager : boost::noncopyable {
       id = *it;
       free_list_.erase(it);
     }
-    event_manager_.emit<EntityCreatedEvent>(*this, id);
+    event_manager_.emit<EntityCreatedEvent>(Entity(this, id));
     return Entity(this, id);
   }
 
@@ -350,22 +365,12 @@ class EntityManager : boost::noncopyable {
    */
   void destroy(Entity::Id entity) {
     CHECK(entity < entity_component_mask_.size()) << "Entity::Id ID outside entity vector range";
-    event_manager_.emit<EntityDestroyedEvent>(*this, entity);
+    event_manager_.emit<EntityDestroyedEvent>(Entity(this, entity));
     for (auto &components : entity_components_) {
       components.at(entity).reset();
     }
     entity_component_mask_.at(entity) = 0;
     free_list_.insert(entity);
-  }
-
-  /**
-   * Check if an Entity::Id is registered.
-   */
-  bool exists(Entity::Id entity) {
-    if (entity_component_mask_.empty() || entity >= id_counter_) {
-      return false;
-    }
-    return free_list_.find(entity) == free_list_.end();
   }
 
   Entity get(Entity::Id id) {
@@ -384,7 +389,7 @@ class EntityManager : boost::noncopyable {
     entity_components_.at(C::family()).at(entity) = base;
     entity_component_mask_.at(entity) |= uint64_t(1) << C::family();
 
-    event_manager_.emit<ComponentAddedEvent<C>>(*this, entity, component);
+    event_manager_.emit<ComponentAddedEvent<C>>(Entity(this, entity), component);
     return component;
   }
 
@@ -520,27 +525,27 @@ class EntityManager : boost::noncopyable {
 
 template <typename C>
 boost::shared_ptr<C> Entity::assign(boost::shared_ptr<C> component) {
-  return entities_->assign<C>(id_, component);
+  return manager_->assign<C>(id_, component);
 }
 
 template <typename C, typename ... Args>
 boost::shared_ptr<C> Entity::assign(Args && ... args) {
-  return entities_->assign<C>(id_, args ...);
+  return manager_->assign<C>(id_, args ...);
 }
 
 template <typename C>
 boost::shared_ptr<C> Entity::component() {
-  return entities_->component<C>(id_);
+  return manager_->component<C>(id_);
 }
 
 template <typename A>
 void Entity::unpack(boost::shared_ptr<A> &a) {
-  entities_->unpack(id_, a);
+  manager_->unpack(id_, a);
 }
 
 template <typename A, typename B, typename ... Args>
 void Entity::unpack(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args) {
-  entities_->unpack(id_, a, b, args ...);
+  manager_->unpack(id_, a, b, args ...);
 }
 
 }

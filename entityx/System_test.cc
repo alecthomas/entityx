@@ -43,7 +43,7 @@ class MovementSystem : public System<MovementSystem> {
     shared_ptr<Position> position;
     shared_ptr<Direction> direction;
     for (auto entity : entities) {
-      es.unpack<Position, Direction>(entity, position, direction);
+      entity.unpack<Position, Direction>(position, direction);
       position->x += direction->x;
       position->y += direction->y;
     }
@@ -55,7 +55,7 @@ class MovementSystem : public System<MovementSystem> {
 
 class TestManager : public entityx::Manager {
  public:
-  std::vector<Entity::Id> entities;
+  std::vector<Entity> entities;
 
   SystemManager &sm() { return system_manager; }
   EntityManager &em() { return entity_manager; }
@@ -66,12 +66,12 @@ class TestManager : public entityx::Manager {
 
   void initialize() override {
     for (int i = 0; i < 150; ++i) {
-      Entity::Id e = entity_manager.create();
+      Entity e = entity_manager.create();
       entities.push_back(e);
       if (i % 2 == 0)
-        entity_manager.assign<Position>(e, 1, 2);
+        e.assign<Position>(1, 2);
       if (i % 3 == 0)
-        entity_manager.assign<Direction>(e, 1, 1);
+        e.assign<Direction>(1, 1);
     }
   }
 
@@ -106,7 +106,7 @@ TEST_F(SystemManagerTest, TestApplySystem) {
   shared_ptr<Position> position;
   shared_ptr<Direction> direction;
   for (auto entity : manager.entities) {
-    manager.em().unpack<Position, Direction>(entity, position, direction);
+    entity.unpack<Position, Direction>(position, direction);
     if (position && direction) {
       ASSERT_FLOAT_EQ(2.0, position->x);
       ASSERT_FLOAT_EQ(3.0, position->y);

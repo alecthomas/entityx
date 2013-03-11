@@ -17,13 +17,14 @@ const Entity::Id Entity::INVALID = Entity::Id(-1);
 
 BaseComponent::Family BaseComponent::family_counter_ = 0;
 
-bool Entity::exists() const {
-  return entities_ != nullptr && entities_->exists(id_);
+void Entity::invalidate() {
+  id_ = INVALID;
+  manager_ = nullptr;
 }
 
-void Entity::detach() {
-  id_ = INVALID;
-  entities_ = nullptr;
+void Entity::destroy() {
+  manager_->destroy(id_);
+  invalidate();
 }
 
 }

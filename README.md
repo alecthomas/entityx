@@ -29,24 +29,21 @@ Entity entity = entities.create();
 And destroying an entity is done with:
 
 ```c++
-entities.destroy(entity);
+entity.destroy();
 ```
 
-#### Testing for destroyed entities
+#### Implementation details
 
-The Entity type can be seen as a safe pointer.
-Test if it is valid with `entity.exists()`.
+- Each Entity is a convenience class wrapping an Entity::Id.
+- An Entity handle can be invalidated with `invalidate()`. This does not affect the underlying entity.
+- When an entity is destroyed the manager adds its ID to a free list and invalidates the Entity handle.
+- When an entity is created IDs are recycled from the free list before allocating new ones.
 
 ### Components (entity data)
 
 The idea with ECS is to not have any functionality in the component. All logic should be contained in Systems.
 
 To that end Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) containing self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
-
-Implementation notes:
-
-- Components must provide a no-argument constructor.
-- The current implementation can handle up to 64 components in total.
 
 #### Creating components
 
@@ -102,6 +99,11 @@ if (position) {
   // Do stuff with position
 }
 ```
+
+#### Implementation notes
+
+- Components must provide a no-argument constructor.
+- The current implementation can handle up to 64 components in total. This can be extended with little effort.
 
 ### Systems (implementing behavior)
 
@@ -187,7 +189,22 @@ DebugCollisions debug_collisions;
 events.subscribe<Collision>(debug_collisions);
 ```
 
-There can be more than one subscriber for an event; each one will be called.
+#### Builtin events
+
+Several events are emitted by EntityX itself:
+
+- `EntityCreatedEvent` - emitted when a new Entity has been created.
+  - `Entity entity` - Newly created Entity.
+- `EntityDestroyedEvent` - emitted when an Entity is *about to be* destroyed.
+  - `Entity entity` - Entity about to be destroyed.
+- `ComponentAddedEvent<T>` - emitted when a new component is added to an entity.
+  - `Entity entity` - Entity that component was added to.
+  - `boost::shared_ptr<T> component` - The component added.
+
+#### Implementation notes
+
+- There can be more than one subscriber for an event; each one will be called.
+- Event objects are destroyed after delivery, so references should not be retained.
 
 ### Manager (tying it all together)
 

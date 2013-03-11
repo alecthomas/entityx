@@ -23,6 +23,7 @@ macro(create_test TARGET_NAME SOURCE)
         entityx
         glog
         ${Boost_LIBRARIES}
+        ${Boost_SIGNALS_LIBRARY}
         ${GTEST_BOTH_LIBRARIES}
         )
     add_test(${TARGET_NAME} ${TARGET_NAME})
@@ -60,6 +61,11 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 set(sources entityx/Components.cc entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/Manager.cc)
 add_library(entityx STATIC ${sources})
 add_library(entityx_shared SHARED ${sources})
+target_link_libraries(
+    entityx_shared
+    ${Boost_SIGNALS_LIBRARY}
+    glog
+)
 set_target_properties(entityx_shared PROPERTIES OUTPUT_NAME entityx)
 
 include_directories(
