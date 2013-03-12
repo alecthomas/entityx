@@ -13,8 +13,6 @@
 
 namespace entityx {
 
-const Entity::Id Entity::INVALID = Entity::Id(-1);
-
 BaseComponent::Family BaseComponent::family_counter_ = 0;
 
 void Entity::invalidate() {

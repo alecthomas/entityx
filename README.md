@@ -104,7 +104,7 @@ if (position) {
 #### Implementation notes
 
 - Components must provide a no-argument constructor.
-- The current implementation can handle up to 64 components in total. This can be extended with little effort.
+- The default implementation can handle up to 64 components in total. This can be extended by changing the `EntityManager::MAX_COMPONENTS` constant.
 
 ### Systems (implementing behavior)
 
