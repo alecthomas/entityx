@@ -84,10 +84,11 @@ entity.assign(position);
 To query all entities with a set of components assigned, use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
 
 ```c++
-boost::shared_ptr<Position> position;
-boost::shared_ptr<Direction> direction;
-for (auto entity : entities.entities_with_components(position, direction)) {
-  // Do things with entity ID, position and direction.
+for (auto entity : entities.entities_with_components<Position, Direction>()) {
+  boost::shared_ptr<Position> position = entity.component<Position>();
+  boost::shared_ptr<Direction> direction = entity.component<Direction>();
+
+  // Do things with entity, position and direction.
 }
 ```
 
@@ -114,11 +115,12 @@ A basic movement system might be implemented with something like the following:
 ```c++
 struct MovementSystem : public System<MovementSystem> {
   void update(EntityManager &es, EventManager &events, double dt) override {
-    boost::shared_ptr<Position> position;
-    boost::shared_ptr<Direction> direction;
-    for (auto entity : es.entities_with_components(position, direction)) {
-      position->x += direction->x;
-      position->y += direction->y;
+    for (auto entity : es.entities_with_components<Position, Direction>()) {
+      boost::shared_ptr<Position> position = entity.component<Position>();
+      boost::shared_ptr<Direction> direction = entity.component<Direction>();
+
+      position->x += direction->x * dt;
+      position->y += direction->y * dt;
     }
   }
 };
@@ -152,8 +154,8 @@ class CollisionSystem : public System<CollisionSystem> {
  public:
   void update(EntityManager &es, EventManager &events, double dt) override {
     boost::shared_ptr<Position> left_position, right_position;
-    for (auto left_entity : es.entities_with_components(left_position)) {
-      for (auto right_entity : es.entities_with_components(right_position)) {
+    for (auto left_entity : es.entities_with_components<Position>()) {
+      for (auto right_entity : es.entities_with_components<Position>()) {
         if (collide(left_position, right_position)) {
           events.emit<Collision>(left_entity, right_entity);
         }

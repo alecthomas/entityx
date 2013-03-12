@@ -23,6 +23,7 @@ macro(create_test TARGET_NAME SOURCE)
         entityx
         glog
         ${Boost_LIBRARIES}
+        ${Boost_TIMER_LIBRARY}
         ${Boost_SIGNALS_LIBRARY}
         ${GTEST_BOTH_LIBRARIES}
         )
@@ -75,6 +76,7 @@ include_directories(
 
 set(BUILD_TESTING false CACHE BOOL "Enable building of tests")
 if (BUILD_TESTING)
+    find_package(Boost 1.48.0 REQUIRED COMPONENTS signals timer system)
     enable_testing()
     find_package(GTest REQUIRED)
     include_directories(${GTEST_INCLUDE_DIRS})
@@ -82,6 +84,7 @@ if (BUILD_TESTING)
     create_test(component_test entityx/Components_test.cc)
     create_test(event_test entityx/Event_test.cc)
     create_test(system_test entityx/System_test.cc)
+    create_test(benchmarks_test entityx/Benchmarks_test.cc)
 endif (BUILD_TESTING)
 
 file(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/entityx/*.h")
