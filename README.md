@@ -170,25 +170,15 @@ class CollisionSystem : public System<CollisionSystem> {
 Objects interested in receiving collision information can subscribe to ``Collision`` events by first subclassing the CRTP class ``Receiver<T>``:
 
 ```c++
-struct DebugCollisions : public Receiver<DebugCollisions> {
+struct DebugSystem : public System<DebugSystem>, Receiver<DebugSystem> {
+  void configure(EventManager &event_manager) {
+    event_manager.subscribe<Collision>(*this);
+  }
+
   void receive(const Collision &collision) {
     LOG(DEBUG) << "entities collided: " << collision.left << " and " << collision.right << endl;
   }
 };
-```
-
-**Note:** a single class can receive any number of types of events by implementing a ``receive(const EventType &)`` method for each event type.
-
-Finally, we subscribe our receiver to collision events:
-
-```c++
-// Setup code (typically global)
-EventManager events;
-CollisionSystem collisions(events);
-DebugCollisions debug_collisions;
-
-// Subscribe to collisions
-events.subscribe<Collision>(debug_collisions);
 ```
 
 #### Builtin events
@@ -207,6 +197,8 @@ Several events are emitted by EntityX itself:
 
 - There can be more than one subscriber for an event; each one will be called.
 - Event objects are destroyed after delivery, so references should not be retained.
+- A single class can receive any number of types of events by implementing a ``receive(const EventType &)`` method for each event type.
+- Any class implementing `Receiver` can receive events, but typical usage is to make `System`s also be `Receiver`s.
 
 ### Manager (tying it all together)
 
@@ -218,6 +210,7 @@ To use it, subclass `Manager` and implement `configure()`, `initialize()` and `u
 class GameManager : public Manager {
  protected:
   void configure() {
+    system_manager.add<DebugSystem>();
     system_manager.add<MovementSystem>();
     system_manager.add<CollisionSystem>();
   }
