@@ -158,12 +158,7 @@ template <typename Derived>
 struct Component : public BaseComponent {
  public:
   /// Used internally for registration.
-  static Family family() {
-    static Family family = family_counter_++;
-    // The 64-bit bitmask supports a maximum of 64 components.
-    assert(family < 64);
-    return family;
-  }
+  static Family family();
 };
 
 
@@ -525,6 +520,13 @@ class EntityManager : boost::noncopyable {
   // List of available Entity::Id IDs.
   std::list<Entity::Id> free_list_;
 };
+
+template <typename C>
+static BaseComponent::Family Component<C>::family() {
+  static Family family = family_counter_++;
+  assert(family < EntityManager::MAX_COMPONENTS);
+  return family;
+}
 
 template <typename C>
 boost::shared_ptr<C> Entity::assign(boost::shared_ptr<C> component) {
