@@ -214,6 +214,8 @@ class EntityManager : boost::noncopyable {
  public:
   static const int MAX_COMPONENTS = 64;
 
+  typedef std::bitset<MAX_COMPONENTS> ComponentMask;
+
   EntityManager(EventManager &event_manager) : event_manager_(event_manager) {}
 
   class View {
@@ -223,15 +225,15 @@ class EntityManager : boost::noncopyable {
     /// A predicate that excludes entities that don't match the given component mask.
     class ComponentMaskPredicate {
      public:
-      ComponentMaskPredicate(const std::vector<std::bitset<MAX_COMPONENTS>> &entity_bits, std::bitset<MAX_COMPONENTS> mask) : entity_bits_(entity_bits), mask_(mask) {}
+      ComponentMaskPredicate(const std::vector<ComponentMask> &entity_bits, ComponentMask mask) : entity_bits_(entity_bits), mask_(mask) {}
 
       bool operator () (EntityManager &, Entity::Id entity) {
         return (entity_bits_.at(entity) & mask_) == mask_;
       }
 
      private:
-      const std::vector<std::bitset<MAX_COMPONENTS>> &entity_bits_;
-      std::bitset<MAX_COMPONENTS> mask_;
+      const std::vector<ComponentMask> &entity_bits_;
+      ComponentMask mask_;
     };
 
     /// An iterator over a view of the entities in an EntityManager.
@@ -474,24 +476,24 @@ class EntityManager : boost::noncopyable {
 
  private:
   template <typename C>
-  std::bitset<MAX_COMPONENTS> component_mask() {
-    std::bitset<MAX_COMPONENTS> mask;
+  ComponentMask component_mask() {
+    ComponentMask mask;
     mask.set(C::family());
     return mask;
   }
 
   template <typename C1, typename C2, typename ... Components>
-  std::bitset<MAX_COMPONENTS> component_mask() {
+  ComponentMask component_mask() {
     return component_mask<C1>() | component_mask<C2, Components ...>();
   }
 
   template <typename C>
-  std::bitset<MAX_COMPONENTS> component_mask(const boost::shared_ptr<C> &c) {
+  ComponentMask component_mask(const boost::shared_ptr<C> &c) {
     return component_mask<C>();
   }
 
   template <typename C1, typename C2, typename ... Components>
-  std::bitset<MAX_COMPONENTS> component_mask(const boost::shared_ptr<C1> &c1, const boost::shared_ptr<C2> &c2, Components && ... args) {
+  ComponentMask component_mask(const boost::shared_ptr<C1> &c1, const boost::shared_ptr<C2> &c2, Components && ... args) {
     return component_mask<C1>(c1) | component_mask<C2, Components ...>(c2, args...);
   }
 
@@ -519,7 +521,7 @@ class EntityManager : boost::noncopyable {
   // A nested array of: components = entity_components_[family][entity]
   std::vector<std::vector<boost::shared_ptr<BaseComponent>>> entity_components_;
   // Bitmask of components associated with each entity. Index into the vector is the Entity::Id.
-  std::vector<std::bitset<MAX_COMPONENTS>> entity_component_mask_;
+  std::vector<ComponentMask> entity_component_mask_;
   // List of available Entity::Id IDs.
   std::list<Entity::Id> free_list_;
 };
