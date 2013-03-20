@@ -522,7 +522,7 @@ class EntityManager : boost::noncopyable {
 };
 
 template <typename C>
-static BaseComponent::Family Component<C>::family() {
+BaseComponent::Family Component<C>::family() {
   static Family family = family_counter_++;
   assert(family < EntityManager::MAX_COMPONENTS);
   return family;
