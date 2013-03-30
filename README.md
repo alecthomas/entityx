@@ -21,7 +21,8 @@ Entities are simply 64-bit numeric identifiers with which components are associa
 Creating an entity is as simple as:
 
 ```c++
-EntityManager entities;
+EventManager events;
+EntityManager entities(events);
 
 Entity entity = entities.create();
 ```
