@@ -238,21 +238,25 @@ class GameManager : public Manager {
 
 EntityX has the following build and runtime requirements:
 
-- A C++ compiler that supports a basic set of C++11 features (ie. recent clang, recent gcc, but **NOT** Visual C++).
+- A C++ compiler that supports a basic set of C++11 features (ie. recent clang, recent gcc, and maybe (untested) VC++ with the [Nov 2012 CTP](http://www.microsoft.com/en-us/download/details.aspx?id=35515)).
 - [CMake](http://cmake.org/)
 - [Boost](http://boost.org) `1.48.0` or higher (links against `boost::signals`).
-- [Glog](http://code.google.com/p/google-glog/) (tested with `0.3.2`).
-- [GTest](http://code.google.com/p/googletest/) (needed for testing only)
 
-**Note:** GTest is no longer installable directly through Homebrew. You can use [this formula](https://raw.github.com/mxcl/homebrew/2bf506e3d90254f81a669a0216f33b2f09589028/Library/Formula/gtest.rb) to install it manually.
-For Debian Linux, install libgtest-dev and then see /usr/share/doc/libgtest-dev/README.Debian.
+Once these dependencies are installed you should be able to build and install EntityX as below. The following options can be passed to cmake to modify how EntityX is built:
 
-Once these dependencies are installed you should be able to build and install EntityX as follows. BUILD_TESTING is false by default.
+- `-DENTITYX_BUILD_TESTING=1` - Build tests (run with `make test`).
+- `-DENTITYX_RUN_BENCHMARKS=1` - In conjunction with `-DENTITYX_BUILD_TESTING=1`, also build benchmarks.
+- `-DENTITYX_USE_CPP11_STDLIB=1` - For Clang, specify whether to use `-stdlib=libc++`.
+- `-DENTITYX_USE_STD_SHARED_PTR=1` - Use `std::shared_ptr<T>` (and friends) rather than the Boost equivalents. This does not eliminate the need for Boost, but is useful if the rest of your application uses `std::shared_ptr<T>`.
 
-```c++
+For a production build, you'll typically only need the `-DENTITYX_USE_STD_SHARED_PTR=1` flag, if any.
+
+Once you have selected your flags, build and install with:
+
+```sh
 mkdir build
 cd build
-cmake [-DBUILD_TESTING=true] ..
+cmake [-DENTITYX_BUILD_TESTING=1] [-DENTITYX_RUN_BENCHMARKS=1] [-DENTITYX_USE_CPP11_STDLIB=1] [-DENTITYX_USE_STD_SHARED_PTR=1] ..
 make
 make install
 ```

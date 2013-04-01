@@ -4,7 +4,7 @@
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution.
- * 
+ *
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
@@ -30,10 +30,10 @@ struct ExplosionSystem : public Receiver<ExplosionSystem> {
 };
 
 TEST(EventManagerTest, TestEmitReceive) {
-  EventManager em;
+  auto em = EventManager::make();
   ExplosionSystem explosion_system;
-  em.subscribe<Explosion>(explosion_system);
+  em->subscribe<Explosion>(explosion_system);
   ASSERT_EQ(0, explosion_system.damage_received);
-  em.emit<Explosion>(10);
+  em->emit<Explosion>(10);
   ASSERT_EQ(10, explosion_system.damage_received);
 }

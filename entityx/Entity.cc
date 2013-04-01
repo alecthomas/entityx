@@ -17,11 +17,11 @@ BaseComponent::Family BaseComponent::family_counter_ = 0;
 
 void Entity::invalidate() {
   id_ = INVALID;
-  manager_ = nullptr;
+  manager_.reset();
 }
 
 void Entity::destroy() {
-  manager_->destroy(id_);
+  manager_.lock()->destroy(id_);
   invalidate();
 }
 

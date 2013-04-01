@@ -24,8 +24,8 @@ class TagsComponent : public Component<TagsComponent> {
   struct TagsPredicate {
     TagsPredicate(const std::string &tag) : tag(tag) {}
 
-    bool operator () (EntityManager &manager, Entity::Id id) {
-      auto tags = manager.component<TagsComponent>(id);
+    bool operator () (entityx::shared_ptr<EntityManager> manager, Entity::Id id) {
+      auto tags = manager->component<TagsComponent>(id);
       return tags != nullptr && tags->tags.find(tag) != tags->tags.end();
     }
 

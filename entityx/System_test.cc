@@ -37,10 +37,10 @@ class MovementSystem : public System<MovementSystem> {
  public:
   MovementSystem(string label = "") : label(label) {}
 
-  void update(EntityManager &es, EventManager &events, double) override {
-    EntityManager::View entities = es.entities_with_components<Position, Direction>();
-    shared_ptr<Position> position;
-    shared_ptr<Direction> direction;
+  void update(entityx::shared_ptr<EntityManager> es, entityx::shared_ptr<EventManager> events, double) override {
+    EntityManager::View entities = es->entities_with_components<Position, Direction>();
+    entityx::shared_ptr<Position> position;
+    entityx::shared_ptr<Direction> direction;
     for (auto entity : entities) {
       entity.unpack<Position, Direction>(position, direction);
       position->x += direction->x;
@@ -56,8 +56,8 @@ class TestManager : public entityx::Manager {
  public:
   std::vector<Entity> entities;
 
-  SystemManager &sm() { return system_manager; }
-  EntityManager &em() { return entity_manager; }
+  entityx::shared_ptr<SystemManager> sm() { return system_manager; }
+  entityx::shared_ptr<EntityManager> em() { return entity_manager; }
 
  protected:
   void configure() override {
@@ -65,7 +65,7 @@ class TestManager : public entityx::Manager {
 
   void initialize() override {
     for (int i = 0; i < 150; ++i) {
-      Entity e = entity_manager.create();
+      Entity e = entity_manager->create();
       entities.push_back(e);
       if (i % 2 == 0)
         e.assign<Position>(1, 2);
@@ -90,20 +90,20 @@ class SystemManagerTest : public ::testing::Test {
 
 
 TEST_F(SystemManagerTest, TestConstructSystemWithArgs) {
-  manager.sm().add<MovementSystem>("movement");
-  manager.sm().configure();
+  manager.sm()->add<MovementSystem>("movement");
+  manager.sm()->configure();
 
-  ASSERT_EQ("movement", manager.sm().system<MovementSystem>()->label);
+  ASSERT_EQ("movement", manager.sm()->system<MovementSystem>()->label);
 }
 
 
 TEST_F(SystemManagerTest, TestApplySystem) {
-  manager.sm().add<MovementSystem>();
-  manager.sm().configure();
+  manager.sm()->add<MovementSystem>();
+  manager.sm()->configure();
 
-  manager.sm().update<MovementSystem>(0.0);
-  shared_ptr<Position> position;
-  shared_ptr<Direction> direction;
+  manager.sm()->update<MovementSystem>(0.0);
+  entityx::shared_ptr<Position> position;
+  entityx::shared_ptr<Direction> direction;
   for (auto entity : manager.entities) {
     entity.unpack<Position, Direction>(position, direction);
     if (position && direction) {

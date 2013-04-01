@@ -4,7 +4,7 @@
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution.
- * 
+ *
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
@@ -16,7 +16,7 @@ BaseSystem::Family BaseSystem::family_counter_;
 
 void SystemManager::configure() {
   for (auto pair : systems_) {
-    pair.second->configure(events_);
+    pair.second->configure(event_manager_);
   }
   initialized_ = true;
 }

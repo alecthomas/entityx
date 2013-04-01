@@ -40,17 +40,16 @@ TEST(TagsComponentTest, TestVariadicConstruction) {
 }
 
 TEST(TagsComponentTest, TestEntitiesWithTag) {
-  EventManager ev;
-  EntityManager en(ev);
-  Entity a = en.create();
+  auto en = EntityManager::make(EventManager::make());
+  Entity a = en->create();
   a.assign<Position>();
   for (int i = 0; i < 99; ++i) {
-    auto e = en.create();
+    auto e = en->create();
     e.assign<Position>();
     e.assign<TagsComponent>("positionable");
   }
   a.assign<TagsComponent>("player", "indestructible");
-  auto entities = en.entities_with_components<Position>();
+  auto entities = en->entities_with_components<Position>();
   ASSERT_EQ(100, size(entities));
   ASSERT_EQ(1, size(TagsComponent::view(entities, "player")));
 }

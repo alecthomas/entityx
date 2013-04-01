@@ -69,6 +69,7 @@ class BaseReceiver {
   std::list<boost::signals::connection> connections_;
 };
 
+
 template <typename Derived>
 class Receiver : public BaseReceiver {
  public:
@@ -81,8 +82,12 @@ class Receiver : public BaseReceiver {
  *
  * Subscriptions are automatically removed when receivers are destroyed..
  */
-class EventManager : boost::noncopyable {
+class EventManager : public entityx::enable_shared_from_this<EventManager>, boost::noncopyable {
  public:
+
+  static entityx::shared_ptr<EventManager> make() {
+    return entityx::shared_ptr<EventManager>(new EventManager());
+  }
 
   /**
    * Subscribe an object to receive events of type E.
@@ -114,8 +119,8 @@ class EventManager : boost::noncopyable {
    *
    * eg.
    *
-   * EntityManager em;
-   * em.emit<Explosion>(10);
+   * entityx::shared_ptr<EventManager> em(entityx::make_shared<EventManager>());
+   * em->emit<Explosion>(10);
    *
    */
   template <typename E, typename ... Args>
@@ -128,6 +133,8 @@ class EventManager : boost::noncopyable {
  private:
   typedef boost::signal<void (const BaseEvent*)> EventSignal;
   typedef entityx::shared_ptr<EventSignal> EventSignalPtr;
+
+  EventManager() {}
 
    EventSignalPtr signal_for(int id) {
     auto it = handlers_.find(id);
