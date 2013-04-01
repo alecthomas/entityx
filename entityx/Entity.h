@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
+#include "entityx/config.h"
 #include "entityx/Event.h"
 
 namespace entityx {
@@ -88,17 +88,17 @@ class Entity {
   EntityManager &manager() { return *manager_; }
 
   template <typename C>
-  boost::shared_ptr<C> assign(boost::shared_ptr<C> component);
+  entityx::shared_ptr<C> assign(entityx::shared_ptr<C> component);
   template <typename C, typename ... Args>
-  boost::shared_ptr<C> assign(Args && ... args);
+  entityx::shared_ptr<C> assign(Args && ... args);
 
   template <typename C>
-  boost::shared_ptr<C> component();
+  entityx::shared_ptr<C> component();
 
   template <typename A>
-  void unpack(boost::shared_ptr<A> &a);
+  void unpack(entityx::shared_ptr<A> &a);
   template <typename A, typename B, typename ... Args>
-  void unpack(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args);
+  void unpack(entityx::shared_ptr<A> &a, entityx::shared_ptr<B> &b, Args && ... args);
 
   /**
    * Destroy and invalidate this Entity.
@@ -183,11 +183,11 @@ struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
  */
 template <typename T>
 struct ComponentAddedEvent : public Event<ComponentAddedEvent<T>> {
-  ComponentAddedEvent(Entity entity, boost::shared_ptr<T> component) :
+  ComponentAddedEvent(Entity entity, entityx::shared_ptr<T> component) :
       entity(entity), component(component) {}
 
   Entity entity;
-  boost::shared_ptr<T> component;
+  entityx::shared_ptr<T> component;
 };
 
 
@@ -291,7 +291,7 @@ class EntityManager : boost::noncopyable {
     const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_->size()); }
 
     template <typename A>
-    View &unpack_to(boost::shared_ptr<A> &a) {
+    View &unpack_to(entityx::shared_ptr<A> &a) {
       unpackers_.push_back(Unpacker<A>(manager_, a));
       // This resulted in a segfault under clang 4.1 on OSX. No idea why.
       /*unpackers_.push_back([&a, this](Entity::Id id) {
@@ -301,7 +301,7 @@ class EntityManager : boost::noncopyable {
     }
 
     template <typename A, typename B, typename ... Args>
-    View &unpack_to(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args) {
+    View &unpack_to(entityx::shared_ptr<A> &a, entityx::shared_ptr<B> &b, Args && ... args) {
       unpack_to<A>(a);
       return unpack_to<B, Args ...>(b, args ...);
     }
@@ -310,7 +310,7 @@ class EntityManager : boost::noncopyable {
 
     template <typename T>
     struct Unpacker {
-      Unpacker(EntityManager *manager, boost::shared_ptr<T> &c) : manager_(manager), c(c) {}
+      Unpacker(EntityManager *manager, entityx::shared_ptr<T> &c) : manager_(manager), c(c) {}
 
       void operator () (Entity::Id id) {
         c = manager_->component<T>(id);
@@ -318,7 +318,7 @@ class EntityManager : boost::noncopyable {
 
      private:
       EntityManager *manager_;
-      boost::shared_ptr<T> &c;
+      entityx::shared_ptr<T> &c;
     };
 
     View(EntityManager *manager, Predicate predicate) : manager_(manager) {
@@ -378,8 +378,8 @@ class EntityManager : boost::noncopyable {
    * @returns component
    */
   template <typename C>
-  boost::shared_ptr<C> assign(Entity::Id entity, boost::shared_ptr<C> component) {
-    boost::shared_ptr<BaseComponent> base = boost::static_pointer_cast<BaseComponent>(component);
+  entityx::shared_ptr<C> assign(Entity::Id entity, entityx::shared_ptr<C> component) {
+    entityx::shared_ptr<BaseComponent> base = entityx::static_pointer_cast<BaseComponent>(component);
     accomodate_component(C::family());
     entity_components_.at(C::family()).at(entity) = base;
     entity_component_mask_.at(entity) |= uint64_t(1) << C::family();
@@ -396,8 +396,8 @@ class EntityManager : boost::noncopyable {
    * @returns Newly created component.
    */
   template <typename C, typename ... Args>
-  boost::shared_ptr<C> assign(Entity::Id entity, Args && ... args) {
-    return assign<C>(entity, boost::make_shared<C>(args ...));
+  entityx::shared_ptr<C> assign(Entity::Id entity, Args && ... args) {
+    return assign<C>(entity, entityx::make_shared<C>(args ...));
   }
 
   /**
@@ -406,13 +406,13 @@ class EntityManager : boost::noncopyable {
    * @returns Component instance, or empty shared_ptr<> if the Entity::Id does not have that Component.
    */
   template <typename C>
-  boost::shared_ptr<C> component(Entity::Id id) {
+  entityx::shared_ptr<C> component(Entity::Id id) {
     // We don't bother checking the component mask, as we return a nullptr anyway.
     if (C::family() >= entity_components_.size()) {
-      return boost::shared_ptr<C>();
+      return entityx::shared_ptr<C>();
     }
-    boost::shared_ptr<BaseComponent> c = entity_components_.at(C::family()).at(id);
-    return boost::static_pointer_cast<C>(c);
+    entityx::shared_ptr<BaseComponent> c = entity_components_.at(C::family()).at(id);
+    return entityx::static_pointer_cast<C>(c);
   }
 
   /**
@@ -428,7 +428,7 @@ class EntityManager : boost::noncopyable {
    * Find Entities that have all of the specified Components.
    */
   template <typename C, typename ... Components>
-  View entities_with_components(boost::shared_ptr<C> &c, Components && ... args) {
+  View entities_with_components(entityx::shared_ptr<C> &c, Components && ... args) {
     auto mask = component_mask(c, args ...);
     return
         View(this, View::ComponentMaskPredicate(entity_component_mask_, mask))
@@ -442,12 +442,12 @@ class EntityManager : boost::noncopyable {
    *
    * Useful for fast bulk iterations.
    *
-   * boost::shared_ptr<Position> p;
-   * boost::shared_ptr<Direction> d;
+   * entityx::shared_ptr<Position> p;
+   * entityx::shared_ptr<Direction> d;
    * unpack<Position, Direction>(e, p, d);
    */
   template <typename A>
-  void unpack(Entity::Id id, boost::shared_ptr<A> &a) {
+  void unpack(Entity::Id id, entityx::shared_ptr<A> &a) {
     a = component<A>(id);
   }
 
@@ -458,12 +458,12 @@ class EntityManager : boost::noncopyable {
    *
    * Useful for fast bulk iterations.
    *
-   * boost::shared_ptr<Position> p;
-   * boost::shared_ptr<Direction> d;
+   * entityx::shared_ptr<Position> p;
+   * entityx::shared_ptr<Direction> d;
    * unpack<Position, Direction>(e, p, d);
    */
   template <typename A, typename B, typename ... Args>
-  void unpack(Entity::Id id, boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args) {
+  void unpack(Entity::Id id, entityx::shared_ptr<A> &a, entityx::shared_ptr<B> &b, Args && ... args) {
     unpack<A>(id, a);
     unpack<B, Args ...>(id, b, args ...);
   }
@@ -482,12 +482,12 @@ class EntityManager : boost::noncopyable {
   }
 
   template <typename C>
-  ComponentMask component_mask(const boost::shared_ptr<C> &c) {
+  ComponentMask component_mask(const entityx::shared_ptr<C> &c) {
     return component_mask<C>();
   }
 
   template <typename C1, typename C2, typename ... Components>
-  ComponentMask component_mask(const boost::shared_ptr<C1> &c1, const boost::shared_ptr<C2> &c2, Components && ... args) {
+  ComponentMask component_mask(const entityx::shared_ptr<C1> &c1, const entityx::shared_ptr<C2> &c2, Components && ... args) {
     return component_mask<C1>(c1) | component_mask<C2, Components ...>(c2, args...);
   }
 
@@ -513,7 +513,7 @@ class EntityManager : boost::noncopyable {
 
   EventManager &event_manager_;
   // A nested array of: components = entity_components_[family][entity]
-  std::vector<std::vector<boost::shared_ptr<BaseComponent>>> entity_components_;
+  std::vector<std::vector<entityx::shared_ptr<BaseComponent>>> entity_components_;
   // Bitmask of components associated with each entity. Index into the vector is the Entity::Id.
   std::vector<ComponentMask> entity_component_mask_;
   // List of available Entity::Id IDs.
@@ -528,27 +528,27 @@ BaseComponent::Family Component<C>::family() {
 }
 
 template <typename C>
-boost::shared_ptr<C> Entity::assign(boost::shared_ptr<C> component) {
+entityx::shared_ptr<C> Entity::assign(entityx::shared_ptr<C> component) {
   return manager_->assign<C>(id_, component);
 }
 
 template <typename C, typename ... Args>
-boost::shared_ptr<C> Entity::assign(Args && ... args) {
+entityx::shared_ptr<C> Entity::assign(Args && ... args) {
   return manager_->assign<C>(id_, args ...);
 }
 
 template <typename C>
-boost::shared_ptr<C> Entity::component() {
+entityx::shared_ptr<C> Entity::component() {
   return manager_->component<C>(id_);
 }
 
 template <typename A>
-void Entity::unpack(boost::shared_ptr<A> &a) {
+void Entity::unpack(entityx::shared_ptr<A> &a) {
   manager_->unpack(id_, a);
 }
 
 template <typename A, typename B, typename ... Args>
-void Entity::unpack(boost::shared_ptr<A> &a, boost::shared_ptr<B> &b, Args && ... args) {
+void Entity::unpack(entityx::shared_ptr<A> &a, entityx::shared_ptr<B> &b, Args && ... args) {
   manager_->unpack(id_, a, b, args ...);
 }
 

@@ -1,22 +1,22 @@
 /**
  * Copyright (C) 2012 Alec Thomas <alec@swapoff.org>
  * All rights reserved.
- * 
+ *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution.
- * 
+ *
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
 #pragma once
 
 #include <stdint.h>
-#include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/signal.hpp>
 #include <boost/unordered_map.hpp>
+#include "entityx/config.h"
 
 
 namespace entityx {
@@ -25,7 +25,7 @@ namespace entityx {
 /// Used internally by the EventManager.
 class BaseEvent {
  public:
-  typedef boost::shared_ptr<BaseEvent> Ptr;
+  typedef entityx::shared_ptr<BaseEvent> Ptr;
   typedef uint64_t Family;
 
   virtual ~BaseEvent() {}
@@ -46,7 +46,7 @@ class BaseEvent {
 template <typename Derived>
 class Event : public BaseEvent {
  public:
-  typedef boost::shared_ptr<Event<Derived>> Ptr;
+  typedef entityx::shared_ptr<Event<Derived>> Ptr;
 
   /// Used internally for registration.
   static Family family() {
@@ -127,17 +127,17 @@ class EventManager : boost::noncopyable {
 
  private:
   typedef boost::signal<void (const BaseEvent*)> EventSignal;
-  typedef boost::shared_ptr<EventSignal> EventSignalPtr;
+  typedef entityx::shared_ptr<EventSignal> EventSignalPtr;
 
    EventSignalPtr signal_for(int id) {
     auto it = handlers_.find(id);
     if (it == handlers_.end()) {
-      EventSignalPtr sig(boost::make_shared<EventSignal>());
+      EventSignalPtr sig(entityx::make_shared<EventSignal>());
       handlers_.insert(make_pair(id, sig));
       return sig;
     }
     return it->second;
-  } 
+  }
 
   // Functor used as an event signal callback that casts to E.
   template <typename E>

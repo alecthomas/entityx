@@ -14,8 +14,8 @@
 #include <stdint.h>
 #include <cassert>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
+#include "entityx/config.h"
 #include "entityx/Entity.h"
 #include "entityx/Event.h"
 
@@ -82,11 +82,11 @@ class SystemManager : boost::noncopyable {
    * Must be called before Systems can be used.
    *
    * eg.
-   * boost::shared_ptr<MovementSystem> movement = boost::make_shared<MovementSystem>();
+   * entityx::shared_ptr<MovementSystem> movement = entityx::make_shared<MovementSystem>();
    * system.add(movement);
    */
   template <typename S>
-  void add(boost::shared_ptr<S> system) {
+  void add(entityx::shared_ptr<S> system) {
     systems_.insert(std::make_pair(S::family(), system));
   }
 
@@ -99,8 +99,8 @@ class SystemManager : boost::noncopyable {
    * auto movement = system.add<MovementSystem>();
    */
   template <typename S, typename ... Args>
-  boost::shared_ptr<S> add(Args && ... args) {
-    boost::shared_ptr<S> s = boost::make_shared<S>(args ...);
+  entityx::shared_ptr<S> add(Args && ... args) {
+    entityx::shared_ptr<S> s = entityx::make_shared<S>(args ...);
     add(s);
     return s;
   }
@@ -108,17 +108,17 @@ class SystemManager : boost::noncopyable {
   /**
    * Retrieve the registered System instance, if any.
    *
-   *   boost::shared_ptr<CollisionSystem> collisions = systems.system<CollisionSystem>();
+   *   entityx::shared_ptr<CollisionSystem> collisions = systems.system<CollisionSystem>();
    *
    * @return System instance or empty shared_ptr<S>.
    */
   template <typename S>
-  boost::shared_ptr<S> system() {
+  entityx::shared_ptr<S> system() {
     auto it = systems_.find(S::family());
     assert(it != systems_.end());
     return it == systems_.end()
-        ? boost::shared_ptr<S>()
-        : boost::static_pointer_cast<S>(it->second);
+        ? entityx::shared_ptr<S>()
+        : entityx::static_pointer_cast<S>(it->second);
   }
 
   /**
@@ -127,7 +127,7 @@ class SystemManager : boost::noncopyable {
   template <typename S>
   void update(double dt) {
     assert(initialized_ && "SystemManager::configure() not called");
-    boost::shared_ptr<S> s = system<S>();
+    entityx::shared_ptr<S> s = system<S>();
     s->update(entities_, events_, dt);
   }
 
@@ -142,7 +142,7 @@ class SystemManager : boost::noncopyable {
   bool initialized_ = false;
   EntityManager &entities_;
   EventManager &events_;
-  boost::unordered_map<BaseSystem::Family, boost::shared_ptr<BaseSystem>> systems_;
+  boost::unordered_map<BaseSystem::Family, entityx::shared_ptr<BaseSystem>> systems_;
 };
 
 }

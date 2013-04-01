@@ -2,6 +2,9 @@ language: cpp
 compiler:
   - clang
   - gcc
+env:
+  - USE_STD_SHARED_PTR=1
+  - USE_STD_SHARED_PTR=0
 before_install:
   - sudo apt-add-repository -y ppa:jkeiren/ppa
   - if test $CC = gcc; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
@@ -14,4 +17,4 @@ before_install:
   - if test $CC = gcc; then sudo update-alternatives --config gcc; fi
   - if test $CC = gcc; then sudo update-alternatives --config g++; fi
 
-script: cmake -DBUILD_TESTING=1 && make && make test
+script: ./scripts/travis.sh

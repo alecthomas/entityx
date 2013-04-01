@@ -98,7 +98,7 @@ TEST_F(BenchmarksTest, TestEntityIteration) {
 
   for (int i = 0; i < 10; ++i) {
     for (auto e : em.entities_with_components<Position>()) {
-      boost::shared_ptr<Position> position = e.component<Position>();
+      entityx::shared_ptr<Position> position = e.component<Position>();
     }
   }
 }

@@ -5,10 +5,82 @@ include_directories(${CMAKE_CURRENT_LIST_DIR})
 set(RUN_BENCHMARKS false CACHE BOOL "Run benchmarks")
 
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
+include(CheckCXXSourceCompiles)
+
+# Default compiler args
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=sign-compare -std=c++11")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+
 # C++11 feature checks
 include(CheckCXX11Features.cmake)
+
 # Misc features
-CHECK_INCLUDE_FILE("stdint.h" HAVE_STDINT_H)
+check_include_file("stdint.h" HAVE_STDINT_H)
+
+set(USE_CPP11_STDLIB false CACHE BOOL "Use the C++11 stdlib (-stdlib=libc++).")
+
+if (USE_CPP11_STDLIB)
+    set(OLD_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    check_cxx_source_compiles(
+    "
+    #include <memory>
+
+    int main() {
+        std::shared_ptr<int>();
+    }
+    "
+    HAVE_CXX11_STDLIB
+    )
+
+    if (NOT HAVE_CXX11_STDLIB)
+        message("-- Not using -stdlib=libc++ (test failed to build)")
+        set(CMAKE_CXX_FLAGS "${OLD_CMAKE_CXX_FLAGS}")
+    else ()
+        message("-- Using -stdlib=libc++")
+    endif ()
+else ()
+    message("-- Using default stdlib (try -DUSE_CPP11_STDLIB=1 to use -stdlib=libc++)")
+endif ()
+
+# Check for which shared_ptr implementation to use.
+set(USE_STD_SHARED_PTR false CACHE BOOL "Use std::shared_ptr<T> rather than boost::shared_ptr<T>?")
+
+check_cxx_source_compiles(
+"
+#include <memory>
+
+int main() { std::shared_ptr<int>(); }
+"
+HAVE_STD_SHARED_PTR
+)
+
+check_cxx_source_compiles(
+"
+#include <boost/shared_ptr.hpp>
+
+int main() { boost::shared_ptr<int>(); }
+"
+HAVE_BOOST_SHARED_PTR
+)
+
+if (HAVE_STD_SHARED_PTR AND USE_STD_SHARED_PTR)
+    message("-- Using std::shared_ptr<T>")
+else()
+    if (USE_STD_SHARED_PTR)
+        message("-- Using boost::shared_ptr<T> (std::shared_ptr<T> could not be used)")
+    else()
+        message("-- Using boost::shared_ptr<T> (try -DUSE_STD_SHARED_PTR=1 to use std::shared_ptr<T>)")
+    endif()
+endif()
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/entityx/config.h.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/entityx/config.h
+)
 
 macro(require FEATURE_NAME MESSAGE_STRING)
     if (NOT ${${FEATURE_NAME}})
@@ -54,12 +126,6 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.48.0 REQUIRED COMPONENTS signals)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=sign-compare -std=c++11")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 
 set(sources entityx/Components.cc entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/Manager.cc)
 add_library(entityx STATIC ${sources})
