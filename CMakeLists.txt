@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 project(EntityX)
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 
+set(RUN_BENCHMARKS false CACHE BOOL "Run benchmarks")
+
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 # C++11 feature checks
 include(CheckCXX11Features.cmake)
@@ -21,7 +23,6 @@ macro(create_test TARGET_NAME SOURCE)
     target_link_libraries(
         ${TARGET_NAME}
         entityx
-        glog
         gtest
         gtest_main
         ${Boost_LIBRARIES}
@@ -66,7 +67,6 @@ add_library(entityx_shared SHARED ${sources})
 target_link_libraries(
     entityx_shared
     ${Boost_SIGNALS_LIBRARY}
-    glog
 )
 set_target_properties(entityx_shared PROPERTIES OUTPUT_NAME entityx)
 
@@ -85,7 +85,12 @@ if (BUILD_TESTING)
     create_test(component_test entityx/Components_test.cc)
     create_test(event_test entityx/Event_test.cc)
     create_test(system_test entityx/System_test.cc)
-    create_test(benchmarks_test entityx/Benchmarks_test.cc)
+    if (RUN_BENCHMARKS)
+        message("-- Running benchmarks")
+        create_test(benchmarks_test entityx/Benchmarks_test.cc)
+    else ()
+        message("-- Not running benchmarks (use -DRUN_BENCHMARKS=1 to enable)")
+    endif ()
 endif (BUILD_TESTING)
 
 file(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/entityx/*.h")

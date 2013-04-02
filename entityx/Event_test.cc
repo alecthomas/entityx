@@ -10,7 +10,6 @@
 
 #include <string>
 #include <vector>
-#include <glog/logging.h>
 #include <gtest/gtest.h>
 #include "entityx/Event.h"
 

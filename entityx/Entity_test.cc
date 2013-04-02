@@ -12,7 +12,6 @@
 #include <string>
 #include <vector>
 #include <boost/ref.hpp>
-#include <glog/logging.h>
 #include <gtest/gtest.h>
 #include "entityx/Entity.h"
 

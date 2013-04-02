@@ -24,7 +24,6 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
-#include <glog/logging.h>
 #include "entityx/Event.h"
 
 namespace entityx {
@@ -360,7 +359,7 @@ class EntityManager : boost::noncopyable {
    * Emits EntityDestroyedEvent.
    */
   void destroy(Entity::Id entity) {
-    CHECK(entity < entity_component_mask_.size()) << "Entity::Id ID outside entity vector range";
+    assert(entity < entity_component_mask_.size() && "Entity::Id ID outside entity vector range");
     event_manager_.emit<EntityDestroyedEvent>(Entity(this, entity));
     for (auto &components : entity_components_) {
       components.at(entity).reset();

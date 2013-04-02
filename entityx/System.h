@@ -12,10 +12,10 @@
 
 
 #include <stdint.h>
+#include <cassert>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
-#include <glog/logging.h>
 #include "entityx/Entity.h"
 #include "entityx/Event.h"
 
@@ -115,7 +115,7 @@ class SystemManager : boost::noncopyable {
   template <typename S>
   boost::shared_ptr<S> system() {
     auto it = systems_.find(S::family());
-    CHECK(it != systems_.end());
+    assert(it != systems_.end());
     return it == systems_.end()
         ? boost::shared_ptr<S>()
         : boost::static_pointer_cast<S>(it->second);
@@ -126,7 +126,7 @@ class SystemManager : boost::noncopyable {
    */
   template <typename S>
   void update(double dt) {
-    CHECK(initialized_) << "SystemManager::configure() not called";
+    assert(initialized_ && "SystemManager::configure() not called");
     boost::shared_ptr<S> s = system<S>();
     s->update(entities_, events_, dt);
   }
