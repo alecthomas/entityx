@@ -22,10 +22,11 @@ macro(create_test TARGET_NAME SOURCE)
         ${TARGET_NAME}
         entityx
         glog
+        gtest
+        gtest_main
         ${Boost_LIBRARIES}
         ${Boost_TIMER_LIBRARY}
         ${Boost_SIGNALS_LIBRARY}
-        ${GTEST_BOTH_LIBRARIES}
         )
     add_test(${TARGET_NAME} ${TARGET_NAME})
 endmacro()
@@ -77,9 +78,9 @@ include_directories(
 set(BUILD_TESTING false CACHE BOOL "Enable building of tests")
 if (BUILD_TESTING)
     find_package(Boost 1.48.0 REQUIRED COMPONENTS signals timer system)
+    add_subdirectory(gtest-1.6.0)
+    include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
     enable_testing()
-    find_package(GTest REQUIRED)
-    include_directories(${GTEST_INCLUDE_DIRS})
     create_test(entity_test entityx/Entity_test.cc)
     create_test(component_test entityx/Components_test.cc)
     create_test(event_test entityx/Event_test.cc)

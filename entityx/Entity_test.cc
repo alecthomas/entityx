@@ -256,11 +256,11 @@ TEST_F(EntityManagerTest, TestEntityCreatedEvent) {
   EntityCreatedEventReceiver receiver;
   ev.subscribe<EntityCreatedEvent>(receiver);
 
-  ASSERT_EQ(0, receiver.created.size());
+  ASSERT_EQ(0UL, receiver.created.size());
   for (int i = 0; i < 10; ++i) {
     em.create();
   }
-  ASSERT_EQ(10, receiver.created.size());
+  ASSERT_EQ(10UL, receiver.created.size());
 }
 
 TEST_F(EntityManagerTest, TestEntityDestroyedEvent) {
@@ -275,12 +275,12 @@ TEST_F(EntityManagerTest, TestEntityDestroyedEvent) {
   EntityDestroyedEventReceiver receiver;
   ev.subscribe<EntityDestroyedEvent>(receiver);
 
-  ASSERT_EQ(0, receiver.destroyed.size());
+  ASSERT_EQ(0UL, receiver.destroyed.size());
   vector<Entity> entities;
   for (int i = 0; i < 10; ++i) {
     entities.push_back(em.create());
   }
-  ASSERT_EQ(0, receiver.destroyed.size());
+  ASSERT_EQ(0UL, receiver.destroyed.size());
   for (auto e : entities) {
     e.destroy();
   }
