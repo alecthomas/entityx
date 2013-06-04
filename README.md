@@ -23,10 +23,10 @@ Entities are simply 64-bit numeric identifiers with which components are associa
 Creating an entity is as simple as:
 
 ```c++
-EventManager events;
-EntityManager entities(events);
+entityx::shared_ptr<EventManager> events = EventManager::make();
+entityx::shared_ptr<EntityManager> entities = EntityManager::make(events);
 
-Entity entity = entities.create();
+Entity entity = entities->create();
 ```
 
 And destroying an entity is done with:
@@ -87,7 +87,7 @@ entity.assign(position);
 To query all entities with a set of components assigned, use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
 
 ```c++
-for (auto entity : entities.entities_with_components<Position, Direction>()) {
+for (auto entity : entities->entities_with_components<Position, Direction>()) {
   entityx::shared_ptr<Position> position = entity.component<Position>();
   entityx::shared_ptr<Direction> direction = entity.component<Direction>();
 
@@ -117,8 +117,8 @@ A basic movement system might be implemented with something like the following:
 
 ```c++
 struct MovementSystem : public System<MovementSystem> {
-  void update(EntityManager &es, EventManager &events, double dt) override {
-    for (auto entity : es.entities_with_components<Position, Direction>()) {
+  void update(entityx::shared_ptr<EntityManager> es, entityx::shared_ptr<EventManager> events, double dt) override {
+    for (auto entity : es->entities_with_components<Position, Direction>()) {
       entityx::shared_ptr<Position> position = entity.component<Position>();
       entityx::shared_ptr<Direction> direction = entity.component<Direction>();
 
@@ -155,7 +155,7 @@ Next we implement our collision system, which emits ``Collision`` objects via an
 ```c++
 class CollisionSystem : public System<CollisionSystem> {
  public:
-  void update(EntityManager &es, EventManager &events, double dt) override {
+  void update(entityx::shared_ptr<EntityManager> es, entityx::shared_ptr<EventManager> events, double dt) override {
     entityx::shared_ptr<Position> left_position, right_position;
     for (auto left_entity : es.entities_with_components<Position>()) {
       for (auto right_entity : es.entities_with_components<Position>()) {
@@ -213,23 +213,23 @@ To use it, subclass `Manager` and implement `configure()`, `initialize()` and `u
 class GameManager : public Manager {
  protected:
   void configure() {
-    system_manager.add<DebugSystem>();
-    system_manager.add<MovementSystem>();
-    system_manager.add<CollisionSystem>();
+    system_manager->add<DebugSystem>();
+    system_manager->add<MovementSystem>();
+    system_manager->add<CollisionSystem>();
   }
 
   void initialize() {
     // Create some entities in random locations heading in random directions
     for (int i = 0; i < 100; ++i) {
-      Entity entity = entity_manager.create();
+      Entity entity = entity_manager->create();
       entity.assign<Position>(rand() % 100, rand() % 100);
       entity.assign<Direction>((rand() % 10) - 5, (rand() % 10) - 5);
     }
   }
 
   void update(double dt) {
-    system_manager.update<MovementSystem>(dt);
-    system_manager.update<CollisionSystem>(dt);
+    system_manager->update<MovementSystem>(dt);
+    system_manager->update<CollisionSystem>(dt);
   }
 };
 ```
