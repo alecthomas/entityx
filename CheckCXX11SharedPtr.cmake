@@ -52,9 +52,3 @@ else()
         message("-- Using boost::shared_ptr<T> (try -DENTITYX_USE_STD_SHARED_PTR=1 to use std::shared_ptr<T>)")
     endif()
 endif()
-
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/entityx/config.h.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/entityx/config.h
-)
-

@@ -170,6 +170,9 @@ struct EntityCreatedEvent : public Event<EntityCreatedEvent> {
 };
 
 
+/**
+ * Called just prior to an entity being destroyed.
+ */
 struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
   EntityDestroyedEvent(Entity entity) : entity(entity) {}
 

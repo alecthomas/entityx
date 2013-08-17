@@ -11,5 +11,5 @@ if [ "$USE_STD_SHARED_PTR" = "1" ]; then
 fi
 
 cmake ${CMAKE_ARGS}
-make
+make VERBOSE=1
 make test
