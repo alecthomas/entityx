@@ -21,4 +21,4 @@ class DeepSubclassTest2(DeepSubclassTest):
         assert self.direction
         assert self.position
         assert self.position2
-        assert self.position is self.position
+        assert self.position is self.position2

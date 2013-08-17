@@ -1,6 +1,12 @@
-# Python Scripting System for EntityX
+# Python Scripting System for EntityX (α Alpha)
 
 This system adds the ability to extend entity logic with Python scripts. The goal is to allow ad-hoc behaviour to be assigned to entities, in contract to the more pure entity-component system approach.
+
+## Limitations
+
+Planned features that are currently unimplemented:
+
+- Emitting events from Python.
 
 ## Concepts
 
@@ -30,7 +36,7 @@ In most cases, this should be pretty simple. Given a component, provide a `boost
 
 Here's an example:
 
-```
+```c++
 namespace py = boost::python;
 
 struct Position : public Component<Position> {
@@ -76,7 +82,7 @@ To implement more refined logic, subclass `PythonEventProxy` and operate on
 the protected member `entities`. Here's a collision example, where the proxy
 only delivers collision events to the colliding entities themselves:
 
-```
+```c++
 struct CollisionEvent : public Event<CollisionEvent> {
   CollisionEvent(Entity a, Entity b) : a(a), b(b) {}
 
@@ -115,7 +121,7 @@ BOOST_PYTHON_MODULE(mygame) {
 
 Finally, initialize the `mygame` module once, before using `PythonSystem`, with something like this:
 
-```
+```c++
 // This should only be performed once, at application initialization time.
 CHECK(PyImport_AppendInittab("mygame", initmygame) != -1)
   << "Failed to initialize mygame Python module";
@@ -123,7 +129,7 @@ CHECK(PyImport_AppendInittab("mygame", initmygame) != -1)
 
 Then create and destroy `PythonSystem` as necessary:
 
-```
+```c++
 // Initialize the PythonSystem.
 vector<string> paths;
 paths.push_back(MYGAME_PYTHON_PATH);

@@ -6,6 +6,13 @@ Entity-Component (EC) systems are a form of decomposition that completely decoup
 
 EntityX is an EC system that uses C++11 features to provide type-safe component management, event delivery, etc. It was built during the creation of a 2D space shooter.
 
+## Recent Notable Changes
+
+- Python scripting system (alpha).
+- Revamped build system, including selectable smart pointer implementation (Boost or stdlib).
+
+See the [ChangeLog](https://github.com/alecthomas/entityx/blob/master/CHANGELOG.md) for a full list.
+
 ## Overview
 
 In EntityX data associated with an entity is called a `Component`. `Systems` encapsulate logic and can use as many component types as necessary. An `EventManager` allows systems to interact without being tightly coupled. Finally, a `Manager` object ties all of the systems together for convenience.
@@ -44,9 +51,9 @@ entity.destroy();
 
 ### Components (entity data)
 
-The idea with ECS is to not have any functionality in the component. All logic should be contained in Systems.
+The general idea with the EntityX interpretation of ECS is to have as little functionality in components as possible. All logic should be contained in Systems.
 
-To that end Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) containing self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
+To that end Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) consisting of self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
 
 #### Creating components
 
