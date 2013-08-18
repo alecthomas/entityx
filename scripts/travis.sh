@@ -12,4 +12,4 @@ fi
 
 cmake ${CMAKE_ARGS}
 make VERBOSE=1
-make test
+make test || cat Testing/Temporary/LastTest.log

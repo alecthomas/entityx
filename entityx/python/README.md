@@ -8,13 +8,16 @@ Planned features that are currently unimplemented:
 
 - Emitting events from Python.
 
-## Concepts
+## Design
 
 - Python scripts are attached to entities with `PythonComponent`.
+- Systems and components can not be created from Python, primarily for performance reasons.
 - Events are proxied directly to Python entities via `PythonEventProxy` objects.
+    - Each event to be handled in Python must have an associated `PythonEventProxy`implementation.
+    - As a convenience `BroadcastPythonEventProxy<Event>(handler_method)` can be used. It will broadcast events to all `PythonComponent` entities with a `<handler_method>`.
 - `PythonSystem` manages scripted entity lifecycle and event delivery.
 
-## Overview
+## Summary
 
 To add scripting support to your system, something like the following steps should be followed:
 

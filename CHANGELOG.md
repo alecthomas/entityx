@@ -5,7 +5,6 @@
 Two big changes in this release:
 
 1. Python scripting support (alpha).
-
     - Bridges the EntityX entity-component system into Python.
     - Components and entities can both be defined in Python.
     - Systems must still be defined in C++, for performance reasons.
@@ -14,4 +13,4 @@ Two big changes in this release:
  
     See the [README](https://github.com/alecthomas/entityx/blob/master/entityx/python/README.md) for help, and the [C++](https://github.com/alecthomas/entityx/blob/master/entityx/python/PythonSystem_test.cc) and [Python](https://github.com/alecthomas/entityx/tree/master/entityx/python/entityx/tests) test source for more examples.
 
-2. Updated the build system to 
+2. Made the build system much more robust, including automatic feature selection with manual override.
