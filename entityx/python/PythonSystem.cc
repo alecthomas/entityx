@@ -27,6 +27,16 @@ namespace python {
 static const py::object None;
 
 
+/**
+ * Convert Entity::Id to a Python long.
+ */
+struct EntityIdToPythonInteger {
+  static PyObject* convert(Entity::Id const& id) {
+    return py::incref(py::long_(id.id()).ptr());
+  }
+};
+
+
 class PythonEntityXLogger {
 public:
   PythonEntityXLogger() {}
@@ -59,8 +69,14 @@ static std::string entity_repr(Entity entity) {
   return repr.str();
 }
 
+static bool entity_eq(Entity left, Entity right) {
+  return left.id() == right.id();
+}
+
 
 BOOST_PYTHON_MODULE(_entityx) {
+  py::to_python_converter<Entity::Id, EntityIdToPythonInteger>();
+
   py::class_<PythonEntityXLogger>("Logger", py::no_init)
     .def("write", &PythonEntityXLogger::write);
 
@@ -71,6 +87,7 @@ BOOST_PYTHON_MODULE(_entityx) {
 
   py::class_<Entity>("RawEntity", py::no_init)
     .add_property("id", &Entity::id)
+    .def("__eq__", &entity_eq)
     .def("__repr__", &entity_repr);
 
   py::class_<PythonComponent, entityx::shared_ptr<PythonComponent>>("PythonComponent", py::init<py::object>())
@@ -184,7 +201,8 @@ void PythonSystem::receive(const ComponentAddedEvent<PythonComponent> &event) {
   // associated with it. Create one.
   if (!event.component->object) {
     py::object module = py::import(event.component->module.c_str());
-    py::object from_raw_entity = module.attr(event.component->cls.c_str()).attr("_from_raw_entity");
+    py::object cls = module.attr(event.component->cls.c_str());
+    py::object from_raw_entity = cls.attr("_from_raw_entity");
     if (py::len(event.component->args) == 0) {
       event.component->object = from_raw_entity(event.entity);
     } else {

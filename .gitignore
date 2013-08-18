@@ -4,3 +4,4 @@
 *.o
 build/*
 entityx/config.h
+Makefile

@@ -13,6 +13,7 @@
 
 namespace entityx {
 
+const Entity::Id Entity::INVALID;
 BaseComponent::Family BaseComponent::family_counter_ = 0;
 
 void Entity::invalidate() {
@@ -21,8 +22,21 @@ void Entity::invalidate() {
 }
 
 void Entity::destroy() {
+  assert(valid());
   manager_.lock()->destroy(id_);
   invalidate();
 }
+
+bool Entity::valid() const {
+  return !manager_.expired() && manager_.lock()->valid(id_);
+}
+
+void EntityManager::destroy_all() {
+  entity_components_.clear();
+  entity_component_mask_.clear();
+  entity_version_.clear();
+  free_list_.clear();
+}
+
 
 }

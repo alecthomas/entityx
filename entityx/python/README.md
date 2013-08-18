@@ -10,7 +10,7 @@ Planned features that are currently unimplemented:
 
 ## Design
 
-- Python scripts are attached to entities with `PythonComponent`.
+- Python scripts are attached to entities via `PythonComponent`.
 - Systems and components can not be created from Python, primarily for performance reasons.
 - Events are proxied directly to Python entities via `PythonEventProxy` objects.
     - Each event to be handled in Python must have an associated `PythonEventProxy`implementation.

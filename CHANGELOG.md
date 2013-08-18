@@ -1,5 +1,11 @@
 # Change Log
 
+## 2013-08-18 - Destroying an entity invalidates all other references
+
+Previously, `Entity::Id` was a simple integer index (slot) into vectors in the `EntityManager`. EntityX also maintains a list of deleted entity slots that are reused when new entities are created. This reduces the size and frequency of vector reallocation. The downside though, was that if a slot was reused, entity IDs referencing the entity before reallocation would be invalidated on reuse.
+
+Each slot now also has a version number and a "valid" bit associated with it. When an entity is allocated the version is incremented and the valid bit set. When an entity is destroyed, the valid bit is cleared. `Entity::Id` now contains all of this information and can correctly determine if an ID is still valid across destroy/create.
+
 ## 2013-08-17 - Python scripting, and a more robust build system
 
 Two big changes in this release:

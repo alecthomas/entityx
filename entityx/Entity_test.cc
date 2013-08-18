@@ -96,6 +96,8 @@ TEST_F(EntityManagerTest, TestEntityAsBoolean) {
 
   e.destroy();
 
+  ASSERT_TRUE(em->size() == 0);
+
   ASSERT_TRUE(!e);
 
   Entity e2; // Not initialized
@@ -104,11 +106,19 @@ TEST_F(EntityManagerTest, TestEntityAsBoolean) {
 
 TEST_F(EntityManagerTest, TestEntityReuse) {
   Entity e1 = em->create();
+  Entity e2 = e1;
   auto id = e1.id();
+  ASSERT_TRUE(e1.valid());
+  ASSERT_TRUE(e2.valid());
   e1.destroy();
-  Entity e2 = em->create();
-  // It is assumed that the allocation will reuse the same entity id.
-  ASSERT_EQ(e2.id(), id);
+  ASSERT_TRUE(!e1.valid());
+  ASSERT_TRUE(!e2.valid());
+  Entity e3 = em->create();
+  // It is assumed that the allocation will reuse the same entity id, though
+  // the version will change.
+  auto new_id = e3.id();
+  ASSERT_NE(new_id, id);
+  ASSERT_EQ(new_id.id() & 0xffffffffUL, id.id() & 0xffffffffUL);
 }
 
 TEST_F(EntityManagerTest, TestComponentConstruction) {
@@ -333,4 +343,11 @@ TEST_F(EntityManagerTest, TestEntityAssignment) {
   ASSERT_EQ(a, b);
   a.invalidate();
   ASSERT_NE(a, b);
+}
+
+TEST_F(EntityManagerTest, TestEntityDestroyAll) {
+  Entity a = em->create(), b = em->create();
+  em->destroy_all();
+  ASSERT_FALSE(a.valid());
+  ASSERT_FALSE(b.valid());
 }

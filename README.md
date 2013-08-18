@@ -6,12 +6,19 @@ Entity-Component (EC) systems are a form of decomposition that completely decoup
 
 EntityX is an EC system that uses C++11 features to provide type-safe component management, event delivery, etc. It was built during the creation of a 2D space shooter.
 
+## Contact
+
+EntityX now has a mailing list! Send a mail to [entityx@librelist.com](mailto:entityx@librelist.com) to subscribe. Instructions will follow.
+
+You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitter](https://twitter.com/alecthomas).
+
+
 ## Recent Notable Changes
 
-- Python scripting system (alpha).
-- Revamped build system, including selectable smart pointer implementation (Boost or stdlib).
+- 2013-08-18 - Destroying an entity invalidates all other references
+- 2013-08-17 - Python scripting, and a more robust build system
 
-See the [ChangeLog](https://github.com/alecthomas/entityx/blob/master/CHANGELOG.md) for a full list.
+See the [ChangeLog](https://github.com/alecthomas/entityx/blob/master/CHANGELOG.md) for details.
 
 ## Overview
 
@@ -25,7 +32,7 @@ Following is some skeleton code that implements `Position` and `Direction` compo
 
 ### Entities
 
-Entities are simply 64-bit numeric identifiers with which components are associated. Entity IDs are allocated by the `EntityManager`. Components are then associated with the entity, and can be queried or retrieved directly.
+An `Entity` is a convenience class wrapping an opaque `uint64_t` value allocated by the `EntityManager`. Each entity has a set of components associated with it that can be added, queried or retrieved directly.
 
 Creating an entity is as simple as:
 
@@ -48,6 +55,7 @@ entity.destroy();
 - An Entity handle can be invalidated with `invalidate()`. This does not affect the underlying entity.
 - When an entity is destroyed the manager adds its ID to a free list and invalidates the Entity handle.
 - When an entity is created IDs are recycled from the free list before allocating new ones.
+- An Entity ID contains an index and a version. When an entity is destroyed, the version associated with the index is incremented, invalidating all previous entities referencing the previous ID.
 
 ### Components (entity data)
 
