@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 2.8)
-project(EntityX CXX)
 
 set(ENTITYX_MAJOR_VERSION 0)
 set(ENTITYX_MINOR_VERSION 8)
