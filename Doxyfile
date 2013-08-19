@@ -672,7 +672,7 @@ INPUT_ENCODING         = UTF-8
 # *.hxx *.hpp *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm *.dox *.py
 # *.f90 *.f *.for *.vhd *.vhdl
 
-FILE_PATTERNS          = *.h
+FILE_PATTERNS          = *.h *.md
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories
 # should be searched for input files as well. Possible values are YES and NO.
@@ -779,7 +779,7 @@ FILTER_SOURCE_PATTERNS =
 # (index.html). This can be useful if you have a project on for instance GitHub
 # and want reuse the introduction page also for the doxygen output.
 
-USE_MDFILE_AS_MAINPAGE =
+USE_MDFILE_AS_MAINPAGE = README.md
 
 #---------------------------------------------------------------------------
 # configuration options related to source browsing
@@ -1889,8 +1889,8 @@ GENERATE_LEGEND        = YES
 
 DOT_CLEANUP            = YES
 
-# GENERATE_DOCSET   = YES
-# DISABLE_INDEX     = YES
-# SEARCHENGINE      = NO
-# GENERATE_TREEVIEW = NO
-
+#GENERATE_DOCSET   = YES
+#DISABLE_INDEX     = YES
+#SEARCHENGINE      = NO
+#GENERATE_TREEVIEW = NO
+#
