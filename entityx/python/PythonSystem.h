@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2013 Alec Thomas <alec@swapoff.org>
  * All rights reserved.
  *
@@ -187,7 +187,15 @@ public:
   }
 };
 
-
+/**
+ * An entityx::System that bridges EntityX and Python.
+ *
+ * This system handles exposing entityx functionality to Python. The Python
+ * support differs in design from the C++ design in the following ways:
+ *
+ * - Entities contain logic and can receive events.
+ * - Systems and Components can not be implemented in Python.
+ */
 class PythonSystem : public entityx::System<PythonSystem>, public entityx::Receiver<PythonSystem> {
 public:
   typedef boost::function<void (const std::string &)> LoggerFunction;
@@ -215,6 +223,7 @@ public:
     }
   }
 
+  /// Return the Python paths the system is configured with.
   const std::vector<std::string> &python_paths() const {
     return python_paths_;
   }
@@ -227,6 +236,9 @@ public:
    */
   void log_to(LoggerFunction stdout, LoggerFunction stderr);
 
+  /**
+   * Proxy events of type Event to any Python entity with a handler_name method.
+   */
   template <typename Event>
   void add_event_proxy(entityx::shared_ptr<EventManager> event_manager, const std::string &handler_name) {
     auto proxy = entityx::make_shared<BroadcastPythonEventProxy<Event>>(handler_name);
@@ -234,6 +246,9 @@ public:
     event_proxies_.push_back(entityx::static_pointer_cast<PythonEventProxy>(proxy));
   }
 
+  /**
+   * Proxy events of type Event using the given PythonEventProxy implementation.
+   */
   template <typename Event, typename Proxy>
   void add_event_proxy(entityx::shared_ptr<EventManager> event_manager, entityx::shared_ptr<Proxy> proxy) {
     event_manager->subscribe<Event>(*proxy);

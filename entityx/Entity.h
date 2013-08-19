@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2012 Alec Thomas <alec@swapoff.org>
  * All rights reserved.
  *
@@ -32,11 +32,14 @@ namespace entityx {
 class EntityManager;
 
 
-/**
- * A convenience handle around an Entity::Id.
+/** A convenience handle around an Entity::Id.
  *
  * If an entity is destroyed, any copies will be invalidated. Use valid() to
  * check for validity before using.
+ *
+ * Create entities with `EntityManager`:
+ *
+ *     Entity entity = entity_manager->create();
  */
 class Entity {
 public:
@@ -166,11 +169,11 @@ struct BaseComponent {
  *
  * Usage:
  *
- * struct Position : public Component<Position> {
- *   Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
+ *     struct Position : public Component<Position> {
+ *       Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
  *
- *   float x, y;
- * };
+ *       float x, y;
+ *     };
  *
  * family() is used for registration.
  */
@@ -230,7 +233,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
    public:
     typedef boost::function<bool (entityx::shared_ptr<EntityManager>, Entity::Id)> Predicate;
 
-    /// A predicate that matches valid entities matching the given component mask.
+    /// A predicate that matches valid entities with the given component mask.
     class ComponentMaskPredicate {
      public:
       ComponentMaskPredicate(const std::vector<ComponentMask> &entity_id, ComponentMask mask) : entity_id_(entity_id), mask_(mask) {}

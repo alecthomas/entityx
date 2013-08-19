@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
-project(EntityX)
+project(EntityX CXX)
+
+set(ENTITYX_MAJOR_VERSION 0)
+set(ENTITYX_MINOR_VERSION 8)
+set(ENTITYX_PATCH_VERSION 1)
+set(ENTITYX_VERSION ${ENTITYX_MAJOR_VERSION}.${ENTITYX_MINOR_VERSION}.${ENTITYX_PATCH_VERSION})
+
+
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 
 set(ENTITYX_BUILD_TESTING false CACHE BOOL "Enable building of tests.")

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2013 Alec Thomas <alec@swapoff.org>
  * All rights reserved.
  *
