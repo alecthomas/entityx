@@ -14,9 +14,8 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
+#include <boost/signal.hpp>
 #include <boost/unordered_map.hpp>
-#include <list>
 #include "entityx/config.h"
 
 
@@ -67,7 +66,7 @@ class BaseReceiver {
 
  private:
   friend class EventManager;
-  std::list<boost::signals2::connection> connections_;
+  std::list<boost::signals::connection> connections_;
 };
 
 
@@ -132,7 +131,7 @@ class EventManager : public entityx::enable_shared_from_this<EventManager>, boos
   }
 
  private:
-  typedef boost::signals2::signal<void (const BaseEvent*)> EventSignal;
+  typedef boost::signal<void (const BaseEvent*)> EventSignal;
   typedef entityx::shared_ptr<EventSignal> EventSignalPtr;
 
   EventManager() {}

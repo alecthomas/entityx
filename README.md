@@ -15,11 +15,10 @@ You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitte
 
 ## Recent Notable Changes
 
-- 2013-08-21 - Switch to `boost::signals2`.
 - 2013-08-18 - Destroying an entity invalidates all other references
 - 2013-08-17 - Python scripting, and a more robust build system
 
-See the [ChangeLog](https://github.com/alecthomas/entityx/blob/master/CHANGES.md) for details.
+See the [ChangeLog](https://github.com/alecthomas/entityx/blob/master/CHANGELOG.md) for details.
 
 ## Overview
 
@@ -256,7 +255,7 @@ EntityX has the following build and runtime requirements:
 
 - A C++ compiler that supports a basic set of C++11 features (ie. recent clang, recent gcc, and maybe (untested) VC++ with the [Nov 2012 CTP](http://www.microsoft.com/en-us/download/details.aspx?id=35515)).
 - [CMake](http://cmake.org/)
-- [Boost](http://boost.org) `1.48.0` or higher (links against `boost::signals2`).
+- [Boost](http://boost.org) `1.48.0` or higher (links against `boost::signals`).
 
 Once these dependencies are installed you should be able to build and install EntityX as below. The following options can be passed to cmake to modify how EntityX is built:
 
