@@ -11,6 +11,7 @@
 #pragma once
 
 
+#include <stdint.h>
 #include <algorithm>
 #include <bitset>
 #include <cassert>
@@ -18,7 +19,6 @@
 #include <iterator>
 #include <list>
 #include <set>
-#include <stdint.h>
 #include <string>
 #include <utility>
 #include <vector>
@@ -73,7 +73,7 @@ public:
   /**
    * Check if Entity handle is invalid.
    */
-  bool operator ! () const {
+  bool operator !() const {
     return !valid();
   }
 
@@ -189,7 +189,7 @@ struct Component : public BaseComponent {
  * Emitted when an entity is added to the system.
  */
 struct EntityCreatedEvent : public Event<EntityCreatedEvent> {
-  EntityCreatedEvent(Entity entity) : entity(entity) {}
+  explicit EntityCreatedEvent(Entity entity) : entity(entity) {}
 
   Entity entity;
 };
@@ -199,7 +199,7 @@ struct EntityCreatedEvent : public Event<EntityCreatedEvent> {
  * Called just prior to an entity being destroyed.
  */
 struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
-  EntityDestroyedEvent(Entity entity) : entity(entity) {}
+  explicit EntityDestroyedEvent(Entity entity) : entity(entity) {}
 
   Entity entity;
 };
@@ -238,7 +238,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
      public:
       ComponentMaskPredicate(const std::vector<ComponentMask> &entity_id, ComponentMask mask) : entity_id_(entity_id), mask_(mask) {}
 
-      bool operator () (entityx::shared_ptr<EntityManager> entities, Entity::Id entity) {
+      bool operator()(entityx::shared_ptr<EntityManager> entities, Entity::Id entity) {
         return entities->entity_version_.at(entity.index()) == entity.version()
             && (entity_id_.at(entity.index()) & mask_) == mask_;
       }
@@ -251,7 +251,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
     /// An iterator over a view of the entities in an EntityManager.
     class Iterator : public std::iterator<std::input_iterator_tag, Entity::Id> {
      public:
-      Iterator &operator ++ () {
+      Iterator &operator ++() {
         ++i_;
         next();
         return *this;
@@ -267,7 +267,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
       Iterator() {}
 
       Iterator(entityx::shared_ptr<EntityManager> manager, const std::vector<Predicate> &predicates,
-               const std::vector<boost::function<void (Entity::Id)>> &unpackers, uint32_t index)
+               const std::vector<boost::function<void(Entity::Id)>> &unpackers, uint32_t index)
           : manager_(manager), predicates_(predicates), unpackers_(unpackers), i_(index) {
         next();
       }
@@ -296,7 +296,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
 
       entityx::shared_ptr<EntityManager> manager_;
       const std::vector<Predicate> predicates_;
-      std::vector<boost::function<void (Entity::Id)>> unpackers_;
+      std::vector<boost::function<void(Entity::Id)>> unpackers_;
       uint32_t i_;
     };
 
@@ -325,6 +325,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
       unpack_to<A>(a);
       return unpack_to<B, Args ...>(b, args ...);
     }
+
    private:
     friend class EntityManager;
 
@@ -332,7 +333,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
     struct Unpacker {
       Unpacker(entityx::shared_ptr<EntityManager> manager, entityx::shared_ptr<T> &c) : manager_(manager), c(c) {}
 
-      void operator () (Entity::Id id) {
+      void operator()(Entity::Id id) {
         c = manager_->component<T>(id);
       }
 
@@ -347,7 +348,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
 
     entityx::shared_ptr<EntityManager> manager_;
     std::vector<Predicate> predicates_;
-    std::vector<boost::function<void (Entity::Id)>> unpackers_;
+    std::vector<boost::function<void(Entity::Id)>> unpackers_;
   };
 
   /**
@@ -522,7 +523,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
   void destroy_all();
 
  private:
-  EntityManager(entityx::shared_ptr<EventManager> event_manager) : event_manager_(event_manager) {}
+  explicit EntityManager(entityx::shared_ptr<EventManager> event_manager) : event_manager_(event_manager) {}
 
 
   template <typename C>
@@ -616,4 +617,4 @@ void Entity::unpack(entityx::shared_ptr<A> &a, entityx::shared_ptr<B> &b, Args &
   manager_.lock()->unpack(id_, a, b, args ...);
 }
 
-}
+}  // namespace entityx

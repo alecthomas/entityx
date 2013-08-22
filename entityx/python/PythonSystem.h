@@ -12,6 +12,7 @@
 
 // http://docs.python.org/2/extending/extending.html
 #include <Python.h>
+
 #include "entityx/config.h"
 
 // boost::python smart pointer adapter for std::shared_ptr<T>
@@ -19,6 +20,8 @@
 
 #include <boost/python.hpp>
 #include <memory>
+
+#ifdef ENTITYX_NEED_GET_POINTER_SHARED_PTR_SPECIALIZATION
 
 namespace std {
 
@@ -28,6 +31,8 @@ template <class T> inline T * get_pointer(const std::shared_ptr<T> &p) {
 }
 
 }
+
+#endif
 
 namespace boost {
 namespace python {
@@ -41,6 +46,7 @@ template <typename T> struct pointee<std::shared_ptr<T> > {
 
 #endif
 
+#include <list>
 #include <vector>
 #include <string>
 #include <boost/python.hpp>
@@ -107,7 +113,7 @@ public:
    * @param handler_name The default implementation of can_send() tests for
    *     the existence of this attribute on an Entity.
    */
-  PythonEventProxy(const std::string &handler_name) : handler_name(handler_name) {}
+  explicit PythonEventProxy(const std::string &handler_name) : handler_name(handler_name) {}
   virtual ~PythonEventProxy() {}
 
   /**

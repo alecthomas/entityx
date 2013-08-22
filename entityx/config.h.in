@@ -6,6 +6,9 @@
 #cmakedefine ENTITYX_MAX_COMPONENTS @ENTITYX_MAX_COMPONENTS@
 #cmakedefine ENTITYX_HAVE_BOOST_PYTHON 1
 #cmakedefine ENTITYX_INSTALLED_PYTHON_PACKAGE_DIR "@ENTITYX_INSTALLED_PYTHON_PACKAGE_DIR@"
+#cmakedefine ENTITYX_NEED_GET_POINTER_SHARED_PTR_SPECIALIZATION "@ENTITYX_NEED_GET_POINTER_SHARED_PTR_SPECIALIZATION@"
+
+#include <stdint.h>
 
 // Which shared_ptr implementation should we use?
 #if (ENTITYX_HAVE_STD_SHARED_PTR && ENTITYX_USE_STD_SHARED_PTR)
@@ -22,6 +25,7 @@ using std::enable_shared_from_this;
 
 #elif ENTITYX_HAVE_BOOST_SHARED_PTR
 
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/make_shared.hpp>
@@ -37,5 +41,5 @@ using boost::enable_shared_from_this;
 #endif
 
 namespace entityx {
-static const int MAX_COMPONENTS = ENTITYX_MAX_COMPONENTS;
+static const uint64_t MAX_COMPONENTS = ENTITYX_MAX_COMPONENTS;
 }

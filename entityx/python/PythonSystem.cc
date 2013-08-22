@@ -40,7 +40,7 @@ struct EntityIdToPythonInteger {
 class PythonEntityXLogger {
 public:
   PythonEntityXLogger() {}
-  PythonEntityXLogger(PythonSystem::LoggerFunction logger) : logger_(logger) {}
+  explicit PythonEntityXLogger(PythonSystem::LoggerFunction logger) : logger_(logger) {}
 
   void write(const std::string &text) {
     logger_(text);
@@ -51,7 +51,7 @@ private:
 
 
 struct PythonEntity {
-  PythonEntity(Entity entity) : _entity(entity) {}
+  explicit PythonEntity(Entity entity) : _entity(entity) {}
 
   void destroy() {
     _entity.destroy();
@@ -164,7 +164,7 @@ void PythonSystem::configure(entityx::shared_ptr<EventManager> event_manager) {
     py::object entityx = py::import("_entityx");
     entityx.attr("_entity_manager") = entity_manager_;
     // entityx.attr("event_manager") = boost::ref(event_manager);
-  } catch (...) {
+  } catch(...) {
     PyErr_Print();
     PyErr_Clear();
     throw;
@@ -177,7 +177,7 @@ void PythonSystem::update(entityx::shared_ptr<EntityManager> entity_manager, ent
 
     try {
       python->object.attr("update")(dt);
-    } catch (...) {
+    } catch(...) {
       PyErr_Print();
       PyErr_Clear();
       throw;
@@ -220,5 +220,5 @@ void PythonSystem::receive(const ComponentAddedEvent<PythonComponent> &event) {
   }
 }
 
-}
-}
+}  // namespace python
+}  // namespace entityx

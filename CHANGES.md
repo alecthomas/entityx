@@ -1,5 +1,11 @@
 # Change Log
 
+## 2013-08-22 - Remove `boost::signal` and switch to `Simple::Signal`.
+
+According to the [benchmarks](http://timj.testbit.eu/2013/cpp11-signal-system-performance/) Simple::Signal is an order of magnitude faster than `boost::signal`. Additionally, `boost::signal` is now deprecated in favor of `boost::signal2`, which is not supported on versions of Boost on a number of platforms.
+
+This is an implementation detail and should not affect EntityX users at all.
+
 ## 2013-08-18 - Destroying an entity invalidates all other references
 
 Previously, `Entity::Id` was a simple integer index (slot) into vectors in the `EntityManager`. EntityX also maintains a list of deleted entity slots that are reused when new entities are created. This reduces the size and frequency of vector reallocation. The downside though, was that if a slot was reused, entity IDs referencing the entity before reallocation would be invalidated on reuse.

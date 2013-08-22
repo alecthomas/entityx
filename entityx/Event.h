@@ -14,9 +14,11 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/signal.hpp>
 #include <boost/unordered_map.hpp>
+#include <list>
+#include <utility>
 #include "entityx/config.h"
+#include "entityx/3rdparty/simplesignal.h"
 
 
 namespace entityx {
@@ -33,6 +35,11 @@ class BaseEvent {
  protected:
   static Family family_counter_;
 };
+
+
+typedef Simple::Signal<void (const BaseEvent*)> EventSignal;
+typedef entityx::shared_ptr<EventSignal> EventSignalPtr;
+typedef entityx::weak_ptr<EventSignal> EventSignalWeakPtr;
 
 
 /**
@@ -60,13 +67,27 @@ class BaseReceiver {
  public:
   virtual ~BaseReceiver() {
     for (auto connection : connections_) {
-      connection.disconnect();
+      auto &ptr = connection.first;
+      if (!ptr.expired()) {
+        ptr.lock()->disconnect(connection.second);
+      }
     }
+  }
+
+  // Return number of signals connected to this receiver.
+  int connected_signals() const {
+    size_t size = 0;
+    for (auto connection : connections_) {
+      if (!connection.first.expired()) {
+        size++;
+      }
+    }
+    return size;
   }
 
  private:
   friend class EventManager;
-  std::list<boost::signals::connection> connections_;
+  std::list<std::pair<EventSignalWeakPtr, size_t>> connections_;
 };
 
 
@@ -84,7 +105,6 @@ class Receiver : public BaseReceiver {
  */
 class EventManager : public entityx::enable_shared_from_this<EventManager>, boost::noncopyable {
  public:
-
   static entityx::shared_ptr<EventManager> make() {
     return entityx::shared_ptr<EventManager>(new EventManager());
   }
@@ -105,11 +125,13 @@ class EventManager : public entityx::enable_shared_from_this<EventManager>, boos
    * em.subscribe<Explosion>(receiver);
    */
   template <typename E, typename Receiver>
-  void subscribe(Receiver &receiver) {
-    void (Receiver::*receive) (const E &) = &Receiver::receive;
+  void subscribe(Receiver &receiver) {  //NOLINT
+    void (Receiver::*receive)(const E &) = &Receiver::receive;
     auto sig = signal_for(E::family());
     auto wrapper = EventCallbackWrapper<E>(boost::bind(receive, &receiver, _1));
-    static_cast<BaseReceiver&>(receiver).connections_.push_back(sig->connect(wrapper));
+    auto connection = sig->connect(wrapper);
+    static_cast<BaseReceiver&>(receiver).connections_.push_back(
+      std::make_pair(EventSignalWeakPtr(sig), connection));
   }
 
   /**
@@ -127,20 +149,25 @@ class EventManager : public entityx::enable_shared_from_this<EventManager>, boos
   void emit(Args && ... args) {
     E event(args ...);
     auto sig = signal_for(E::family());
-    (*sig)(static_cast<BaseEvent*>(&event));
+    sig->emit(static_cast<BaseEvent*>(&event));
+  }
+
+  int connected_receivers() const {
+    int size = 0;
+    for (auto pair : handlers_) {
+      size += pair.second->size();
+    }
+    return size;
   }
 
  private:
-  typedef boost::signal<void (const BaseEvent*)> EventSignal;
-  typedef entityx::shared_ptr<EventSignal> EventSignalPtr;
-
   EventManager() {}
 
-   EventSignalPtr signal_for(int id) {
+  EventSignalPtr signal_for(int id) {
     auto it = handlers_.find(id);
     if (it == handlers_.end()) {
       EventSignalPtr sig(entityx::make_shared<EventSignal>());
-      handlers_.insert(make_pair(id, sig));
+      handlers_.insert(std::make_pair(id, sig));
       return sig;
     }
     return it->second;
@@ -149,12 +176,12 @@ class EventManager : public entityx::enable_shared_from_this<EventManager>, boos
   // Functor used as an event signal callback that casts to E.
   template <typename E>
   struct EventCallbackWrapper {
-    EventCallbackWrapper(boost::function<void (const E &)> callback) : callback(callback) {}
-    void operator () (const BaseEvent* event) { callback(*(static_cast<const E*>(event))); }
-    boost::function<void (const E &)> callback;
+    EventCallbackWrapper(boost::function<void(const E &)> callback) : callback(callback) {}
+    void operator()(const BaseEvent* event) { callback(*(static_cast<const E*>(event))); }
+    boost::function<void(const E &)> callback;
   };
 
   boost::unordered_map<int, EventSignalPtr> handlers_;
 };
 
-}
+}  // namespace entityx
