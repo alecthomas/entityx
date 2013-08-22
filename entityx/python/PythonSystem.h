@@ -23,9 +23,9 @@
 namespace std {
 
 // This may or may not work... it definitely does not work on OSX.
-template <class T> inline T * get_pointer(const std::shared_ptr<T> &p) {
-  return p.get();
-}
+// template <class T> inline T * get_pointer(const std::shared_ptr<T> &p) {
+//   return p.get();
+// }
 
 }
 
