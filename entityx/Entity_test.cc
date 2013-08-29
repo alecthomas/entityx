@@ -10,6 +10,7 @@
 
 #include <iterator>
 #include <string>
+#include <utility>
 #include <vector>
 #include <gtest/gtest.h>
 #include "entityx/Entity.h"
@@ -26,7 +27,7 @@ int size(const T &t) {
   int n = 0;
   for (auto i : t) {
     ++n;
-    (void)i; // Unused on purpose, suppress warning
+    (void)i;  // Unused on purpose, suppress warning
   }
   return n;
 }
@@ -74,33 +75,33 @@ class EntityManagerTest : public ::testing::Test {
 
 
 TEST_F(EntityManagerTest, TestCreateEntity) {
-  ASSERT_TRUE(em->size() == 0);
+  ASSERT_EQ(em->size(), 0UL);
 
   Entity e2;
   ASSERT_FALSE(e2.valid());
 
   Entity e = em->create();
   ASSERT_TRUE(e.valid());
-  ASSERT_TRUE(em->size() == 1);
+  ASSERT_EQ(em->size(), 1UL);
 
   e2 = e;
   ASSERT_TRUE(e2.valid());
 }
 
 TEST_F(EntityManagerTest, TestEntityAsBoolean) {
-  ASSERT_TRUE(em->size() == 0);
+  ASSERT_EQ(em->size(), 0UL);
   Entity e = em->create();
   ASSERT_TRUE(e.valid());
-  ASSERT_TRUE(em->size() == 1);
+  ASSERT_EQ(em->size(), 1UL);
   ASSERT_FALSE(!e);
 
   e.destroy();
 
-  ASSERT_TRUE(em->size() == 0);
+  ASSERT_EQ(em->size(), 0UL);
 
   ASSERT_TRUE(!e);
 
-  Entity e2; // Not initialized
+  Entity e2;  // Not initialized
   ASSERT_TRUE(!e2);
 }
 
@@ -124,7 +125,7 @@ TEST_F(EntityManagerTest, TestEntityReuse) {
 TEST_F(EntityManagerTest, TestComponentConstruction) {
   auto e = em->create();
   auto p = e.assign<Position>(1, 2);
-  //auto p = em->assign<Position>(e, 1, 2);
+  // auto p = em->assign<Position>(e, 1, 2);
   auto cp = e.component<Position>();
   ASSERT_EQ(p, cp);
   ASSERT_FLOAT_EQ(1.0, cp->x);
@@ -151,17 +152,17 @@ TEST_F(EntityManagerTest, TestDestroyEntity) {
   ASSERT_EQ(2, ep.use_count());
   ASSERT_TRUE(e.valid());
   ASSERT_TRUE(f.valid());
-  ASSERT_TRUE(bool(e.component<Position>()));
-  ASSERT_TRUE(bool(e.component<Direction>()));
-  ASSERT_TRUE(bool(f.component<Position>()));
-  ASSERT_TRUE(bool(f.component<Direction>()));
+  ASSERT_TRUE(static_cast<bool>(e.component<Position>()));
+  ASSERT_TRUE(static_cast<bool>(e.component<Direction>()));
+  ASSERT_TRUE(static_cast<bool>(f.component<Position>()));
+  ASSERT_TRUE(static_cast<bool>(f.component<Direction>()));
 
   e.destroy();
 
   ASSERT_FALSE(e.valid());
   ASSERT_TRUE(f.valid());
-  ASSERT_TRUE(bool(f.component<Position>()));
-  ASSERT_TRUE(bool(f.component<Direction>()));
+  ASSERT_TRUE(static_cast<bool>(f.component<Position>()));
+  ASSERT_TRUE(static_cast<bool>(f.component<Direction>()));
   ASSERT_EQ(1, ep.use_count());
 }
 
@@ -186,7 +187,6 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithIntersectionOfComponents) {
       e.assign<Position>();
     if (i % 3 == 0)
       e.assign<Direction>();
-
   }
   ASSERT_EQ(50, size(em->entities_with_components<Direction>()));
   ASSERT_EQ(75, size(em->entities_with_components<Position>()));
@@ -212,8 +212,8 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
   entityx::shared_ptr<Direction> direction;
   for (auto unused_entity : em->entities_with_components(position, direction)) {
     (void)unused_entity;
-    ASSERT_TRUE(bool(position));
-    ASSERT_TRUE(bool(direction));
+    ASSERT_TRUE(static_cast<bool>(position));
+    ASSERT_TRUE(static_cast<bool>(direction));
     auto pd = position_directions.at(i);
     ASSERT_EQ(position, pd.first);
     ASSERT_EQ(direction, pd.second);
@@ -235,7 +235,7 @@ TEST_F(EntityManagerTest, TestUnpack) {
 }
 
 // gcc 4.7.2 does not allow this struct to be declared locally inside the TEST_F.
-struct NullDeleter {template<typename T> void operator()(T*) {} };
+struct NullDeleter {template<typename T> void operator()(T *unused) {} };
 
 TEST_F(EntityManagerTest, TestUnpackNullMissing) {
   Entity e = em->create();
@@ -292,14 +292,14 @@ TEST_F(EntityManagerTest, TestEntityDestroyedEvent) {
   for (auto e : entities) {
     e.destroy();
   }
-  ASSERT_TRUE(entities == receiver.destroyed);
+  ASSERT_EQ(entities, receiver.destroyed);
 }
 
 TEST_F(EntityManagerTest, TestComponentAddedEvent) {
   struct ComponentAddedEventReceiver : public Receiver<ComponentAddedEventReceiver> {
     void receive(const ComponentAddedEvent<Position> &event) {
       auto p = event.component;
-      float n = float(position_events);
+      float n = static_cast<float>(position_events);
       ASSERT_EQ(p->x, n);
       ASSERT_EQ(p->y, n);
       position_events++;
@@ -307,7 +307,7 @@ TEST_F(EntityManagerTest, TestComponentAddedEvent) {
 
     void receive(const ComponentAddedEvent<Direction> &event) {
       auto p = event.component;
-      float n = float(direction_events);
+      float n = static_cast<float>(direction_events);
       ASSERT_EQ(p->x, -n);
       ASSERT_EQ(p->y, -n);
       direction_events++;
@@ -328,8 +328,8 @@ TEST_F(EntityManagerTest, TestComponentAddedEvent) {
   ASSERT_EQ(0, receiver.direction_events);
   for (int i = 0; i < 10; ++i) {
     Entity e = em->create();
-    e.assign<Position>(float(i), float(i));
-    e.assign<Direction>(float(-i), float(-i));
+    e.assign<Position>(static_cast<float>(i), static_cast<float>(i));
+    e.assign<Direction>(static_cast<float>(-i), static_cast<float>(-i));
   }
   ASSERT_EQ(10, receiver.position_events);
   ASSERT_EQ(10, receiver.direction_events);

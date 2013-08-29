@@ -80,7 +80,7 @@ public:
   /**
    * Create a new PythonComponent from an existing Python instance.
    */
-  PythonComponent(boost::python::object object) : object(object) {}
+  explicit PythonComponent(boost::python::object object) : object(object) {}
 
   boost::python::object object;
   boost::python::list args;
@@ -160,7 +160,7 @@ private:
  * A helper function for class_ to assign a component to an entity.
  */
 template <typename Component>
-void assign_to(entityx::shared_ptr<Component> component, Entity &entity) {
+void assign_to(entityx::shared_ptr<Component> component, Entity &entity) {  // NOLINT
   entity.assign<Component>(component);
 }
 
@@ -170,7 +170,7 @@ void assign_to(entityx::shared_ptr<Component> component, Entity &entity) {
  * entity.
  */
 template <typename Component>
-entityx::shared_ptr<Component> get_component(Entity &entity) {
+entityx::shared_ptr<Component> get_component(Entity &entity) {  // NOLINT
   return entity.component<Component>();
 }
 
@@ -206,7 +206,7 @@ class PythonSystem : public entityx::System<PythonSystem>, public entityx::Recei
 public:
   typedef boost::function<void (const std::string &)> LoggerFunction;
 
-  PythonSystem(entityx::shared_ptr<EntityManager> entity_manager);
+  PythonSystem(entityx::shared_ptr<EntityManager> entity_manager);  // NOLINT
   virtual ~PythonSystem();
 
   /**

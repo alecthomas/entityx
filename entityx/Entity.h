@@ -69,6 +69,9 @@ public:
   static const Id INVALID;
 
   Entity() {}
+  Entity(const Entity &) = default;
+  Entity(Entity &&) = default;
+  Entity &operator = (const Entity &) = default;
 
   /**
    * Check if Entity handle is invalid.
@@ -258,45 +261,39 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
       }
       bool operator == (const Iterator& rhs) const { return i_ == rhs.i_; }
       bool operator != (const Iterator& rhs) const { return i_ != rhs.i_; }
-      Entity operator * () { return Entity(manager_, manager_->create_id(i_)); }
-      const Entity operator * () const { return Entity(manager_, manager_->create_id(i_)); }
+      Entity operator * () { return Entity(view_.manager_, view_.manager_->create_id(i_)); }
+      const Entity operator * () const { return Entity(view_.manager_, view_.manager_->create_id(i_)); }
 
      private:
       friend class View;
 
-      Iterator() {}
-
-      Iterator(entityx::shared_ptr<EntityManager> manager, const std::vector<Predicate> &predicates,
-               const std::vector<boost::function<void(Entity::Id)>> &unpackers, uint32_t index)
-          : manager_(manager), predicates_(predicates), unpackers_(unpackers), i_(index) {
+      Iterator(const View &view, uint32_t index) : view_(view), i_(index) {
         next();
       }
 
       void next() {
-        while (i_ < manager_->capacity() && !predicate()) {
+        while (i_ < view_.manager_->capacity() && !predicate()) {
           ++i_;
         }
-        if (i_ < manager_->capacity() && !unpackers_.empty()) {
-          Entity::Id id = manager_->create_id(i_);
-          for (auto unpacker : unpackers_) {
+        if (i_ < view_.manager_->capacity() && !view_.unpackers_.empty()) {
+          Entity::Id id = view_.manager_->create_id(i_);
+          for (auto &unpacker : view_.unpackers_) {
             unpacker(id);
           }
         }
       }
 
       bool predicate() {
-        Entity::Id id = manager_->create_id(i_);
-        for (auto &p : predicates_) {
-          if (!p(manager_, id)) {
+        Entity::Id id = view_.manager_->create_id(i_);
+        for (auto &p : view_.predicates_) {
+          if (!p(view_.manager_, id)) {
             return false;
           }
         }
         return true;
       }
 
-      entityx::shared_ptr<EntityManager> manager_;
-      const std::vector<Predicate> predicates_;
-      std::vector<boost::function<void(Entity::Id)>> unpackers_;
+      const View &view_;
       uint32_t i_;
     };
 
@@ -305,18 +302,14 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
       predicates_.push_back(predicate);
     }
 
-    Iterator begin() { return Iterator(manager_, predicates_, unpackers_, 0); }
-    Iterator end() { return Iterator(manager_, predicates_, unpackers_, manager_->capacity()); }
-    const Iterator begin() const { return Iterator(manager_, predicates_, unpackers_, 0); }
-    const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_->size()); }
+    Iterator begin() { return Iterator(*this, 0); }
+    Iterator end() { return Iterator(*this, manager_->size()); }
+    const Iterator begin() const { return Iterator(*this, 0); }
+    const Iterator end() const { return Iterator(*this, manager_->size()); }
 
     template <typename A>
     View &unpack_to(entityx::shared_ptr<A> &a) {
       unpackers_.push_back(Unpacker<A>(manager_, a));
-      // This resulted in a segfault under clang 4.1 on OSX. No idea why.
-      // unpackers_.push_back([&a, this](uint32_t index) {
-      //   a = manager_->component<A>(Entity::Id(index, 0));
-      // });
       return *this;
     }
 

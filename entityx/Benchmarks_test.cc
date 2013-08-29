@@ -76,7 +76,7 @@ TEST_F(BenchmarksTest, TestDestroyEntitiesWithListener) {
   boost::timer::auto_cpu_timer t;
   cout << "destroying " << count << " entities" << endl;
 
-  for (auto e : entities) {
+  for (auto &e : entities) {
     e.destroy();
   }
 }
@@ -99,6 +99,7 @@ TEST_F(BenchmarksTest, TestEntityIteration) {
   for (int i = 0; i < 10; ++i) {
     for (auto e : em->entities_with_components<Position>()) {
       entityx::shared_ptr<Position> position = e.component<Position>();
+      position.get();
     }
   }
 }
