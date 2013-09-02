@@ -114,6 +114,9 @@ public:
   entityx::shared_ptr<C> assign(Args && ... args);
 
   template <typename C>
+  entityx::shared_ptr<C> remove();
+
+  template <typename C>
   entityx::shared_ptr<C> component();
 
   template <typename A>
@@ -220,6 +223,17 @@ struct ComponentAddedEvent : public Event<ComponentAddedEvent<T>> {
   entityx::shared_ptr<T> component;
 };
 
+/**
+ * Emitted when any component is removed from an entity.
+ */
+template <typename T>
+struct ComponentRemovedEvent : public Event<ComponentRemovedEvent<T>> {
+  ComponentRemovedEvent(Entity entity, entityx::shared_ptr<T> component) :
+      entity(entity), component(component) {}
+
+  Entity entity;
+  entityx::shared_ptr<T> component;
+};
 
 /**
  * Manages Entity::Id creation and component assignment.
@@ -443,6 +457,18 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
   }
 
   /**
+   * Remove a Component from an Entity::Id
+   */
+  template <typename C>
+  entityx::shared_ptr<C> remove(Entity::Id id) {
+    entityx::shared_ptr<C> component = entityx::static_pointer_cast<C>(entity_components_.at(C::family()).at(id.index()));
+    entity_components_.at(C::family()).at(id.index()) = nullptr;
+    entity_component_mask_.at(id.index()) ^= uint64_t(1) << C::family();
+    event_manager_->emit<ComponentRemovedEvent<C>>(Entity(shared_from_this(), id), component);
+    return component;
+  }
+
+  /**
    * Retrieve a Component assigned to an Entity::Id.
    *
    * @returns Component instance, or empty shared_ptr<> if the Entity::Id does not have that Component.
@@ -590,6 +616,12 @@ template <typename C, typename ... Args>
 entityx::shared_ptr<C> Entity::assign(Args && ... args) {
   assert(valid());
   return manager_.lock()->assign<C>(id_, args ...);
+}
+
+template <typename C>
+entityx::shared_ptr<C> Entity::remove(){
+  assert(valid() && component<C>());
+  return manager_.lock()->remove<C>(id_);
 }
 
 template <typename C>
