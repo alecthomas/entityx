@@ -335,6 +335,26 @@ TEST_F(EntityManagerTest, TestComponentAddedEvent) {
   ASSERT_EQ(10, receiver.direction_events);
 }
 
+TEST_F(EntityManagerTest, TestComponentRemovedEvent) {
+  struct ComponentRemovedReceiver : public Receiver<ComponentRemovedReceiver> {
+    void receive(const ComponentRemovedEvent<Direction> &event) {
+      removed = event.component;
+    }
+
+    entityx::shared_ptr<Direction> removed;
+  };
+
+  ComponentRemovedReceiver receiver;
+  ev->subscribe<ComponentRemovedEvent<Direction>>(receiver);
+
+  ASSERT_FALSE(receiver.removed);
+  Entity e = em->create();
+  e.assign<Direction>(1.0, 2.0);
+  auto p = e.remove<Direction>();
+  ASSERT_EQ(receiver.removed, p);
+  ASSERT_FALSE(e.component<Direction>());
+}
+
 TEST_F(EntityManagerTest, TestEntityAssignment) {
   Entity a, b;
   a = em->create();
