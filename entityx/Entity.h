@@ -53,11 +53,11 @@ public:
     bool operator != (const Id &other) const { return id_ != other.id_; }
     bool operator < (const Id &other) const { return id_ < other.id_; }
 
-  private:
-    friend class EntityManager;
-
     uint32_t index() const { return id_ & 0xffffffffUL; }
     uint32_t version() const { return id_ >> 32; }
+
+  private:
+    friend class EntityManager;
 
     uint64_t id_;
   };
@@ -76,12 +76,12 @@ public:
   /**
    * Check if Entity handle is invalid.
    */
-  bool operator !() const {
-    return !valid();
+  operator bool () const {
+    return valid();
   }
 
   bool operator == (const Entity &other) const {
-    return other.manager_.lock() == manager_.lock() && other.id_ == id_;
+    return other.manager_ == manager_ && other.id_ == id_;
   }
 
   bool operator != (const Entity &other) const {
@@ -109,20 +109,20 @@ public:
   Id id() const { return id_; }
 
   template <typename C>
-  entityx::shared_ptr<C> assign(entityx::shared_ptr<C> component);
+  ptr<C> assign(ptr<C> component);
   template <typename C, typename ... Args>
-  entityx::shared_ptr<C> assign(Args && ... args);
+  ptr<C> assign(Args && ... args);
 
   template <typename C>
-  entityx::shared_ptr<C> remove();
+  ptr<C> remove();
 
   template <typename C>
-  entityx::shared_ptr<C> component();
+  ptr<C> component();
 
   template <typename A>
-  void unpack(entityx::shared_ptr<A> &a);
+  void unpack(ptr<A> &a);
   template <typename A, typename B, typename ... Args>
-  void unpack(entityx::shared_ptr<A> &a, entityx::shared_ptr<B> &b, Args && ... args);
+  void unpack(ptr<A> &a, ptr<B> &b, Args && ... args);
 
   /**
    * Destroy and invalidate this Entity.
@@ -132,9 +132,9 @@ public:
  private:
   friend class EntityManager;
 
-  Entity(entityx::shared_ptr<EntityManager> manager, Entity::Id id) : manager_(manager), id_(id) {}
+  Entity(ptr<EntityManager> manager, Entity::Id id) : manager_(manager), id_(id) {}
 
-  entityx::weak_ptr<EntityManager> manager_;
+  weak_ptr<EntityManager> manager_;
   Entity::Id id_ = INVALID;
 };
 
@@ -216,11 +216,11 @@ struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
  */
 template <typename T>
 struct ComponentAddedEvent : public Event<ComponentAddedEvent<T>> {
-  ComponentAddedEvent(Entity entity, entityx::shared_ptr<T> component) :
+  ComponentAddedEvent(Entity entity, ptr<T> component) :
       entity(entity), component(component) {}
 
   Entity entity;
-  entityx::shared_ptr<T> component;
+  ptr<T> component;
 };
 
 /**
@@ -228,41 +228,50 @@ struct ComponentAddedEvent : public Event<ComponentAddedEvent<T>> {
  */
 template <typename T>
 struct ComponentRemovedEvent : public Event<ComponentRemovedEvent<T>> {
-  ComponentRemovedEvent(Entity entity, entityx::shared_ptr<T> component) :
+  ComponentRemovedEvent(Entity entity, ptr<T> component) :
       entity(entity), component(component) {}
 
   Entity entity;
-  entityx::shared_ptr<T> component;
+  ptr<T> component;
 };
 
 /**
  * Manages Entity::Id creation and component assignment.
  */
-class EntityManager : public entityx::enable_shared_from_this<EntityManager>, boost::noncopyable {
+class EntityManager : boost::noncopyable, public enable_shared_from_this<EntityManager> {
  public:
   typedef std::bitset<entityx::MAX_COMPONENTS> ComponentMask;
 
-  static entityx::shared_ptr<EntityManager> make(entityx::shared_ptr<EventManager> event_manager) {
-    return entityx::shared_ptr<EntityManager>(new EntityManager(event_manager));
+  explicit EntityManager(ptr<EventManager> event_manager);
+  virtual ~EntityManager();
+
+  static ptr<EntityManager> make(ptr<EventManager> event_manager) {
+    return ptr<EntityManager>(new EntityManager(event_manager));
   }
 
   class View {
    public:
-    typedef boost::function<bool (entityx::shared_ptr<EntityManager>, Entity::Id)> Predicate;
+    typedef boost::function<bool (const ptr<EntityManager> &, const Entity::Id &)> Predicate;
 
     /// A predicate that matches valid entities with the given component mask.
     class ComponentMaskPredicate {
      public:
-      ComponentMaskPredicate(const std::vector<ComponentMask> &entity_id, ComponentMask mask) : entity_id_(entity_id), mask_(mask) {}
+      ComponentMaskPredicate(const std::vector<ComponentMask> &entity_components, ComponentMask mask)
+          : entity_components_(entity_components), mask_(mask) {}
 
-      bool operator()(entityx::shared_ptr<EntityManager> entities, Entity::Id entity) {
-        return entities->entity_version_.at(entity.index()) == entity.version()
-            && (entity_id_.at(entity.index()) & mask_) == mask_;
+      bool operator()(const ptr<EntityManager> &entities, const Entity::Id &entity) {
+        return entities->entity_version_[entity.index()] == entity.version()
+            && (entity_components_[entity.index()] & mask_) == mask_;
       }
 
      private:
-      const std::vector<ComponentMask> &entity_id_;
+      const std::vector<ComponentMask> &entity_components_;
       ComponentMask mask_;
+    };
+
+    struct BaseUnpacker {
+      virtual ~BaseUnpacker() {}
+      virtual void unpack(const Entity::Id &id) = 0;
     };
 
     /// An iterator over a view of the entities in an EntityManager.
@@ -275,40 +284,47 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
       }
       bool operator == (const Iterator& rhs) const { return i_ == rhs.i_; }
       bool operator != (const Iterator& rhs) const { return i_ != rhs.i_; }
-      Entity operator * () { return Entity(view_.manager_, view_.manager_->create_id(i_)); }
-      const Entity operator * () const { return Entity(view_.manager_, view_.manager_->create_id(i_)); }
+      Entity operator * () { return Entity(manager_, manager_->create_id(i_)); }
+      const Entity operator * () const { return Entity(manager_, manager_->create_id(i_)); }
 
      private:
       friend class View;
 
-      Iterator(const View &view, uint32_t index) : view_(view), i_(index) {
+      Iterator(ptr<EntityManager> manager,
+               std::vector<Predicate> predicates,
+               std::vector<ptr<BaseUnpacker>> unpackers,
+               uint32_t index)
+          : manager_(manager), predicates_(predicates), unpackers_(unpackers), i_(index), capacity_(manager_->capacity()) {
         next();
       }
 
       void next() {
-        while (i_ < view_.manager_->capacity() && !predicate()) {
+        while (i_ < capacity_ && !predicate()) {
           ++i_;
         }
-        if (i_ < view_.manager_->capacity() && !view_.unpackers_.empty()) {
-          Entity::Id id = view_.manager_->create_id(i_);
-          for (auto &unpacker : view_.unpackers_) {
-            unpacker(id);
+        if (i_ < capacity_ && !unpackers_.empty()) {
+          Entity::Id id = manager_->create_id(i_);
+          for (auto &unpacker : unpackers_) {
+            unpacker->unpack(id);
           }
         }
       }
 
       bool predicate() {
-        Entity::Id id = view_.manager_->create_id(i_);
-        for (auto &p : view_.predicates_) {
-          if (!p(view_.manager_, id)) {
+        Entity::Id id = manager_->create_id(i_);
+        for (auto &p : predicates_) {
+          if (!p(manager_, id)) {
             return false;
           }
         }
         return true;
       }
 
-      const View &view_;
+      ptr<EntityManager> manager_;
+      std::vector<Predicate> predicates_;
+      std::vector<ptr<BaseUnpacker>> unpackers_;
       uint32_t i_;
+      size_t capacity_;
     };
 
     // Create a sub-view with an additional predicate.
@@ -316,19 +332,19 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
       predicates_.push_back(predicate);
     }
 
-    Iterator begin() { return Iterator(*this, 0); }
-    Iterator end() { return Iterator(*this, manager_->size()); }
-    const Iterator begin() const { return Iterator(*this, 0); }
-    const Iterator end() const { return Iterator(*this, manager_->size()); }
+    Iterator begin() { return Iterator(manager_, predicates_, unpackers_, 0); }
+    Iterator end() { return Iterator(manager_, predicates_, unpackers_, manager_->size()); }
+    const Iterator begin() const { return Iterator(manager_, predicates_, unpackers_, 0); }
+    const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_->size()); }
 
     template <typename A>
-    View &unpack_to(entityx::shared_ptr<A> &a) {
-      unpackers_.push_back(Unpacker<A>(manager_, a));
+    View &unpack_to(ptr<A> &a) {
+      unpackers_.push_back(ptr<Unpacker<A>>(new Unpacker<A>(manager_, a)));
       return *this;
     }
 
     template <typename A, typename B, typename ... Args>
-    View &unpack_to(entityx::shared_ptr<A> &a, entityx::shared_ptr<B> &b, Args && ... args) {
+    View &unpack_to(ptr<A> &a, ptr<B> &b, Args && ... args) {
       unpack_to<A>(a);
       return unpack_to<B, Args ...>(b, args ...);
     }
@@ -337,25 +353,25 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
     friend class EntityManager;
 
     template <typename T>
-    struct Unpacker {
-      Unpacker(entityx::shared_ptr<EntityManager> manager, entityx::shared_ptr<T> &c) : manager_(manager), c(c) {}
+    struct Unpacker : BaseUnpacker {
+      Unpacker(ptr<EntityManager> manager, ptr<T> &c) : manager_(manager), c(c) {}
 
-      void operator()(Entity::Id id) {
+      void unpack(const Entity::Id &id) {
         c = manager_->component<T>(id);
       }
 
      private:
-      entityx::shared_ptr<EntityManager> manager_;
-      entityx::shared_ptr<T> &c;
+      ptr<EntityManager> manager_;
+      ptr<T> &c;
     };
 
-    View(entityx::shared_ptr<EntityManager> manager, Predicate predicate) : manager_(manager) {
+    View(ptr<EntityManager> manager, Predicate predicate) : manager_(manager) {
       predicates_.push_back(predicate);
     }
 
-    entityx::shared_ptr<EntityManager> manager_;
+    ptr<EntityManager> manager_;
     std::vector<Predicate> predicates_;
-    std::vector<boost::function<void(Entity::Id)>> unpackers_;
+    std::vector<ptr<BaseUnpacker>> unpackers_;
   };
 
   /**
@@ -372,7 +388,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
    * Return true if the given entity ID is still valid.
    */
   bool valid(Entity::Id id) {
-    return id.index() < entity_version_.size() && entity_version_.at(id.index()) == id.version();
+    return id.index() < entity_version_.size() && entity_version_[id.index()] == id.version();
   }
 
   /**
@@ -385,11 +401,11 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
     if (free_list_.empty()) {
       index = index_counter_++;
       accomodate_entity(index);
-      version = entity_version_.at(index) = 1;
+      version = entity_version_[index] = 1;
     } else {
       index = free_list_.front();
       free_list_.pop_front();
-       version = entity_version_.at(index);
+       version = entity_version_[index];
     }
     Entity entity(shared_from_this(), Entity::Id(index, version));
     event_manager_->emit<EntityCreatedEvent>(entity);
@@ -403,18 +419,18 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
    */
   void destroy(Entity::Id entity) {
     assert(entity.index() < entity_component_mask_.size() && "Entity::Id ID outside entity vector range");
-    assert(entity_version_.at(entity.index()) == entity.version() && "Attempt to destroy Entity using a stale Entity::Id");
+    assert(entity_version_[entity.index()] == entity.version() && "Attempt to destroy Entity using a stale Entity::Id");
     event_manager_->emit<EntityDestroyedEvent>(Entity(shared_from_this(), entity));
     for (auto &components : entity_components_) {
-      components.at(entity.index()).reset();
+      components[entity.index()].reset();
     }
-    entity_component_mask_.at(entity.index()) = 0;
-    entity_version_.at(entity.index())++;
+    entity_component_mask_[entity.index()] = 0;
+    entity_version_[entity.index()]++;
     free_list_.push_back(entity.index());
   }
 
   Entity get(Entity::Id id) {
-    assert(entity_version_.at(id.index()) != id.version() && "Attempt to get() with stale Entity::Id");
+    assert(entity_version_[id.index()] != id.version() && "Attempt to get() with stale Entity::Id");
     return Entity(shared_from_this(), id);
   }
 
@@ -425,7 +441,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
    * fail if the ID is invalid.
    */
   Entity::Id create_id(uint32_t index) const {
-    return Entity::Id(index, entity_version_.at(index));
+    return Entity::Id(index, entity_version_[index]);
   }
 
   /**
@@ -434,11 +450,11 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
    * @returns component
    */
   template <typename C>
-  entityx::shared_ptr<C> assign(Entity::Id id, entityx::shared_ptr<C> component) {
-    entityx::shared_ptr<BaseComponent> base = entityx::static_pointer_cast<BaseComponent>(component);
+  ptr<C> assign(Entity::Id id, ptr<C> component) {
+    ptr<BaseComponent> base(static_pointer_cast<BaseComponent>(component));
     accomodate_component(C::family());
-    entity_components_.at(C::family()).at(id.index()) = base;
-    entity_component_mask_.at(id.index()) |= uint64_t(1) << C::family();
+    entity_components_[C::family()][id.index()] = base;
+    entity_component_mask_[id.index()] |= uint64_t(1) << C::family();
 
     event_manager_->emit<ComponentAddedEvent<C>>(Entity(shared_from_this(), id), component);
     return component;
@@ -447,13 +463,13 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
   /**
    * Assign a Component to an Entity::Id, optionally passing through Component constructor arguments.
    *
-   *   shared_ptr<Position> position = em.assign<Position>(e, x, y);
+   *     ptr<Position> position = em.assign<Position>(e, x, y);
    *
    * @returns Newly created component.
    */
   template <typename C, typename ... Args>
-  entityx::shared_ptr<C> assign(Entity::Id entity, Args && ... args) {
-    return assign<C>(entity, entityx::make_shared<C>(args ...));
+  ptr<C> assign(Entity::Id entity, Args && ... args) {
+    return assign<C>(entity, ptr<C>(new C(args ...)));
   }
 
   /**
@@ -462,10 +478,10 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
    * Emits a ComponentRemovedEvent<C> event.
    */
   template <typename C>
-  entityx::shared_ptr<C> remove(Entity::Id id) {
-    entityx::shared_ptr<C> component = entityx::static_pointer_cast<C>(entity_components_.at(C::family()).at(id.index()));
-    entity_components_.at(C::family()).at(id.index()).reset();
-    entity_component_mask_.at(id.index()) &= ~(uint64_t(1) << C::family());
+  ptr<C> remove(const Entity::Id &id) {
+    ptr<C> component(static_pointer_cast<C>(entity_components_[C::family()][id.index()]));
+    entity_components_[C::family()][id.index()].reset();
+    entity_component_mask_[id.index()] &= ~(uint64_t(1) << C::family());
     if (component)
       event_manager_->emit<ComponentRemovedEvent<C>>(Entity(shared_from_this(), id), component);
     return component;
@@ -474,16 +490,16 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
   /**
    * Retrieve a Component assigned to an Entity::Id.
    *
-   * @returns Component instance, or empty shared_ptr<> if the Entity::Id does not have that Component.
+   * @returns Component instance, or empty ptr<> if the Entity::Id does not have that Component.
    */
   template <typename C>
-  entityx::shared_ptr<C> component(Entity::Id id) {
+  ptr<C> component(const Entity::Id &id) {
     // We don't bother checking the component mask, as we return a nullptr anyway.
     if (C::family() >= entity_components_.size()) {
-      return entityx::shared_ptr<C>();
+      return ptr<C>();
     }
-    entityx::shared_ptr<BaseComponent> c = entity_components_.at(C::family()).at(id.index());
-    return entityx::static_pointer_cast<C>(c);
+    ptr<BaseComponent> c = entity_components_[C::family()][id.index()];
+    return ptr<C>(static_pointer_cast<C>(c));
   }
 
   /**
@@ -499,7 +515,7 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
    * Find Entities that have all of the specified Components.
    */
   template <typename C, typename ... Components>
-  View entities_with_components(entityx::shared_ptr<C> &c, Components && ... args) {
+  View entities_with_components(ptr<C> &c, Components && ... args) {
     auto mask = component_mask(c, args ...);
     return
         View(shared_from_this(), View::ComponentMaskPredicate(entity_component_mask_, mask))
@@ -513,12 +529,12 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
    *
    * Useful for fast bulk iterations.
    *
-   * entityx::shared_ptr<Position> p;
-   * entityx::shared_ptr<Direction> d;
+   * ptr<Position> p;
+   * ptr<Direction> d;
    * unpack<Position, Direction>(e, p, d);
    */
   template <typename A>
-  void unpack(Entity::Id id, entityx::shared_ptr<A> &a) {
+  void unpack(Entity::Id id, ptr<A> &a) {
     a = component<A>(id);
   }
 
@@ -529,12 +545,12 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
    *
    * Useful for fast bulk iterations.
    *
-   * entityx::shared_ptr<Position> p;
-   * entityx::shared_ptr<Direction> d;
+   * ptr<Position> p;
+   * ptr<Direction> d;
    * unpack<Position, Direction>(e, p, d);
    */
   template <typename A, typename B, typename ... Args>
-  void unpack(Entity::Id id, entityx::shared_ptr<A> &a, entityx::shared_ptr<B> &b, Args && ... args) {
+  void unpack(Entity::Id id, ptr<A> &a, ptr<B> &b, Args && ... args) {
     unpack<A>(id, a);
     unpack<B, Args ...>(id, b, args ...);
   }
@@ -545,9 +561,6 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
   void destroy_all();
 
  private:
-  explicit EntityManager(entityx::shared_ptr<EventManager> event_manager) : event_manager_(event_manager) {}
-
-
   template <typename C>
   ComponentMask component_mask() {
     ComponentMask mask;
@@ -561,12 +574,12 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
   }
 
   template <typename C>
-  ComponentMask component_mask(const entityx::shared_ptr<C> &c) {
+  ComponentMask component_mask(const ptr<C> &c) {
     return component_mask<C>();
   }
 
   template <typename C1, typename C2, typename ... Components>
-  ComponentMask component_mask(const entityx::shared_ptr<C1> &c1, const entityx::shared_ptr<C2> &c2, Components && ... args) {
+  ComponentMask component_mask(const ptr<C1> &c1, const ptr<C2> &c2, Components && ... args) {
     return component_mask<C1>(c1) | component_mask<C2, Components ...>(c2, args...);
   }
 
@@ -591,9 +604,9 @@ class EntityManager : public entityx::enable_shared_from_this<EntityManager>, bo
 
   uint32_t index_counter_ = 0;
 
-  entityx::shared_ptr<EventManager> event_manager_;
+  ptr<EventManager> event_manager_;
   // A nested array of: components = entity_components_[family][entity]
-  std::vector<std::vector<entityx::shared_ptr<BaseComponent>>> entity_components_;
+  std::vector<std::vector<ptr<BaseComponent>>> entity_components_;
   // Bitmask of components associated with each entity. Index into the vector is the Entity::Id.
   std::vector<ComponentMask> entity_component_mask_;
   // Vector of entity version numbers. Incremented each time an entity is destroyed
@@ -610,37 +623,37 @@ BaseComponent::Family Component<C>::family() {
 }
 
 template <typename C>
-entityx::shared_ptr<C> Entity::assign(entityx::shared_ptr<C> component) {
+ptr<C> Entity::assign(ptr<C> component) {
   assert(valid());
   return manager_.lock()->assign<C>(id_, component);
 }
 
 template <typename C, typename ... Args>
-entityx::shared_ptr<C> Entity::assign(Args && ... args) {
+ptr<C> Entity::assign(Args && ... args) {
   assert(valid());
   return manager_.lock()->assign<C>(id_, args ...);
 }
 
 template <typename C>
-entityx::shared_ptr<C> Entity::remove(){
+ptr<C> Entity::remove() {
   assert(valid() && component<C>());
   return manager_.lock()->remove<C>(id_);
 }
 
 template <typename C>
-entityx::shared_ptr<C> Entity::component() {
+ptr<C> Entity::component() {
   assert(valid());
   return manager_.lock()->component<C>(id_);
 }
 
 template <typename A>
-void Entity::unpack(entityx::shared_ptr<A> &a) {
+void Entity::unpack(ptr<A> &a) {
   assert(valid());
   manager_.lock()->unpack(id_, a);
 }
 
 template <typename A, typename B, typename ... Args>
-void Entity::unpack(entityx::shared_ptr<A> &a, entityx::shared_ptr<B> &b, Args && ... args) {
+void Entity::unpack(ptr<A> &a, ptr<B> &b, Args && ... args) {
   assert(valid());
   manager_.lock()->unpack(id_, a, b, args ...);
 }

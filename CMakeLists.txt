@@ -16,6 +16,7 @@ set(ENTITYX_USE_CPP11_STDLIB false CACHE BOOL "For Clang, specify whether to use
 set(ENTITYX_USE_STD_SHARED_PTR false CACHE BOOL "Use std::shared_ptr<T> rather than boost::shared_ptr<T>?")
 set(ENTITYX_BUILD_SHARED true CACHE BOOL "Build shared libraries?")
 set(ENTITYX_BUILD_PYTHON true CACHE BOOL "Build entityx::python?")
+set(ENTITYX_BOOST_SP_DISABLE_THREADS false CACHE BOOL "Disable multi-threading support in boost::shared_ptr")
 
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 include(CheckCXXSourceCompiles)
@@ -26,6 +27,12 @@ set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+
+
+if (ENTITYX_BOOST_SP_DISABLE_THREADS)
+    message("-- Disabled multi-threading support in Boost (see http://www.boost.org/doc/libs/1_54_0/libs/smart_ptr/shared_ptr.htm)")
+    add_definitions(-DBOOST_SP_DISABLE_THREADS=1)
+endif ()
 
 # C++11 feature checks
 include(CheckCXX11Features.cmake)

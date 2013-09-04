@@ -12,16 +12,21 @@
 
 // http://docs.python.org/2/extending/extending.html
 #include <Python.h>
-
+#include <boost/python.hpp>
+#include <boost/function.hpp>
+#include <list>
+#include <vector>
+#include <string>
+#include "entityx/System.h"
+#include "entityx/Entity.h"
+#include "entityx/Event.h"
 #include "entityx/config.h"
 
 // boost::python smart pointer adapter for std::shared_ptr<T>
-#if (ENTITYX_HAVE_STD_SHARED_PTR && ENTITYX_USE_STD_SHARED_PTR)
+#ifdef ENTITYX_NEED_GET_POINTER_SHARED_PTR_SPECIALIZATION
 
-#include <boost/python.hpp>
 #include <memory>
 
-#ifdef ENTITYX_NEED_GET_POINTER_SHARED_PTR_SPECIALIZATION
 
 namespace std {
 
@@ -30,35 +35,14 @@ template <class T> inline T * get_pointer(const std::shared_ptr<T> &p) {
   return p.get();
 }
 
-}
+}  // namespace std
+
 
 #endif
-
-namespace boost {
-namespace python {
-
-template <typename T> struct pointee<std::shared_ptr<T> > {
-  typedef T type;
-};
-
-}
-}
-
-#endif
-
-#include <list>
-#include <vector>
-#include <string>
-#include <boost/python.hpp>
-#include <boost/function.hpp>
-#include "entityx/System.h"
-#include "entityx/Entity.h"
-#include "entityx/Event.h"
 
 
 namespace entityx {
 namespace python {
-
 
 /**
  * An EntityX component that represents a Python script.
@@ -66,10 +50,10 @@ namespace python {
 class PythonComponent : public entityx::Component<PythonComponent> {
 public:
   /**
-   * Create a new PythonComponent from a Python class.
+   * Create a new PythonComponent from a Python Entity class.
    *
    * @param module The Python module where the Entity subclass resides.
-   * @param cls The Class within the module.
+   * @param cls The Class within the module. Must inherit from entityx.Entity.
    * @param args The *args to pass to the Python constructor.
    */
   template <typename ...Args>
@@ -160,7 +144,7 @@ private:
  * A helper function for class_ to assign a component to an entity.
  */
 template <typename Component>
-void assign_to(entityx::shared_ptr<Component> component, Entity &entity) {  // NOLINT
+void assign_to(ptr<Component> component, Entity &entity) {  // NOLINT
   entity.assign<Component>(component);
 }
 
@@ -170,7 +154,7 @@ void assign_to(entityx::shared_ptr<Component> component, Entity &entity) {  // N
  * entity.
  */
 template <typename Component>
-entityx::shared_ptr<Component> get_component(Entity &entity) {  // NOLINT
+ptr<Component> get_component(Entity &entity) {  // NOLINT
   return entity.component<Component>();
 }
 
@@ -206,7 +190,7 @@ class PythonSystem : public entityx::System<PythonSystem>, public entityx::Recei
 public:
   typedef boost::function<void (const std::string &)> LoggerFunction;
 
-  PythonSystem(entityx::shared_ptr<EntityManager> entity_manager);  // NOLINT
+  PythonSystem(ptr<EntityManager> entity_manager);  // NOLINT
   virtual ~PythonSystem();
 
   /**
@@ -234,11 +218,11 @@ public:
     return python_paths_;
   }
 
-  virtual void configure(entityx::shared_ptr<EventManager> event_manager) override;
-  virtual void update(entityx::shared_ptr<EntityManager> entities, entityx::shared_ptr<EventManager> event_manager, double dt) override;
+  virtual void configure(ptr<EventManager> event_manager) override;
+  virtual void update(ptr<EntityManager> entities, ptr<EventManager> event_manager, double dt) override;
 
   /**
-   * Set functions that writes to sys.stdout/sys.stderr will be passed to.
+   * Set line-based (not including \n) logger for stdout and stderr.
    */
   void log_to(LoggerFunction stdout, LoggerFunction stderr);
 
@@ -246,32 +230,34 @@ public:
    * Proxy events of type Event to any Python entity with a handler_name method.
    */
   template <typename Event>
-  void add_event_proxy(entityx::shared_ptr<EventManager> event_manager, const std::string &handler_name) {
-    auto proxy = entityx::make_shared<BroadcastPythonEventProxy<Event>>(handler_name);
-    event_manager->subscribe<Event>(*proxy);
-    event_proxies_.push_back(entityx::static_pointer_cast<PythonEventProxy>(proxy));
+  void add_event_proxy(ptr<EventManager> event_manager, const std::string &handler_name) {
+    ptr<BroadcastPythonEventProxy<Event>> proxy(new BroadcastPythonEventProxy<Event>(handler_name));
+    event_manager->subscribe<Event>(*proxy.get());
+    event_proxies_.push_back(static_pointer_cast<PythonEventProxy>(proxy));
   }
 
   /**
    * Proxy events of type Event using the given PythonEventProxy implementation.
    */
   template <typename Event, typename Proxy>
-  void add_event_proxy(entityx::shared_ptr<EventManager> event_manager, entityx::shared_ptr<Proxy> proxy) {
+  void add_event_proxy(ptr<EventManager> event_manager, ptr<Proxy> proxy) {
     event_manager->subscribe<Event>(*proxy);
-    event_proxies_.push_back(entityx::static_pointer_cast<PythonEventProxy>(proxy));
+    event_proxies_.push_back(static_pointer_cast<PythonEventProxy>(proxy));
   }
 
   void receive(const EntityDestroyedEvent &event);
   void receive(const ComponentAddedEvent<PythonComponent> &event);
+
 private:
   void initialize_python_module();
 
-  entityx::shared_ptr<EntityManager> entity_manager_;
+  weak_ptr<EntityManager> entity_manager_;
   std::vector<std::string> python_paths_;
   LoggerFunction stdout_, stderr_;
   static bool initialized_;
-  std::vector<entityx::shared_ptr<PythonEventProxy>> event_proxies_;
+  std::vector<ptr<PythonEventProxy>> event_proxies_;
+  int frame_ = 0;
 };
 
-}
-}
+}  // namespace python
+}  // namespace entityx

@@ -11,7 +11,7 @@ They allow you to declare your entities and components in an intuitive way:
         direction = Component(Direction)
         sprite = Component(Sprite, 'player.png')  # Sprite component with constructor argument
 
-        def update(self, dt):
+        def update(self, dt, frame):
             self.position.x += self.direction.x * dt
             self.position.x += self.direction.y * dt
 
@@ -100,3 +100,11 @@ class Entity(_entityx.Entity):
         self = Entity.__new__(cls, raw_entity=raw_entity)
         cls.__init__(self, *args, **kwargs)
         return self
+
+
+def emit(event):
+    """Emit an event.
+
+    :param event: A Python-exposed C++ subclass of entityx::BaseEvent.
+    """
+    return _entityx._event_manager.emit(event)

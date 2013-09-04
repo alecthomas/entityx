@@ -28,6 +28,7 @@ To add scripting support to your system, something like the following steps shou
 5. Create a `PythonSystem`, passing in the list of paths to add to Python's import search path.
 6. Optionally attach any event proxies.
 7. Create an entity and associate it with a Python script by assigning `PythonComponent`, passing it the package name, class name, and any constructor arguments.
+8. When finished, call `EntityManager::destroy_all()`.
 
 ## Interfacing with Python
 
@@ -49,7 +50,7 @@ struct Position : public Component<Position> {
 };
 
 void export_position_to_python() {
-  py::class_<PythonPosition, entityx::shared_ptr<PythonPosition>>("Position", py::init<py::optional<float, float>>())
+  py::class_<PythonPosition, entityx::ptr<PythonPosition>>("Position", py::init<py::optional<float, float>>())
     .def("assign_to", &entityx::python::assign_to<Position>)
     .def("get_component", &entityx::python::get_component<Position>)
     .staticmethod("get_component")
@@ -137,9 +138,8 @@ Then create and destroy `PythonSystem` as necessary:
 vector<string> paths;
 paths.push_back(MYGAME_PYTHON_PATH);
 // +any other Python paths...
-auto script_system = make_shared<PythonSystem>(paths);
+entityx::ptr<PythonSystem> script_system = new PythonSystem(paths);
 
 // Add any Event proxies.
-script_system->add_event_proxy<CollisionEvent>(
-    ev, entityx::make_shared<CollisionEventProxy>());
+script_system->add_event_proxy<CollisionEvent>(ev, new CollisionEventProxy());
 ```

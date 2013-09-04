@@ -9,10 +9,10 @@ using namespace entityx;
 
 class BenchmarksTest : public ::testing::Test {
 protected:
- BenchmarksTest() : ev(EventManager::make()), em(EntityManager::make(ev)) {}
+  BenchmarksTest() : ev(EventManager::make()), em(EntityManager::make(ev)) {}
 
- entityx::shared_ptr<EventManager> ev;
- entityx::shared_ptr<EntityManager> em;
+  ptr<EventManager> ev;
+  ptr<EntityManager> em;
 };
 
 
@@ -97,8 +97,8 @@ TEST_F(BenchmarksTest, TestEntityIteration) {
   cout << "iterating over " << count << " entities with a component 10 times" << endl;
 
   for (int i = 0; i < 10; ++i) {
-    for (auto e : em->entities_with_components<Position>()) {
-      entityx::shared_ptr<Position> position = e.component<Position>();
+    ptr<Position> position;
+    for (auto e : em->entities_with_components<Position>(position)) {
       position.get();
     }
   }

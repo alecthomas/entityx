@@ -12,6 +12,17 @@
 
 namespace entityx {
 
-BaseEvent::Family BaseEvent::family_counter_ = 0;
+BaseEvent::Family BaseEvent::family_counter_ = 1;
 
+EventManager::EventManager() {
 }
+
+EventManager::~EventManager() {
+}
+
+void EventManager::emit(const BaseEvent &event) {
+  auto sig = signal_for(event.my_family());
+  sig->emit(&event);
+}
+
+}  // namespace entityx

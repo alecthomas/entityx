@@ -42,6 +42,17 @@ TEST(EventManagerTest, TestEmitReceive) {
 }
 
 
+TEST(EventManagerTest, TestUntypedEmitReceive) {
+  auto em = EventManager::make();
+  ExplosionSystem explosion_system;
+  em->subscribe<Explosion>(explosion_system);
+  ASSERT_EQ(0, explosion_system.damage_received);
+  Explosion explosion(10);
+  em->emit(explosion);
+  ASSERT_EQ(10, explosion_system.damage_received);
+}
+
+
 TEST(EventManagerTest, TestReceiverExpired) {
   auto em = EventManager::make();
   {

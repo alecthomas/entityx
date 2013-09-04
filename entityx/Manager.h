@@ -19,10 +19,6 @@ namespace entityx {
 
 class Manager {
  public:
-  Manager() :
-    event_manager(EventManager::make()),
-    entity_manager(EntityManager::make(event_manager)),
-    system_manager(SystemManager::make(entity_manager, event_manager)) {}
   virtual ~Manager() {}
 
   void start();
@@ -30,6 +26,11 @@ class Manager {
   void stop();
 
  protected:
+  Manager() :
+    event_manager(EventManager::make()),
+    entity_manager(EntityManager::make(event_manager)),
+    system_manager(SystemManager::make(entity_manager, event_manager)) {}
+
   /**
    * Configure the world.
    *
@@ -52,13 +53,13 @@ class Manager {
    */
   virtual void update(double dt) = 0;
 
-  entityx::shared_ptr<EventManager> event_manager;
-  entityx::shared_ptr<EntityManager> entity_manager;
-  entityx::shared_ptr<SystemManager> system_manager;
+  ptr<EventManager> event_manager;
+  ptr<EntityManager> entity_manager;
+  ptr<SystemManager> system_manager;
 
  private:
   boost::timer timer_;
   bool running_ = false;
 };
 
-}
+}  // namespace entityx

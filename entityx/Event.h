@@ -27,10 +27,11 @@ namespace entityx {
 /// Used internally by the EventManager.
 class BaseEvent {
  public:
-  typedef entityx::shared_ptr<BaseEvent> Ptr;
   typedef uint64_t Family;
 
   virtual ~BaseEvent() {}
+
+  virtual Family my_family() const = 0;
 
  protected:
   static Family family_counter_;
@@ -38,8 +39,8 @@ class BaseEvent {
 
 
 typedef Simple::Signal<void (const BaseEvent*)> EventSignal;
-typedef entityx::shared_ptr<EventSignal> EventSignalPtr;
-typedef entityx::weak_ptr<EventSignal> EventSignalWeakPtr;
+typedef ptr<EventSignal> EventSignalPtr;
+typedef weak_ptr<EventSignal> EventSignalWeakPtr;
 
 
 /**
@@ -53,13 +54,13 @@ typedef entityx::weak_ptr<EventSignal> EventSignalWeakPtr;
 template <typename Derived>
 class Event : public BaseEvent {
  public:
-  typedef entityx::shared_ptr<Event<Derived>> Ptr;
-
   /// Used internally for registration.
   static Family family() {
     static Family family = family_counter_++;
     return family;
   }
+
+  virtual Family my_family() const override { return Derived::family(); }
 };
 
 
@@ -103,10 +104,13 @@ class Receiver : public BaseReceiver {
  *
  * Subscriptions are automatically removed when receivers are destroyed..
  */
-class EventManager : public entityx::enable_shared_from_this<EventManager>, boost::noncopyable {
+class EventManager : boost::noncopyable {
  public:
-  static entityx::shared_ptr<EventManager> make() {
-    return entityx::shared_ptr<EventManager>(new EventManager());
+  EventManager();
+  virtual ~EventManager();
+
+  static ptr<EventManager> make() {
+    return ptr<EventManager>(new EventManager());
   }
 
   /**
@@ -116,13 +120,13 @@ class EventManager : public entityx::enable_shared_from_this<EventManager>, boos
    *
    * eg.
    *
-   * struct ExplosionReceiver : public Receiver<ExplosionReceiver> {
-   *   void receive(const Explosion &explosion) {
-   *   }
-   * };
+   *     struct ExplosionReceiver : public Receiver<ExplosionReceiver> {
+   *       void receive(const Explosion &explosion) {
+   *       }
+   *     };
    *
-   * ExplosionReceiver receiver;
-   * em.subscribe<Explosion>(receiver);
+   *     ExplosionReceiver receiver;
+   *     em.subscribe<Explosion>(receiver);
    */
   template <typename E, typename Receiver>
   void subscribe(Receiver &receiver) {  //NOLINT
@@ -134,6 +138,17 @@ class EventManager : public entityx::enable_shared_from_this<EventManager>, boos
       std::make_pair(EventSignalWeakPtr(sig), connection));
   }
 
+  void emit(const BaseEvent &event);
+
+  /**
+   * Emit an already constructed event.
+   */
+  template <typename E>
+  void emit(ptr<E> event) {
+    auto sig = signal_for(E::family());
+    sig->emit(static_cast<BaseEvent*>(event.get()));
+  }
+
   /**
    * Emit an event to receivers.
    *
@@ -141,7 +156,7 @@ class EventManager : public entityx::enable_shared_from_this<EventManager>, boos
    *
    * eg.
    *
-   * entityx::shared_ptr<EventManager> em(entityx::make_shared<EventManager>());
+   * ptr<EventManager> em = new EventManager();
    * em->emit<Explosion>(10);
    *
    */
@@ -161,12 +176,10 @@ class EventManager : public entityx::enable_shared_from_this<EventManager>, boos
   }
 
  private:
-  EventManager() {}
-
   EventSignalPtr signal_for(int id) {
     auto it = handlers_.find(id);
     if (it == handlers_.end()) {
-      EventSignalPtr sig(entityx::make_shared<EventSignal>());
+      EventSignalPtr sig(new EventSignal());
       handlers_.insert(std::make_pair(id, sig));
       return sig;
     }

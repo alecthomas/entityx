@@ -38,8 +38,8 @@ An `Entity` is a convenience class wrapping an opaque `uint64_t` value allocated
 Creating an entity is as simple as:
 
 ```c++
-entityx::shared_ptr<EventManager> events = EventManager::make();
-entityx::shared_ptr<EntityManager> entities = EntityManager::make(events);
+entityx::ptr<EventManager> events = EventManager::make();
+entityx::ptr<EntityManager> entities = EntityManager::make(events);
 
 Entity entity = entities->create();
 ```
@@ -57,6 +57,7 @@ entity.destroy();
 - When an entity is destroyed the manager adds its ID to a free list and invalidates the Entity handle.
 - When an entity is created IDs are recycled from the free list before allocating new ones.
 - An Entity ID contains an index and a version. When an entity is destroyed, the version associated with the index is incremented, invalidating all previous entities referencing the previous ID.
+- EntityX uses a reference counting smart pointer`entityx::ptr<T>` to manage object lifetimes. As a general rule, passing a pointer to any EntityX method will convert to a smart pointer and take ownership. To maintain your own reference to the pointer you will need to wrap it in `entityx::ptr<T>`.
 
 ### Components (entity data)
 
@@ -94,7 +95,7 @@ entity.assign<Position>(1.0f, 2.0f);
 You can also assign existing instances of components:
 
 ```c++
-entityx::shared_ptr<Position> position = entityx::make_shared<Position>(1.0f, 2.0f);
+entityx::ptr<Position> position = new Position(1.0f, 2.0f);
 entity.assign(position);
 ```
 
@@ -104,8 +105,8 @@ To query all entities with a set of components assigned, use ``EntityManager::en
 
 ```c++
 for (auto entity : entities->entities_with_components<Position, Direction>()) {
-  entityx::shared_ptr<Position> position = entity.component<Position>();
-  entityx::shared_ptr<Direction> direction = entity.component<Direction>();
+  entityx::ptr<Position> position = entity.component<Position>();
+  entityx::ptr<Direction> direction = entity.component<Direction>();
 
   // Do things with entity, position and direction.
 }
@@ -114,7 +115,7 @@ for (auto entity : entities->entities_with_components<Position, Direction>()) {
 To retrieve a component associated with an entity use ``Entity::component<C>()``:
 
 ```c++
-entityx::shared_ptr<Position> position = entity.component<Position>();
+entityx::ptr<Position> position = entity.component<Position>();
 if (position) {
   // Do stuff with position
 }
@@ -133,10 +134,10 @@ A basic movement system might be implemented with something like the following:
 
 ```c++
 struct MovementSystem : public System<MovementSystem> {
-  void update(entityx::shared_ptr<EntityManager> es, entityx::shared_ptr<EventManager> events, double dt) override {
+  void update(entityx::ptr<EntityManager> es, entityx::ptr<EventManager> events, double dt) override {
     for (auto entity : es->entities_with_components<Position, Direction>()) {
-      entityx::shared_ptr<Position> position = entity.component<Position>();
-      entityx::shared_ptr<Direction> direction = entity.component<Direction>();
+      entityx::ptr<Position> position = entity.component<Position>();
+      entityx::ptr<Direction> direction = entity.component<Direction>();
 
       position->x += direction->x * dt;
       position->y += direction->y * dt;
@@ -171,10 +172,10 @@ Next we implement our collision system, which emits ``Collision`` objects via an
 ```c++
 class CollisionSystem : public System<CollisionSystem> {
  public:
-  void update(entityx::shared_ptr<EntityManager> es, entityx::shared_ptr<EventManager> events, double dt) override {
-    entityx::shared_ptr<Position> left_position, right_position;
-    for (auto left_entity : es.entities_with_components<Position>()) {
-      for (auto right_entity : es.entities_with_components<Position>()) {
+  void update(entityx::ptr<EntityManager> es, entityx::ptr<EventManager> events, double dt) override {
+    entityx::ptr<Position> left_position, right_position;
+    for (auto left_entity : es.entities_with_components<Position>(left_position)) {
+      for (auto right_entity : es.entities_with_components<Position>(right_position)) {
         if (collide(left_position, right_position)) {
           events.emit<Collision>(left_entity, right_entity);
         }
@@ -190,8 +191,8 @@ Objects interested in receiving collision information can subscribe to ``Collisi
 
 ```c++
 struct DebugSystem : public System<DebugSystem>, Receiver<DebugSystem> {
-  void configure(EventManager &event_manager) {
-    event_manager.subscribe<Collision>(*this);
+  void configure(entityx::ptr<EventManager> event_manager) {
+    event_manager->subscribe<Collision>(*this);
   }
 
   void receive(const Collision &collision) {
@@ -210,7 +211,7 @@ Several events are emitted by EntityX itself:
   - `Entity entity` - Entity about to be destroyed.
 - `ComponentAddedEvent<T>` - emitted when a new component is added to an entity.
   - `Entity entity` - Entity that component was added to.
-  - `entityx::shared_ptr<T> component` - The component added.
+  - `entityx::ptr<T> component` - The component added.
 
 #### Implementation notes
 

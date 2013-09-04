@@ -31,6 +31,12 @@ bool Entity::valid() const {
   return !manager_.expired() && manager_.lock()->valid(id_);
 }
 
+EntityManager::EntityManager(ptr<EventManager> event_manager) : event_manager_(event_manager) {
+}
+
+EntityManager::~EntityManager() {
+}
+
 void EntityManager::destroy_all() {
   entity_components_.clear();
   entity_component_mask_.clear();
@@ -39,4 +45,4 @@ void EntityManager::destroy_all() {
 }
 
 
-}
+}  // namespace entityx

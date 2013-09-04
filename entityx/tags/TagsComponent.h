@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include <string>
 #include <boost/unordered_set.hpp>
+#include <string>
 #include "entityx/Entity.h"
 
 namespace entityx {
@@ -22,11 +22,11 @@ namespace tags {
  */
 class TagsComponent : public Component<TagsComponent> {
   struct TagsPredicate {
-    TagsPredicate(const std::string &tag) : tag(tag) {}
+    explicit TagsPredicate(const std::string &tag) : tag(tag) {}
 
-    bool operator () (entityx::shared_ptr<EntityManager> manager, Entity::Id id) {
+    bool operator() (ptr<EntityManager> manager, Entity::Id id) {
       auto tags = manager->component<TagsComponent>(id);
-      return tags != nullptr && tags->tags.find(tag) != tags->tags.end();
+      return tags && tags->tags.find(tag) != tags->tags.end();
     }
 
     std::string tag;
@@ -64,5 +64,5 @@ class TagsComponent : public Component<TagsComponent> {
   }
 };
 
-}
-}
+}  // namespace tags
+}  // namespace entityx
