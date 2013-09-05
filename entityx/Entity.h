@@ -291,8 +291,8 @@ class EntityManager : boost::noncopyable, public enable_shared_from_this<EntityM
       friend class View;
 
       Iterator(ptr<EntityManager> manager,
-               std::vector<Predicate> predicates,
-               std::vector<ptr<BaseUnpacker>> unpackers,
+               const std::vector<Predicate> &predicates,
+               const std::vector<ptr<BaseUnpacker>> &unpackers,
                uint32_t index)
           : manager_(manager), predicates_(predicates), unpackers_(unpackers), i_(index), capacity_(manager_->capacity()) {
         next();
