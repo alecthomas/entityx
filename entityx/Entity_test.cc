@@ -8,6 +8,7 @@
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
+#include <algorithm>
 #include <iterator>
 #include <string>
 #include <utility>
@@ -368,4 +369,26 @@ TEST_F(EntityManagerTest, TestEntityDestroyAll) {
   em->destroy_all();
   ASSERT_FALSE(a.valid());
   ASSERT_FALSE(b.valid());
+}
+
+
+TEST_F(EntityManagerTest, TestEntityDestroyHole) {
+  std::vector<Entity> entities;
+
+  auto count = [this]() {
+    auto e = em->entities_with_components<Position>();
+    return std::count_if(e.begin(), e.end(), [] (const Entity &) { return true; });
+  };
+
+  for (int i = 0; i < 5000; i++) {
+    auto e = em->create();
+    e.assign<Position>();
+    entities.push_back(e);
+  }
+
+  ASSERT_EQ(count(), 5000);
+
+  entities[2500].destroy();
+
+  ASSERT_EQ(count(), 4999);
 }

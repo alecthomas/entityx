@@ -302,6 +302,7 @@ class EntityManager : boost::noncopyable, public enable_shared_from_this<EntityM
         while (i_ < capacity_ && !predicate()) {
           ++i_;
         }
+
         if (i_ < capacity_ && !unpackers_.empty()) {
           Entity::Id id = manager_->create_id(i_);
           for (auto &unpacker : unpackers_) {
@@ -333,9 +334,9 @@ class EntityManager : boost::noncopyable, public enable_shared_from_this<EntityM
     }
 
     Iterator begin() { return Iterator(manager_, predicates_, unpackers_, 0); }
-    Iterator end() { return Iterator(manager_, predicates_, unpackers_, manager_->size()); }
+    Iterator end() { return Iterator(manager_, predicates_, unpackers_, manager_->capacity()); }
     const Iterator begin() const { return Iterator(manager_, predicates_, unpackers_, 0); }
-    const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_->size()); }
+    const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_->capacity()); }
 
     template <typename A>
     View &unpack_to(ptr<A> &a) {
