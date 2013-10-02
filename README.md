@@ -1,8 +1,8 @@
-# EntityX - A fast, type-safe C++ Entity-Component system
+# EntityX - A fast, type-safe C++ entityx::Entity-entityx::Component system
 
 [![Build Status](https://travis-ci.org/alecthomas/entityx.png)](https://travis-ci.org/alecthomas/entityx)
 
-Entity-Component (EC) systems are a form of decomposition that completely decouples entity logic and data from the entity "objects" themselves. The [Evolve your Hierarchy](http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/) article provides a solid overview of EC systems and why you should use them.
+entityx::Entity-entityx::Component (EC) systems are a form of decomposition that completely decouples entity logic and data from the entity "objects" themselves. The [Evolve your Hierarchy](http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/) article provides a solid overview of EC systems and why you should use them.
 
 EntityX is an EC system that uses C++11 features to provide type-safe component management, event delivery, etc. It was built during the creation of a 2D space shooter.
 
@@ -23,7 +23,7 @@ See the [ChangeLog](https://github.com/alecthomas/entityx/blob/master/CHANGES.md
 
 ## Overview
 
-In EntityX data associated with an entity is called a `Component`. `Systems` encapsulate logic and can use as many component types as necessary. An `EventManager` allows systems to interact without being tightly coupled. Finally, a `Manager` object ties all of the systems together for convenience.
+In EntityX data associated with an entity is called a `entityx::Component`. `Systems` encapsulate logic and can use as many component types as necessary. An `entityx::EventManager` allows systems to interact without being tightly coupled. Finally, a `Manager` object ties all of the systems together for convenience.
 
 As an example, a physics system might need *position* and *mass* data, while a collision system might only need *position* - the data would be logically separated into two components, but usable by any system. The physics system might emit *collision* events whenever two entities collide.
 
@@ -31,17 +31,23 @@ As an example, a physics system might need *position* and *mass* data, while a c
 
 Following is some skeleton code that implements `Position` and `Direction` components, a `MovementSystem` using these data components, and a `CollisionSystem` that emits `Collision` events when two entities collide.
 
+To start with, add the following line to your source file:
+
+```c++
+#include "entityx/entityx.h"
+```
+
 ### Entities
 
-An `Entity` is a convenience class wrapping an opaque `uint64_t` value allocated by the `EntityManager`. Each entity has a set of components associated with it that can be added, queried or retrieved directly.
+An `entityx::Entity` is a convenience class wrapping an opaque `uint64_t` value allocated by the `entityx::EntityManager`. Each entity has a set of components associated with it that can be added, queried or retrieved directly.
 
 Creating an entity is as simple as:
 
 ```c++
-entityx::ptr<EventManager> events = EventManager::make();
-entityx::ptr<EntityManager> entities = EntityManager::make(events);
+entityx::ptr<entityx::EventManager> events(new entityx::EventManager());
+entityx::ptr<entityx::EntityManager> entities(new entityx::EntityManager(event));
 
-Entity entity = entities->create();
+entityx::Entity entity = entities->create();
 ```
 
 And destroying an entity is done with:
@@ -52,31 +58,31 @@ entity.destroy();
 
 #### Implementation details
 
-- Each Entity is a convenience class wrapping an Entity::Id.
-- An Entity handle can be invalidated with `invalidate()`. This does not affect the underlying entity.
-- When an entity is destroyed the manager adds its ID to a free list and invalidates the Entity handle.
+- Each entityx::Entity is a convenience class wrapping an entityx::Entity::Id.
+- An entityx::Entity handle can be invalidated with `invalidate()`. This does not affect the underlying entity.
+- When an entity is destroyed the manager adds its ID to a free list and invalidates the entityx::Entity handle.
 - When an entity is created IDs are recycled from the free list before allocating new ones.
-- An Entity ID contains an index and a version. When an entity is destroyed, the version associated with the index is incremented, invalidating all previous entities referencing the previous ID.
+- An entityx::Entity ID contains an index and a version. When an entity is destroyed, the version associated with the index is incremented, invalidating all previous entities referencing the previous ID.
 - EntityX uses a reference counting smart pointer`entityx::ptr<T>` to manage object lifetimes. As a general rule, passing a pointer to any EntityX method will convert to a smart pointer and take ownership. To maintain your own reference to the pointer you will need to wrap it in `entityx::ptr<T>`.
 
 ### Components (entity data)
 
 The general idea with the EntityX interpretation of ECS is to have as little functionality in components as possible. All logic should be contained in Systems.
 
-To that end Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) consisting of self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `Component<T>`.
+To that end Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) consisting of self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `entityx::Component<T>`.
 
 #### Creating components
 
 As an example, position and direction information might be represented as:
 
 ```c++
-struct Position : Component<Position> {
+struct Position : entityx::Component<Position> {
   Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   float x, y;
 };
 
-struct Direction : Component<Direction> {
+struct Direction : entityx::Component<Direction> {
   Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   float x, y;
@@ -85,7 +91,7 @@ struct Direction : Component<Direction> {
 
 #### Assigning components to entities
 
-To associate a component with a previously created entity call ``Entity::assign<C>()`` with the component type, and any component constructor arguments:
+To associate a component with a previously created entity call ``entityx::Entity::assign<C>()`` with the component type, and any component constructor arguments:
 
 ```c++
 // Assign a Position with x=1.0f and y=2.0f to "entity"
@@ -101,7 +107,7 @@ entity.assign(position);
 
 #### Querying entities and their components
 
-To query all entities with a set of components assigned, use ``EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
+To query all entities with a set of components assigned, use ``entityx::EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
 
 ```c++
 for (auto entity : entities->entities_with_components<Position, Direction>()) {
@@ -112,7 +118,7 @@ for (auto entity : entities->entities_with_components<Position, Direction>()) {
 }
 ```
 
-To retrieve a component associated with an entity use ``Entity::component<C>()``:
+To retrieve a component associated with an entity use ``entityx::Entity::component<C>()``:
 
 ```c++
 entityx::ptr<Position> position = entity.component<Position>();
@@ -124,7 +130,7 @@ if (position) {
 #### Implementation notes
 
 - Components must provide a no-argument constructor.
-- The default implementation can handle up to 64 components in total. This can be extended by changing the `EntityManager::MAX_COMPONENTS` constant.
+- The default implementation can handle up to 64 components in total. This can be extended by changing the `entityx::EntityManager::MAX_COMPONENTS` constant.
 
 ### Systems (implementing behavior)
 
@@ -134,7 +140,7 @@ A basic movement system might be implemented with something like the following:
 
 ```c++
 struct MovementSystem : public System<MovementSystem> {
-  void update(entityx::ptr<EntityManager> es, entityx::ptr<EventManager> events, double dt) override {
+  void update(entityx::ptr<entityx::EntityManager> es, entityx::ptr<entityx::EventManager> events, double dt) override {
     for (auto entity : es->entities_with_components<Position, Direction>()) {
       entityx::ptr<Position> position = entity.component<Position>();
       entityx::ptr<Direction> direction = entity.component<Direction>();
@@ -148,7 +154,7 @@ struct MovementSystem : public System<MovementSystem> {
 
 ### Events (communicating between systems)
 
-Events are objects emitted by systems, typically when some condition is met. Listeners subscribe to an event type and will receive a callback for each event object emitted. An ``EventManager`` coordinates subscription and delivery of events between subscribers and emitters. Typically subscribers will be other systems, but need not be.
+Events are objects emitted by systems, typically when some condition is met. Listeners subscribe to an event type and will receive a callback for each event object emitted. An ``entityx::EventManager`` coordinates subscription and delivery of events between subscribers and emitters. Typically subscribers will be other systems, but need not be.
 Events are not part of the original ECS pattern, but they are an efficient alternative to component flags for sending infrequent data.
 
 As an example, we might want to implement a very basic collision system using our ``Position`` data from above.
@@ -159,25 +165,25 @@ First, we define the event type, which for our example is simply the two entitie
 
 ```c++
 struct Collision : public Event<Collision> {
-  Collision(Entity left, Entity right) : left(left), right(right) {}
+  Collision(entityx::Entity left, entityx::Entity right) : left(left), right(right) {}
 
-  Entity left, right;
+  entityx::Entity left, right;
 };
 ```
 
 #### Emitting events
 
-Next we implement our collision system, which emits ``Collision`` objects via an ``EventManager`` instance whenever two entities collide.
+Next we implement our collision system, which emits ``Collision`` objects via an ``entityx::EventManager`` instance whenever two entities collide.
 
 ```c++
 class CollisionSystem : public System<CollisionSystem> {
  public:
-  void update(entityx::ptr<EntityManager> es, entityx::ptr<EventManager> events, double dt) override {
+  void update(entityx::ptr<entityx::EntityManager> es, entityx::ptr<entityx::EventManager> events, double dt) override {
     entityx::ptr<Position> left_position, right_position;
-    for (auto left_entity : es.entities_with_components<Position>(left_position)) {
-      for (auto right_entity : es.entities_with_components<Position>(right_position)) {
+    for (auto left_entity : es->entities_with_components<Position>(left_position)) {
+      for (auto right_entity : es->entities_with_components<Position>(right_position)) {
         if (collide(left_position, right_position)) {
-          events.emit<Collision>(left_entity, right_entity);
+          events->emit<Collision>(left_entity, right_entity);
         }
       }
     }
@@ -191,9 +197,11 @@ Objects interested in receiving collision information can subscribe to ``Collisi
 
 ```c++
 struct DebugSystem : public System<DebugSystem>, Receiver<DebugSystem> {
-  void configure(entityx::ptr<EventManager> event_manager) {
+  void configure(entityx::ptr<entityx::EventManager> event_manager) {
     event_manager->subscribe<Collision>(*this);
   }
+
+  void update(ptr<entityx::EntityManager> entities, ptr<entityx::EventManager> events, double dt) {}
 
   void receive(const Collision &collision) {
     LOG(DEBUG) << "entities collided: " << collision.left << " and " << collision.right << endl;
@@ -205,13 +213,16 @@ struct DebugSystem : public System<DebugSystem>, Receiver<DebugSystem> {
 
 Several events are emitted by EntityX itself:
 
-- `EntityCreatedEvent` - emitted when a new Entity has been created.
-  - `Entity entity` - Newly created Entity.
-- `EntityDestroyedEvent` - emitted when an Entity is *about to be* destroyed.
-  - `Entity entity` - Entity about to be destroyed.
+- `EntityCreatedEvent` - emitted when a new entityx::Entity has been created.
+  - `entityx::Entity entity` - Newly created entityx::Entity.
+- `EntityDestroyedEvent` - emitted when an entityx::Entity is *about to be* destroyed.
+  - `entityx::Entity entity` - entityx::Entity about to be destroyed.
 - `ComponentAddedEvent<T>` - emitted when a new component is added to an entity.
-  - `Entity entity` - Entity that component was added to.
+  - `entityx::Entity entity` - entityx::Entity that component was added to.
   - `entityx::ptr<T> component` - The component added.
+- `ComponentRemovedEvent<T>` - emitted when a component is removed from an entity.
+  - `entityx::Entity entity` - entityx::Entity that component was removed from.
+  - `entityx::ptr<T> component` - The component removed.
 
 #### Implementation notes
 
@@ -233,12 +244,13 @@ class GameManager : public Manager {
     system_manager->add<DebugSystem>();
     system_manager->add<MovementSystem>();
     system_manager->add<CollisionSystem>();
+    system_manager->configure();
   }
 
   void initialize() {
     // Create some entities in random locations heading in random directions
     for (int i = 0; i < 100; ++i) {
-      Entity entity = entity_manager->create();
+      entityx::Entity entity = entity_manager->create();
       entity.assign<Position>(rand() % 100, rand() % 100);
       entity.assign<Direction>((rand() % 10) - 5, (rand() % 10) - 5);
     }

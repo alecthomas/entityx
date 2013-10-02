@@ -375,7 +375,7 @@ TEST_F(EntityManagerTest, TestEntityDestroyAll) {
 TEST_F(EntityManagerTest, TestEntityDestroyHole) {
   std::vector<Entity> entities;
 
-  auto count = [this]() {
+  auto count = [this]() -> int {
     auto e = em->entities_with_components<Position>();
     return std::count_if(e.begin(), e.end(), [] (const Entity &) { return true; });
   };
