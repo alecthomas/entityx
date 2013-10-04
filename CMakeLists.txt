@@ -102,7 +102,7 @@ set(install_libs entityx)
 
 include(CheckCXX11SharedPtr.cmake)
 
-set(sources entityx/tags/TagsComponent.cc entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/Manager.cc)
+set(sources entityx/tags/TagsComponent.cc entityx/deps/Dependencies.cc entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/Manager.cc)
 add_library(entityx STATIC ${sources})
 
 if (ENTITYX_BUILD_SHARED)
@@ -157,6 +157,7 @@ if (ENTITYX_BUILD_TESTING)
     create_test(event_test entityx/Event_test.cc)
     create_test(system_test entityx/System_test.cc)
     create_test(tags_component_test entityx/tags/TagsComponent_test.cc)
+    create_test(dependencies_test entityx/deps/Dependencies_test.cc)
     if (Boost_PYTHON_LIBRARY)
         add_definitions(-DENTITYX_PYTHON_TEST_DATA=\"${CMAKE_CURRENT_SOURCE_DIR}/entityx/python\")
         create_test(python_test entityx/python/PythonSystem_test.cc entityx_python ${Boost_PYTHON_LIBRARY} ${PYTHON_LIBRARIES})
