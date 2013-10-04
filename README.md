@@ -127,6 +127,18 @@ if (position) {
 }
 ```
 
+#### Component dependencies
+
+In the case where a component has dependencies on other components, a helper class exists that will automatically create these dependencies.
+
+eg. The following will also add `Position` and `Direction` components when a `Physics` component is added to an entity.
+
+```c++
+#include "entityx/deps/Dependency.h"
+
+system_manager->add<entityx::deps::Depdendency<Physics, Position, Direction>>();
+```
+
 #### Implementation notes
 
 - Components must provide a no-argument constructor.
