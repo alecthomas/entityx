@@ -1,4 +1,5 @@
-# EntityX - A fast, type-safe C++ Entity Component System
+# EntityX - A fast, type-safe C++ Entity Component System 
+(No Boost Branch)
 
 [![Build Status](https://travis-ci.org/alecthomas/entityx.png)](https://travis-ci.org/alecthomas/entityx)
 
