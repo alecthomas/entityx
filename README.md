@@ -58,11 +58,11 @@ entity.destroy();
 
 #### Implementation details
 
-- Each entityx::Entity is a convenience class wrapping an entityx::Entity::Id.
-- An entityx::Entity handle can be invalidated with `invalidate()`. This does not affect the underlying entity.
-- When an entity is destroyed the manager adds its ID to a free list and invalidates the entityx::Entity handle.
+- Each `entityx::Entity` is a convenience class wrapping an `entityx::Entity::Id`.
+- An `entityx::Entity` handle can be invalidated with `invalidate()`. This does not affect the underlying entity.
+- When an entity is destroyed the manager adds its ID to a free list and invalidates the `entityx::Entity` handle.
 - When an entity is created IDs are recycled from the free list before allocating new ones.
-- An entityx::Entity ID contains an index and a version. When an entity is destroyed, the version associated with the index is incremented, invalidating all previous entities referencing the previous ID.
+- An `entityx::Entity` ID contains an index and a version. When an entity is destroyed, the version associated with the index is incremented, invalidating all previous entities referencing the previous ID.
 - EntityX uses a reference counting smart pointer`entityx::ptr<T>` to manage object lifetimes. As a general rule, passing a pointer to any EntityX method will convert to a smart pointer and take ownership. To maintain your own reference to the pointer you will need to wrap it in `entityx::ptr<T>`.
 
 ### Components (entity data)
