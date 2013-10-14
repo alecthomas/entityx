@@ -432,7 +432,7 @@ class EntityManager : boost::noncopyable, public enable_shared_from_this<EntityM
   }
 
   Entity get(Entity::Id id) {
-    assert(entity_version_[id.index()] != id.version() && "Attempt to get() with stale Entity::Id");
+    assert(entity_version_[id.index()] == id.version() && "Attempt to get() with stale Entity::Id");
     return Entity(shared_from_this(), id);
   }
 
