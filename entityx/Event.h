@@ -11,14 +11,12 @@
 #pragma once
 
 #include <stdint.h>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/unordered_map.hpp>
 #include <list>
 #include <utility>
+#include <unordered_map>
 #include "entityx/config.h"
 #include "entityx/3rdparty/simplesignal.h"
+#include "entityx/help/NonCopyable.h"
 
 
 namespace entityx {
@@ -104,7 +102,7 @@ class Receiver : public BaseReceiver {
  *
  * Subscriptions are automatically removed when receivers are destroyed..
  */
-class EventManager : boost::noncopyable {
+class EventManager : entityx::help::NonCopyable {
  public:
   EventManager();
   virtual ~EventManager();
@@ -132,7 +130,7 @@ class EventManager : boost::noncopyable {
   void subscribe(Receiver &receiver) {  //NOLINT
     void (Receiver::*receive)(const E &) = &Receiver::receive;
     auto sig = signal_for(E::family());
-    auto wrapper = EventCallbackWrapper<E>(boost::bind(receive, &receiver, _1));
+    auto wrapper = EventCallbackWrapper<E>(std::bind(receive, &receiver, std::placeholders::_1));
     auto connection = sig->connect(wrapper);
     static_cast<BaseReceiver&>(receiver).connections_.push_back(
       std::make_pair(EventSignalWeakPtr(sig), connection));
@@ -189,12 +187,12 @@ class EventManager : boost::noncopyable {
   // Functor used as an event signal callback that casts to E.
   template <typename E>
   struct EventCallbackWrapper {
-    EventCallbackWrapper(boost::function<void(const E &)> callback) : callback(callback) {}
+    EventCallbackWrapper(std::function<void(const E &)> callback) : callback(callback) {}
     void operator()(const BaseEvent* event) { callback(*(static_cast<const E*>(event))); }
-    boost::function<void(const E &)> callback;
+    std::function<void(const E &)> callback;
   };
 
-  boost::unordered_map<int, EventSignalPtr> handlers_;
+  std::unordered_map<int, EventSignalPtr> handlers_;
 };
 
 }  // namespace entityx

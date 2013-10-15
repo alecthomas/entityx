@@ -25,6 +25,7 @@
 
 #include "entityx/config.h"
 #include "entityx/Event.h"
+#include "entityx/help/NonCopyable.h"
 
 namespace entityx {
 
@@ -239,7 +240,7 @@ struct ComponentRemovedEvent : public Event<ComponentRemovedEvent<T>> {
 /**
  * Manages Entity::Id creation and component assignment.
  */
-class EntityManager : boost::noncopyable, public enable_shared_from_this<EntityManager> {
+class EntityManager : entityx::help::NonCopyable, public enable_shared_from_this<EntityManager> {
  public:
   typedef std::bitset<entityx::MAX_COMPONENTS> ComponentMask;
 
@@ -252,7 +253,7 @@ class EntityManager : boost::noncopyable, public enable_shared_from_this<EntityM
 
   class View {
    public:
-    typedef boost::function<bool (const ptr<EntityManager> &, const Entity::Id &)> Predicate;
+    typedef std::function<bool (const ptr<EntityManager> &, const Entity::Id &)> Predicate;
 
     /// A predicate that matches valid entities with the given component mask.
     class ComponentMaskPredicate {

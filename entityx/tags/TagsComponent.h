@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include <boost/unordered_set.hpp>
 #include <string>
+#include <unordered_set>
 #include "entityx/Entity.h"
 
 namespace entityx {
@@ -50,7 +50,7 @@ class TagsComponent : public Component<TagsComponent> {
     return EntityManager::View(view, TagsPredicate(tag));
   }
 
-  boost::unordered_set<std::string> tags;
+  std::unordered_set<std::string> tags;
 
  private:
   template <typename ... Args>
