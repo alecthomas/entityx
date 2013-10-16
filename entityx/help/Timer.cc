@@ -25,12 +25,12 @@ Timer::~Timer()
 
 void Timer::restart()
 {
-
+	_start = std::chrono::system_clock::now();
 }
 
 double Timer::elapsed()
 {
-	return 1.0;
+	return std::chrono::duration<double>(std::chrono::system_clock::now() - _start);
 }
 
 } // namespace help

@@ -7,8 +7,9 @@
  *
  * Author: Antony Woods <antony@teamwoods.org>
  */
-
 #pragma once
+
+ #include <chrono>
 
 namespace entityx {
 namespace help {
@@ -21,6 +22,8 @@ public:
 
 	void restart();
 	double elapsed();
+private:
+	std::chrono::time_point<std::chrono::system_clock> _start;
 };
 
 } // namespace help

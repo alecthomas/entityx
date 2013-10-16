@@ -15,7 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include "entityx/python/PythonSystem.h"
-#include "entityx/help/NonCopyableEvent.h"
+#include "entityx/help/NonCopyable.h"
 
 namespace py = boost::python;
 

@@ -13,10 +13,8 @@ set(ENTITYX_RUN_BENCHMARKS false CACHE BOOL "Run benchmarks (in conjunction with
 set(ENTITYX_MAX_COMPONENTS 64 CACHE STRING "Set the maximum number of components.")
 set(ENTITYX_USE_CPP11_STDLIB false CACHE BOOL "For Clang, specify whether to use libc++ (-stdlib=libc++).")
 # Check for which shared_ptr implementation to use.
-set(ENTITYX_USE_STD_SHARED_PTR true CACHE BOOL "Use std::shared_ptr<T> rather than boost::shared_ptr<T>?")
 set(ENTITYX_BUILD_SHARED false CACHE BOOL "Build shared libraries?")
 set(ENTITYX_BUILD_PYTHON false CACHE BOOL "Build entityx::python?")
-set(ENTITYX_BOOST_SP_DISABLE_THREADS true CACHE BOOL "Disable multi-threading support in boost::shared_ptr")
 
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 include(CheckCXXSourceCompiles)
@@ -27,12 +25,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
-
-
-if (ENTITYX_BOOST_SP_DISABLE_THREADS)
-    message("-- Disabled multi-threading support in Boost (see http://www.boost.org/doc/libs/1_54_0/libs/smart_ptr/shared_ptr.htm)")
-    add_definitions(-DBOOST_SP_DISABLE_THREADS=1)
-endif ()
 
 # C++11 feature checks
 include(CheckCXX11Features.cmake)
@@ -55,9 +47,6 @@ macro(create_test TARGET_NAME SOURCE)
         entityx
         gtest
         gtest_main
-        ${Boost_SYSTEM_LIBRARY}
-        ${Boost_TIMER_LIBRARY}
-        ${Boost_SIGNALS_LIBRARY}
         ${ARGN}
         )
     add_test(${TARGET_NAME} ${TARGET_NAME})
@@ -81,9 +70,6 @@ require(HAS_CXX11_LONG_LONG "C++11 lambdas")
 message("-- Checking misc features")
 require(HAVE_STDINT_H "stdint.h")
 
-set(Boost_USE_STATIC_LIBS OFF)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
 if (ENTITYX_BUILD_PYTHON)
     message("-- Building with Python support (-DENTITYX_BUILD_PYTHON=0 to disable)")
     find_package(Boost 1.48.0 COMPONENTS python)
@@ -91,7 +77,6 @@ else (ENTITYX_BUILD_PYTHON)
     message("-- Python support disabled")
 endif (ENTITYX_BUILD_PYTHON)
 
-include_directories(${Boost_INCLUDE_DIR})
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
@@ -99,8 +84,6 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 
 # Things to install
 set(install_libs entityx)
-
-include(CheckCXX11SharedPtr.cmake)
 
 set(sources entityx/tags/TagsComponent.cc entityx/deps/Dependencies.cc entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/Manager.cc)
 add_library(entityx STATIC ${sources})
@@ -110,13 +93,10 @@ if (ENTITYX_BUILD_SHARED)
     add_library(entityx_shared SHARED ${sources})
     target_link_libraries(
         entityx_shared
-        ${Boost_SIGNALS_LIBRARY}
         )
     set_target_properties(entityx_shared PROPERTIES OUTPUT_NAME entityx)
     list(APPEND install_libs entityx_shared)
 endif (ENTITYX_BUILD_SHARED)
-
-include_directories(${Boost_INCLUDE_DIR})
 
 if (ENTITYX_BUILD_PYTHON AND Boost_PYTHON_LIBRARY)
     message("-- Found boost::python, building entityx/python")
@@ -149,7 +129,7 @@ if (ENTITYX_BUILD_PYTHON AND Boost_PYTHON_LIBRARY)
 endif (ENTITYX_BUILD_PYTHON AND Boost_PYTHON_LIBRARY)
 
 if (ENTITYX_BUILD_TESTING)
-    find_package(Boost 1.48.0 REQUIRED COMPONENTS timer system)
+    #find_package(Boost 1.48.0 REQUIRED COMPONENTS timer system)
     add_subdirectory(gtest-1.6.0)
     include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
     enable_testing()
