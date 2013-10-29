@@ -30,7 +30,7 @@ void Timer::restart()
 
 double Timer::elapsed()
 {
-	return std::chrono::duration<double>(std::chrono::system_clock::now() - _start);
+	return std::chrono::duration<double>(std::chrono::system_clock::now() - _start).count();
 }
 
 } // namespace help
