@@ -12,7 +12,6 @@
 #include "entityx/tags/TagsComponent.h"
 
 using namespace std;
-using namespace boost;
 using namespace entityx;
 using namespace entityx::tags;
 
