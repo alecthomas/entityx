@@ -1,5 +1,4 @@
 # EntityX - A fast, type-safe C++ Entity Component System 
-(No Boost Branch)
 
 [![Build Status](https://travis-ci.org/alecthomas/entityx.png)](https://travis-ci.org/alecthomas/entityx)
 
@@ -16,6 +15,7 @@ You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitte
 
 ## Recent Notable Changes
 
+- 2013-10-29 - The 'no-boost' branch now exists to remove boost as a dependency for builds not using python.
 - 2013-08-21 - Remove dependency on `boost::signal` and switch to embedded [Simple::Signal](http://timj.testbit.eu/2013/cpp11-signal-system-performance/).
 - 2013-08-18 - Destroying an entity invalidates all other references
 - 2013-08-17 - Python scripting, and a more robust build system

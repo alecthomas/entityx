@@ -1,5 +1,9 @@
 # Change Log
 
+## 2013-10-29 [no-boost branch] - Removed boost dependency for everything except python integration.
+
+This branch requires C++11 support and has removed all the non-boost::python dependecies, reducing the overhead of running entityx.
+
 ## 2013-08-22 - Remove `boost::signal` and switch to `Simple::Signal`.
 
 According to the [benchmarks](http://timj.testbit.eu/2013/cpp11-signal-system-performance/) Simple::Signal is an order of magnitude faster than `boost::signal`. Additionally, `boost::signal` is now deprecated in favor of `boost::signal2`, which is not supported on versions of Boost on a number of platforms.
