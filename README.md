@@ -15,7 +15,7 @@ You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitte
 
 ## Recent Notable Changes
 
-- 2013-10-29 - The 'no-boost' branch now exists to remove boost as a dependency for builds not using python.
+- 2013-10-29 - Boost has been removed as a primary dependency for builds not using python.
 - 2013-08-21 - Remove dependency on `boost::signal` and switch to embedded [Simple::Signal](http://timj.testbit.eu/2013/cpp11-signal-system-performance/).
 - 2013-08-18 - Destroying an entity invalidates all other references
 - 2013-08-17 - Python scripting, and a more robust build system
@@ -135,7 +135,7 @@ In the case where a component has dependencies on other components, a helper cla
 eg. The following will also add `Position` and `Direction` components when a `Physics` component is added to an entity.
 
 ```c++
-#include "entityx/deps/Dependency.h"
+#include "entityx/deps/Dependencies.h"
 
 system_manager->add<entityx::deps::Depdendency<Physics, Position, Direction>>();
 ```
