@@ -134,7 +134,7 @@ In the case where a component has dependencies on other components, a helper cla
 eg. The following will also add `Position` and `Direction` components when a `Physics` component is added to an entity.
 
 ```c++
-#include "entityx/deps/Dependency.h"
+#include "entityx/deps/Dependencies.h"
 
 system_manager->add<entityx::deps::Depdendency<Physics, Position, Direction>>();
 ```
