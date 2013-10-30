@@ -1,0 +1,10 @@
+* text=auto
+*.cc text
+*.h text
+*.txt text
+CMake* text
+*.cmake text
+*.md text
+*.in text
+Doxyfile text
+Makefile text
