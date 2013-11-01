@@ -5,8 +5,6 @@
 #cmakedefine ENTITYX_INSTALLED_PYTHON_PACKAGE_DIR "@ENTITYX_INSTALLED_PYTHON_PACKAGE_DIR@"
 #cmakedefine ENTITYX_NEED_GET_POINTER_SHARED_PTR_SPECIALIZATION "@ENTITYX_NEED_GET_POINTER_SHARED_PTR_SPECIALIZATION@"
 
-#define ENTITYX_HAVE_STD_SHARED_PTR 1
-
 #include <stdint.h>
 #include "entityx/config.h"
 
@@ -14,15 +12,7 @@ namespace entityx {
 
 static const uint64_t MAX_COMPONENTS = ENTITYX_MAX_COMPONENTS;
 
-}  // namespace entityx
-
-
-// Which shared_ptr implementation should we use?
-#if (ENTITYX_HAVE_STD_SHARED_PTR)
-
 #include <memory>
-
-namespace entityx {
 
 template <typename T>
 using ptr = std::shared_ptr<T>;
@@ -34,17 +24,6 @@ ptr<U> static_pointer_cast(const ptr<T> &ptr) {
 }
 template <typename T>
 using enable_shared_from_this = std::enable_shared_from_this<T>;
-
-}  // namespace entityx
-
-#else
-
-#warning "Don't have a std shared_ptr implementation to use"
-
-#endif
-
-
-namespace entityx {
 
 template <typename T>
 bool operator == (const weak_ptr<T> &a, const weak_ptr<T> &b) {
