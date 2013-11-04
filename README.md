@@ -291,20 +291,12 @@ C++11 support is quite...raw. To make life more interesting, C++ support really 
 
 On OSX you must use Clang as the GCC version is practically prehistoric.
 
-EntityX can build against libstdc++ (GCC with no C++11 library support) or libc++ (Clang with C++11 library support), though you will need to ensure that Boost is built with the same standard library.
-
 I use Homebrew, and the following works for me:
 
 For libstdc++:
 
 ```bash
-cmake -DENTITYX_BUILD_SHARED=0 -DENTITYX_BUILD_TESTING=1 -DENTITYX_USE_CPP11_STDLIB=0 ..
-```
-
-For libc++ (with C++11 support):
-
-```bash
-cmake -DENTITYX_BUILD_SHARED=0 -DENTITYX_BUILD_TESTING=1 -DENTITYX_USE_CPP11_STDLIB=1 ..
+cmake -DENTITYX_BUILD_SHARED=0 -DENTITYX_BUILD_TESTING=1 ..
 ```
 
 ### Installing on Ubuntu 12.04
@@ -336,7 +328,6 @@ Once these dependencies are installed you should be able to build and install En
 - `-DENTITYX_BUILD_PYTHON=1` - Build Python scripting integration.
 - `-DENTITYX_BUILD_TESTING=1` - Build tests (run with `make test`).
 - `-DENTITYX_RUN_BENCHMARKS=1` - In conjunction with `-DENTITYX_BUILD_TESTING=1`, also build benchmarks.
-- `-DENTITYX_USE_CPP11_STDLIB=1` - For Clang, specify whether to use `-stdlib=libc++`.
 - `-DENTITYX_MAX_COMPONENTS=64` - Override the maximum number of components that can be assigned to each entity.
 - `-DENTITYX_BUILD_SHARED=1` - Whether to build shared libraries (defaults to 1).
 - `-DENTITYX_BUILD_TESTING=0` - Whether to build tests (defaults to 0). Run with "make && make test".

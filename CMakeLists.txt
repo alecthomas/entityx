@@ -11,8 +11,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR})
 set(ENTITYX_BUILD_TESTING false CACHE BOOL "Enable building of tests.")
 set(ENTITYX_RUN_BENCHMARKS false CACHE BOOL "Run benchmarks (in conjunction with -DENTITYX_BUILD_TESTING=1).")
 set(ENTITYX_MAX_COMPONENTS 64 CACHE STRING "Set the maximum number of components.")
-set(ENTITYX_USE_CPP11_STDLIB false CACHE BOOL "For Clang, specify whether to use libc++ (-stdlib=libc++).")
-# Check for which shared_ptr implementation to use.
+set(ENTITYX_USE_CPP11_STDLIB true CACHE BOOL "For Clang, specify whether to use libc++ (-stdlib=libc++).")
 set(ENTITYX_BUILD_SHARED false CACHE BOOL "Build shared libraries?")
 set(ENTITYX_BUILD_PYTHON false CACHE BOOL "Build entityx::python?")
 
@@ -28,6 +27,28 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 
 # C++11 feature checks
 include(CheckCXX11Features.cmake)
+
+add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1)
+set(OLD_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+check_cxx_source_compiles(
+"
+#include <memory>
+
+int main() {
+    std::shared_ptr<int>();
+}
+"
+ENTITYX_HAVE_CXX11_STDLIB
+)
+
+if (NOT ENTITYX_HAVE_CXX11_STDLIB)
+    message("-- Not using -stdlib=libc++ (test failed to build)")
+    set(CMAKE_CXX_FLAGS "${OLD_CMAKE_CXX_FLAGS}")
+else ()
+    message("-- Using -stdlib=libc++")
+endif ()
+
 
 # Misc features
 check_include_file("stdint.h" HAVE_STDINT_H)
