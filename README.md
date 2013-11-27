@@ -136,7 +136,7 @@ eg. The following will also add `Position` and `Direction` components when a `Ph
 ```c++
 #include "entityx/deps/Dependencies.h"
 
-system_manager->add<entityx::deps::Depdendency<Physics, Position, Direction>>();
+system_manager->add<entityx::deps::Dependency<Physics, Position, Direction>>();
 ```
 
 #### Implementation notes
