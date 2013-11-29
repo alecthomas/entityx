@@ -25,8 +25,7 @@ void Timer::restart() {
 }
 
 double Timer::elapsed() {
-  auto duration = std::chrono::system_clock::now() - _start;
-  return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count()) / 1000.0;
+  return std::chrono::duration<double>(std::chrono::system_clock::now() - _start).count();
 }
 
 }  // namespace help
