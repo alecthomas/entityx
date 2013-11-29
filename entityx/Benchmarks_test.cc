@@ -1,11 +1,21 @@
 #include <iostream>
 #include <vector>
-#include <gtest/gtest.h>
-#include <boost/timer/timer.hpp>
+#include "gtest/gtest.h"
+#include "entityx/help/Timer.h"
 #include "entityx/Entity.h"
 
 using namespace std;
 using namespace entityx;
+
+
+struct AutoTimer {
+  ~AutoTimer() {
+    cout << timer_.elapsed() << " seconds elapsed" << endl;
+  }
+
+private:
+  entityx::help::Timer timer_;
+};
 
 class BenchmarksTest : public ::testing::Test {
 protected:
@@ -17,7 +27,7 @@ protected:
 
 
 TEST_F(BenchmarksTest, TestCreateEntities) {
-  boost::timer::auto_cpu_timer t;
+  AutoTimer t;
 
   uint64_t count = 10000000L;
   cout << "creating " << count << " entities" << endl;
@@ -35,7 +45,7 @@ TEST_F(BenchmarksTest, TestDestroyEntities) {
     entities.push_back(em->create());
   }
 
-  boost::timer::auto_cpu_timer t;
+  AutoTimer t;
   cout << "destroying " << count << " entities" << endl;
 
   for (auto e : entities) {
@@ -54,7 +64,7 @@ TEST_F(BenchmarksTest, TestCreateEntitiesWithListener) {
 
   uint64_t count = 10000000L;
 
-  boost::timer::auto_cpu_timer t;
+  AutoTimer t;
   cout << "creating " << count << " entities while notifying a single EntityCreatedEvent listener" << endl;
 
   vector<Entity> entities;
@@ -73,7 +83,7 @@ TEST_F(BenchmarksTest, TestDestroyEntitiesWithListener) {
     entities.push_back(em->create());
   }
 
-  boost::timer::auto_cpu_timer t;
+  AutoTimer t;
   cout << "destroying " << count << " entities" << endl;
 
   for (auto &e : entities) {
@@ -93,7 +103,7 @@ TEST_F(BenchmarksTest, TestEntityIteration) {
     entities.push_back(e);
   }
 
-  boost::timer::auto_cpu_timer t;
+  AutoTimer t;
   cout << "iterating over " << count << " entities with a component 10 times" << endl;
 
   for (int i = 0; i < 10; ++i) {
