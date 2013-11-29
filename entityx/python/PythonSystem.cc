@@ -15,6 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include "entityx/python/PythonSystem.h"
+#include "entityx/help/NonCopyable.h"
 
 namespace py = boost::python;
 
@@ -103,7 +104,7 @@ BOOST_PYTHON_MODULE(_entityx) {
   py::class_<PythonEntityXLogger>("Logger", py::no_init)
     .def("write", &PythonEntityXLogger::write);
 
-  py::class_<BaseEvent, ptr<BaseEvent>, boost::noncopyable>("BaseEvent", py::no_init);
+  py::class_<BaseEvent, ptr<BaseEvent>, entityx::help::NonCopyable>("BaseEvent", py::no_init);
 
   py::class_<PythonEntity>("Entity", py::init<Entity>())
     .def_readonly("_entity", &PythonEntity::_entity)
@@ -121,12 +122,12 @@ BOOST_PYTHON_MODULE(_entityx) {
     .def("get_component", &get_component<PythonComponent>)
     .staticmethod("get_component");
 
-  py::class_<EntityManager, ptr<EntityManager>, boost::noncopyable>("EntityManager", py::no_init)
+  py::class_<EntityManager, ptr<EntityManager>, entityx::help::NonCopyable>("EntityManager", py::no_init)
     .def("create", &EntityManager::create);
 
   void (EventManager::*emit)(const BaseEvent &) = &EventManager::emit;
 
-  py::class_<EventManager, ptr<EventManager>, boost::noncopyable>("EventManager", py::no_init)
+  py::class_<EventManager, ptr<EventManager>, entityx::help::NonCopyable>("EventManager", py::no_init)
     .def("emit", emit);
 
   py::implicitly_convertible<PythonEntity, Entity>();

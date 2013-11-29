@@ -15,8 +15,7 @@
 #include "entityx/System.h"
 
 
-// using namespace std; // This will give name space conflicts with boost
-using namespace boost;
+// using namespace std;
 using namespace entityx;
 using std::string;
 

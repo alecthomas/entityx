@@ -11,13 +11,13 @@
 #pragma once
 
 
-#include <boost/noncopyable.hpp>
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 #include <stdint.h>
 #include <cassert>
 #include "entityx/config.h"
 #include "entityx/Entity.h"
 #include "entityx/Event.h"
+#include "entityx/help/NonCopyable.h"
 
 
 namespace entityx {
@@ -25,7 +25,7 @@ namespace entityx {
 /**
  * Base System class. Generally should not be directly used, instead see System<Derived>.
  */
-class BaseSystem : boost::noncopyable {
+class BaseSystem : entityx::help::NonCopyable {
  public:
   typedef uint64_t Family;
 
@@ -72,7 +72,7 @@ class System : public BaseSystem {
 };
 
 
-class SystemManager : boost::noncopyable, public enable_shared_from_this<SystemManager> {
+class SystemManager : entityx::help::NonCopyable, public enable_shared_from_this<SystemManager> {
  public:
   SystemManager(ptr<EntityManager> entity_manager,
                 ptr<EventManager> event_manager) :
@@ -150,7 +150,7 @@ class SystemManager : boost::noncopyable, public enable_shared_from_this<SystemM
   bool initialized_ = false;
   ptr<EntityManager> entity_manager_;
   ptr<EventManager> event_manager_;
-  boost::unordered_map<BaseSystem::Family, ptr<BaseSystem>> systems_;
+  std::unordered_map<BaseSystem::Family, ptr<BaseSystem>> systems_;
 };
 
 }  // namespace entityx

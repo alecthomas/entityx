@@ -1,4 +1,4 @@
-# EntityX - A fast, type-safe C++ Entity Component System
+# EntityX - A fast, type-safe C++ Entity Component System 
 
 [![Build Status](https://travis-ci.org/alecthomas/entityx.png)](https://travis-ci.org/alecthomas/entityx)
 
@@ -15,6 +15,7 @@ You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitte
 
 ## Recent Notable Changes
 
+- 2013-10-29 - Boost has been removed as a primary dependency for builds not using python.
 - 2013-08-21 - Remove dependency on `boost::signal` and switch to embedded [Simple::Signal](http://timj.testbit.eu/2013/cpp11-signal-system-performance/).
 - 2013-08-18 - Destroying an entity invalidates all other references
 - 2013-08-17 - Python scripting, and a more robust build system
@@ -281,7 +282,6 @@ EntityX has the following build and runtime requirements:
 
 - A C++ compiler that supports a basic set of C++11 features (ie. Clang >= 3.1, GCC >= 4.7, and maybe (untested) VC++ with the [Nov 2012 CTP](http://www.microsoft.com/en-us/download/details.aspx?id=35515)).
 - [CMake](http://cmake.org/)
-- [Boost](http://boost.org) `1.48.0` (headers only unless using boost::python).
 
 ### C++11 compiler and library support
 
@@ -291,22 +291,12 @@ C++11 support is quite...raw. To make life more interesting, C++ support really 
 
 On OSX you must use Clang as the GCC version is practically prehistoric.
 
-EntityX can build against libstdc++ (GCC with no C++11 library support) or libc++ (Clang with C++11 library support), though you will need to ensure that Boost is built with the same standard library.
-
 I use Homebrew, and the following works for me:
 
 For libstdc++:
 
 ```bash
-brew install boost
-cmake -DENTITYX_BUILD_SHARED=0 -DENTITYX_BUILD_TESTING=1 -DENTITYX_USE_STD_SHARED_PTR=1 -DENTITYX_USE_CPP11_STDLIB=0 ..
-```
-
-For libc++ (with C++11 support):
-
-```bash
-brew install boost --with-c++11
-cmake -DENTITYX_BUILD_SHARED=0 -DENTITYX_BUILD_TESTING=1 -DENTITYX_USE_STD_SHARED_PTR=1 -DENTITYX_USE_CPP11_STDLIB=1 ..
+cmake -DENTITYX_BUILD_SHARED=0 -DENTITYX_BUILD_TESTING=1 ..
 ```
 
 ### Installing on Ubuntu 12.04
@@ -338,13 +328,9 @@ Once these dependencies are installed you should be able to build and install En
 - `-DENTITYX_BUILD_PYTHON=1` - Build Python scripting integration.
 - `-DENTITYX_BUILD_TESTING=1` - Build tests (run with `make test`).
 - `-DENTITYX_RUN_BENCHMARKS=1` - In conjunction with `-DENTITYX_BUILD_TESTING=1`, also build benchmarks.
-- `-DENTITYX_USE_CPP11_STDLIB=1` - For Clang, specify whether to use `-stdlib=libc++`.
-- `-DENTITYX_USE_STD_SHARED_PTR=1` - Use `std::shared_ptr<T>` (and friends) rather than the Boost equivalents. This does not eliminate the need for Boost, but is useful if the rest of your application uses `std::shared_ptr<T>`.
 - `-DENTITYX_MAX_COMPONENTS=64` - Override the maximum number of components that can be assigned to each entity.
 - `-DENTITYX_BUILD_SHARED=1` - Whether to build shared libraries (defaults to 1).
 - `-DENTITYX_BUILD_TESTING=0` - Whether to build tests (defaults to 0). Run with "make && make test".
-
-For a production build, you'll typically only need the `-DENTITYX_USE_STD_SHARED_PTR=1` flag, if any.
 
 Once you have selected your flags, build and install with:
 

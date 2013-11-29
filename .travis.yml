@@ -9,7 +9,6 @@ before_install:
   - sudo apt-add-repository -y ppa:jkeiren/ppa
   - if test $CC = gcc; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
   - sudo apt-get update -qq
-  - sudo apt-get install -y boost1.48 python-dev
   - if test $CC = gcc; then sudo apt-get install gcc-4.7 g++-4.7; fi
   - if test $CC = gcc; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.7 20; fi
   - if test $CC = gcc; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.7 20; fi
