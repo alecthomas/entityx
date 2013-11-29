@@ -13,25 +13,21 @@
 namespace entityx {
 namespace help {
 
-Timer::Timer()
-{
-
+Timer::Timer() {
+  _start = std::chrono::system_clock::now();
 }
 
-Timer::~Timer()
-{
-	
+Timer::~Timer() {
 }
 
-void Timer::restart()
-{
-	_start = std::chrono::system_clock::now();
+void Timer::restart() {
+  _start = std::chrono::system_clock::now();
 }
 
-double Timer::elapsed()
-{
-	return std::chrono::duration<double>(std::chrono::system_clock::now() - _start).count();
+double Timer::elapsed() {
+  auto duration = std::chrono::system_clock::now() - _start;
+  return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count()) / 1000.0;
 }
 
-} // namespace help
-} // namespace entityx
+}  // namespace help
+}  // namespace entityx

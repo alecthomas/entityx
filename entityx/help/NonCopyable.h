@@ -5,19 +5,16 @@
 namespace entityx {
 namespace help {
 
-class NonCopyable
-{
- protected:
-
+class NonCopyable {
+protected:
   NonCopyable() = default;
   ~NonCopyable() = default;
 
 
-  NonCopyable( const NonCopyable& ) = delete;
-  NonCopyable& operator=( const NonCopyable& ) = delete;
-
+  NonCopyable(const NonCopyable&) = delete;
+  NonCopyable& operator = (const NonCopyable &) = delete;
 };
 
 
-} // namespace help
-} // namespace entityx
+}  // namespace help
+}  // namespace entityx
