@@ -102,7 +102,7 @@ entity.assign<Position>(1.0f, 2.0f);
 You can also assign existing instances of components:
 
 ```c++
-entityx::ptr<Position> position = new Position(1.0f, 2.0f);
+entityx::ptr<Position> position(new Position(1.0f, 2.0f));
 entity.assign(position);
 ```
 
@@ -161,7 +161,7 @@ struct MovementSystem : public System<MovementSystem> {
       position->x += direction->x * dt;
       position->y += direction->y * dt;
     }
-  }
+  };
 };
 ```
 
@@ -200,7 +200,7 @@ class CollisionSystem : public System<CollisionSystem> {
         }
       }
     }
-  }
+  };
 };
 ```
 
@@ -248,21 +248,24 @@ Several events are emitted by EntityX itself:
 
 Managing systems, components and entities can be streamlined by subclassing `Manager`. It is not necessary, but it provides callbacks for configuring systems, initializing entities, and so on.
 
-To use it, subclass `Manager` and implement `configure()`, `initialize()` and `update()`:
+To use it, subclass `Manager` and implement `configure()`, `initialize()` and `update()`. In this example a new `Manager` is created for each level.
 
 ```c++
-class GameManager : public Manager {
+class Level : public Manager {
+public:
+  explicit Level(filename string) : filename_(filename) {}
+
  protected:
   void configure() {
     system_manager->add<DebugSystem>();
     system_manager->add<MovementSystem>();
     system_manager->add<CollisionSystem>();
-    system_manager->configure();
-  }
+  };
 
   void initialize() {
-    // Create some entities in random locations heading in random directions
-    for (int i = 0; i < 100; ++i) {
+    level_.load(filename_);
+
+    for (auto e : level.entity_data()) {
       entityx::Entity entity = entity_manager->create();
       entity.assign<Position>(rand() % 100, rand() % 100);
       entity.assign<Direction>((rand() % 10) - 5, (rand() % 10) - 5);
@@ -273,7 +276,32 @@ class GameManager : public Manager {
     system_manager->update<MovementSystem>(dt);
     system_manager->update<CollisionSystem>(dt);
   }
+
+  string filename_;
+  Level level_;
 };
+```
+
+
+Once created, start the manager:
+
+```c++
+Level level("mylevel.dat");
+level.start();
+```
+
+You can then either start the (simplistic) main loop:
+
+```c++
+level.run();
+```
+
+Or step the entities explicitly inside your own game loop (recommended):
+
+```c++
+while (true) {
+  level.step(0.1);
+}
 ```
 
 ## Installation
