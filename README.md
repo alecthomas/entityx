@@ -6,6 +6,18 @@ Entity Component Systems (ECS) are a form of decomposition that completely decou
 
 EntityX is an EC system that uses C++11 features to provide type-safe component management, event delivery, etc. It was built during the creation of a 2D space shooter.
 
+## Downloading
+
+You can acquire stable releases [here](https://github.com/alecthomas/entityx/releases).
+
+Alternatively, you can check out the current development version with:
+
+```
+git checkout https://github.com/alecthomas/entityx.git
+```
+
+See [below](#installation) for installation instructions.
+
 ## Contact
 
 EntityX now has a mailing list! Send a mail to [entityx@librelist.com](mailto:entityx@librelist.com) to subscribe. Instructions will follow.
