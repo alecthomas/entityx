@@ -1,8 +1,5 @@
 #pragma once
 
-#cmakedefine ENTITYX_HAVE_BOOST_SHARED_PTR 1
-#cmakedefine ENTITYX_HAVE_STD_SHARED_PTR 1
-#cmakedefine ENTITYX_USE_STD_SHARED_PTR 1
 #cmakedefine ENTITYX_MAX_COMPONENTS @ENTITYX_MAX_COMPONENTS@
 #cmakedefine ENTITYX_HAVE_BOOST_PYTHON 1
 #cmakedefine ENTITYX_INSTALLED_PYTHON_PACKAGE_DIR "@ENTITYX_INSTALLED_PYTHON_PACKAGE_DIR@"
@@ -19,8 +16,6 @@ static const uint64_t MAX_COMPONENTS = ENTITYX_MAX_COMPONENTS;
 
 
 // Which shared_ptr implementation should we use?
-#if (ENTITYX_HAVE_STD_SHARED_PTR && ENTITYX_USE_STD_SHARED_PTR)
-
 #include <memory>
 
 namespace entityx {
@@ -37,35 +32,6 @@ template <typename T>
 using enable_shared_from_this = std::enable_shared_from_this<T>;
 
 }  // namespace entityx
-
-#elif ENTITYX_HAVE_BOOST_SHARED_PTR
-
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
-
-namespace entityx {
-
-template <typename T>
-using ptr = boost::shared_ptr<T>;
-template <typename T>
-using weak_ptr = boost::weak_ptr<T>;
-template <typename T, typename U>
-ptr<U> static_pointer_cast(const ptr<T> &ptr) {
-  return boost::static_pointer_cast<U>(ptr);
-}
-template <typename T>
-using enable_shared_from_this = boost::enable_shared_from_this<T>;
-
-}  // namespace entityx
-
-#else
-
-#warning "Don't have a boost or std shared_ptr implementation to use"
-
-#endif
-
 
 namespace entityx {
 

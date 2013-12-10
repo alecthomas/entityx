@@ -29,8 +29,13 @@ void Manager::run() {
   }
 }
 
+void Manager::step(double dt) {
+  update(dt);
+}
+
+
 void Manager::stop() {
   running_ = false;
 }
 
-}
+}  // namespace entityx

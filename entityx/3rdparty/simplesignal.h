@@ -6,7 +6,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <vector>
-#include <boost/function.hpp>
 
 namespace Simple {
 
@@ -46,7 +45,7 @@ struct CollectorDefault<void> {
 template<class Collector, class R, class... Args>
 struct CollectorInvocation<Collector, R (Args...)> {
   inline bool
-  invoke (Collector &collector, const boost::function<R (Args...)> &cbf, Args... args)
+  invoke (Collector &collector, const std::function<R (Args...)> &cbf, Args... args)
   {
     return collector (cbf (args...));
   }
@@ -56,7 +55,7 @@ struct CollectorInvocation<Collector, R (Args...)> {
 template<class Collector, class... Args>
 struct CollectorInvocation<Collector, void (Args...)> {
   inline bool
-  invoke (Collector &collector, const boost::function<void (Args...)> &cbf, Args... args)
+  invoke (Collector &collector, const std::function<void (Args...)> &cbf, Args... args)
   {
     cbf (args...); return collector();
   }
@@ -66,7 +65,7 @@ struct CollectorInvocation<Collector, void (Args...)> {
 template<class Collector, class R, class... Args>
 class ProtoSignal<R (Args...), Collector> : private CollectorInvocation<Collector, R (Args...)> {
 protected:
-  typedef boost::function<R (Args...)> CbFunction;
+  typedef std::function<R (Args...)> CbFunction;
   typedef typename CbFunction::result_type Result;
   typedef typename Collector::CollectorResult CollectorResult;
 private:
@@ -237,7 +236,7 @@ public:
  * The overhead of an unused signal is intentionally kept very low, around the size of a single pointer.
  * Note that the Signal template types is non-copyable.
  */
-template <typename SignalSignature, class Collector = Lib::CollectorDefault<typename boost::function<SignalSignature>::result_type> >
+template <typename SignalSignature, class Collector = Lib::CollectorDefault<typename std::function<SignalSignature>::result_type> >
 struct Signal /*final*/ :
     Lib::ProtoSignal<SignalSignature, Collector>
 {
@@ -247,15 +246,15 @@ struct Signal /*final*/ :
   Signal (const CbFunction &method = CbFunction()) : ProtoSignal (method) {}
 };
 
-/// This function creates a boost::function by binding @a object to the member function pointer @a method.
-template<class Instance, class Class, class R, class... Args> boost::function<R (Args...)>
+/// This function creates a std::function by binding @a object to the member function pointer @a method.
+template<class Instance, class Class, class R, class... Args> std::function<R (Args...)>
 slot (Instance &object, R (Class::*method) (Args...))
 {
   return [&object, method] (Args... args) { return (object .* method) (args...); };
 }
 
-/// This function creates a boost::function by binding @a object to the member function pointer @a method.
-template<class Class, class R, class... Args> boost::function<R (Args...)>
+/// This function creates a std::function by binding @a object to the member function pointer @a method.
+template<class Class, class R, class... Args> std::function<R (Args...)>
 slot (Class *object, R (Class::*method) (Args...))
 {
   return [object, method] (Args... args) { return (object ->* method) (args...); };

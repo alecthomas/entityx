@@ -1,10 +1,22 @@
-# EntityX - A fast, type-safe C++ Entity Component System
+# EntityX - A fast, type-safe C++ Entity Component System 
 
 [![Build Status](https://travis-ci.org/alecthomas/entityx.png)](https://travis-ci.org/alecthomas/entityx)
 
 Entity Component Systems (ECS) are a form of decomposition that completely decouples entity logic and data from the entity "objects" themselves. The [Evolve your Hierarchy](http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/) article provides a solid overview of EC systems and why you should use them.
 
 EntityX is an EC system that uses C++11 features to provide type-safe component management, event delivery, etc. It was built during the creation of a 2D space shooter.
+
+## Downloading
+
+You can acquire stable releases [here](https://github.com/alecthomas/entityx/releases).
+
+Alternatively, you can check out the current development version with:
+
+```
+git checkout https://github.com/alecthomas/entityx.git
+```
+
+See [below](#installation) for installation instructions.
 
 ## Contact
 
@@ -15,6 +27,7 @@ You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitte
 
 ## Recent Notable Changes
 
+- 2013-10-29 - Boost has been removed as a primary dependency for builds not using python.
 - 2013-08-21 - Remove dependency on `boost::signal` and switch to embedded [Simple::Signal](http://timj.testbit.eu/2013/cpp11-signal-system-performance/).
 - 2013-08-18 - Destroying an entity invalidates all other references
 - 2013-08-17 - Python scripting, and a more robust build system
@@ -101,7 +114,7 @@ entity.assign<Position>(1.0f, 2.0f);
 You can also assign existing instances of components:
 
 ```c++
-entityx::ptr<Position> position = new Position(1.0f, 2.0f);
+entityx::ptr<Position> position(new Position(1.0f, 2.0f));
 entity.assign(position);
 ```
 
@@ -160,7 +173,7 @@ struct MovementSystem : public System<MovementSystem> {
       position->x += direction->x * dt;
       position->y += direction->y * dt;
     }
-  }
+  };
 };
 ```
 
@@ -199,7 +212,7 @@ class CollisionSystem : public System<CollisionSystem> {
         }
       }
     }
-  }
+  };
 };
 ```
 
@@ -247,21 +260,24 @@ Several events are emitted by EntityX itself:
 
 Managing systems, components and entities can be streamlined by subclassing `Manager`. It is not necessary, but it provides callbacks for configuring systems, initializing entities, and so on.
 
-To use it, subclass `Manager` and implement `configure()`, `initialize()` and `update()`:
+To use it, subclass `Manager` and implement `configure()`, `initialize()` and `update()`. In this example a new `Manager` is created for each level.
 
 ```c++
-class GameManager : public Manager {
+class Level : public Manager {
+public:
+  explicit Level(filename string) : filename_(filename) {}
+
  protected:
   void configure() {
     system_manager->add<DebugSystem>();
     system_manager->add<MovementSystem>();
     system_manager->add<CollisionSystem>();
-    system_manager->configure();
-  }
+  };
 
   void initialize() {
-    // Create some entities in random locations heading in random directions
-    for (int i = 0; i < 100; ++i) {
+    level_.load(filename_);
+
+    for (auto e : level.entity_data()) {
       entityx::Entity entity = entity_manager->create();
       entity.assign<Position>(rand() % 100, rand() % 100);
       entity.assign<Direction>((rand() % 10) - 5, (rand() % 10) - 5);
@@ -272,7 +288,32 @@ class GameManager : public Manager {
     system_manager->update<MovementSystem>(dt);
     system_manager->update<CollisionSystem>(dt);
   }
+
+  string filename_;
+  Level level_;
 };
+```
+
+
+Once created, start the manager:
+
+```c++
+Level level("mylevel.dat");
+level.start();
+```
+
+You can then either start the (simplistic) main loop:
+
+```c++
+level.run();
+```
+
+Or step the entities explicitly inside your own game loop (recommended):
+
+```c++
+while (true) {
+  level.step(0.1);
+}
 ```
 
 ## Installation
@@ -281,7 +322,6 @@ EntityX has the following build and runtime requirements:
 
 - A C++ compiler that supports a basic set of C++11 features (ie. Clang >= 3.1, GCC >= 4.7, and maybe (untested) VC++ with the [Nov 2012 CTP](http://www.microsoft.com/en-us/download/details.aspx?id=35515)).
 - [CMake](http://cmake.org/)
-- [Boost](http://boost.org) `1.48.0` (headers only unless using boost::python).
 
 ### C++11 compiler and library support
 
@@ -291,22 +331,12 @@ C++11 support is quite...raw. To make life more interesting, C++ support really 
 
 On OSX you must use Clang as the GCC version is practically prehistoric.
 
-EntityX can build against libstdc++ (GCC with no C++11 library support) or libc++ (Clang with C++11 library support), though you will need to ensure that Boost is built with the same standard library.
-
 I use Homebrew, and the following works for me:
 
 For libstdc++:
 
 ```bash
-brew install boost
-cmake -DENTITYX_BUILD_SHARED=0 -DENTITYX_BUILD_TESTING=1 -DENTITYX_USE_STD_SHARED_PTR=1 -DENTITYX_USE_CPP11_STDLIB=0 ..
-```
-
-For libc++ (with C++11 support):
-
-```bash
-brew install boost --with-c++11
-cmake -DENTITYX_BUILD_SHARED=0 -DENTITYX_BUILD_TESTING=1 -DENTITYX_USE_STD_SHARED_PTR=1 -DENTITYX_USE_CPP11_STDLIB=1 ..
+cmake -DENTITYX_BUILD_SHARED=0 -DENTITYX_BUILD_TESTING=1 ..
 ```
 
 ### Installing on Ubuntu 12.04
@@ -338,13 +368,9 @@ Once these dependencies are installed you should be able to build and install En
 - `-DENTITYX_BUILD_PYTHON=1` - Build Python scripting integration.
 - `-DENTITYX_BUILD_TESTING=1` - Build tests (run with `make test`).
 - `-DENTITYX_RUN_BENCHMARKS=1` - In conjunction with `-DENTITYX_BUILD_TESTING=1`, also build benchmarks.
-- `-DENTITYX_USE_CPP11_STDLIB=1` - For Clang, specify whether to use `-stdlib=libc++`.
-- `-DENTITYX_USE_STD_SHARED_PTR=1` - Use `std::shared_ptr<T>` (and friends) rather than the Boost equivalents. This does not eliminate the need for Boost, but is useful if the rest of your application uses `std::shared_ptr<T>`.
 - `-DENTITYX_MAX_COMPONENTS=64` - Override the maximum number of components that can be assigned to each entity.
 - `-DENTITYX_BUILD_SHARED=1` - Whether to build shared libraries (defaults to 1).
 - `-DENTITYX_BUILD_TESTING=0` - Whether to build tests (defaults to 0). Run with "make && make test".
-
-For a production build, you'll typically only need the `-DENTITYX_USE_STD_SHARED_PTR=1` flag, if any.
 
 Once you have selected your flags, build and install with:
 

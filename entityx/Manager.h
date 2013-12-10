@@ -10,10 +10,10 @@
 
 #pragma once
 
-#include <boost/timer.hpp>
 #include "entityx/Entity.h"
 #include "entityx/Event.h"
 #include "entityx/System.h"
+#include "entityx/help/Timer.h"
 
 namespace entityx {
 
@@ -21,8 +21,26 @@ class Manager {
  public:
   virtual ~Manager() {}
 
+  /**
+   * Call start() to initialize the Manager.
+   */
   void start();
+
+
+  /**
+   * Run the main loop. To explicitly manage your own main loop use step(dt);
+   */
   void run();
+
+  /**
+   * Step the system by dt.
+   * @param dt Delta time since last frame.
+   */
+  void step(double dt);
+
+  /**
+   * Stop the manager.
+   */
   void stop();
 
  protected:
@@ -58,7 +76,7 @@ class Manager {
   ptr<SystemManager> system_manager;
 
  private:
-  boost::timer timer_;
+  help::Timer timer_;
   bool running_ = false;
 };
 
