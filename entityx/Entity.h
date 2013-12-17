@@ -125,6 +125,11 @@ public:
   void unpack(ptr<A> &a);
   template <typename A, typename B, typename ... Args>
   void unpack(ptr<A> &a, ptr<B> &b, Args && ... args);
+  template <typename A, typename B, typename C, typename ... Args>
+  void unpack(ptr<A> &a, ptr<B> &b, ptr<C> &c, Args && ... args);
+  template <typename A, typename B, typename C, typename D, typename ... Args>
+  void unpack(ptr<A> &a, ptr<B> &b, ptr<C> &c, ptr<D> &d, Args && ... args);
+
 
   /**
    * Destroy and invalidate this Entity.
@@ -352,6 +357,19 @@ class EntityManager : entityx::help::NonCopyable, public enable_shared_from_this
       return unpack_to<B, Args ...>(b, args ...);
     }
 
+    template <typename A, typename B, typename C, typename ... Args>
+    View &unpack_to(ptr<A> &a, ptr<B> &b, ptr<C> &c, Args && ... args) {
+      unpack_to<A, B>(a, b);
+      return unpack_to<C, Args ...>(c, args ...);
+    }
+
+    template <typename A, typename B, typename C, typename D, typename ... Args>
+    View &unpack_to(ptr<A> &a, ptr<B> &b, ptr<C> &c, ptr<D> &d, Args && ... args) {
+      unpack_to<A, B, C>(a, b, c);
+      return unpack_to<D, Args ...>(c, args ...);
+    }
+
+
    private:
     friend class EntityManager;
 
@@ -559,6 +577,41 @@ class EntityManager : entityx::help::NonCopyable, public enable_shared_from_this
   }
 
   /**
+   * Unpack components directly into pointers.
+   *
+   * Components missing from the entity will be set to nullptr.
+   *
+   * Useful for fast bulk iterations.
+   *
+   * ptr<Position> p;
+   * ptr<Direction> d;
+   * unpack<Position, Direction>(e, p, d);
+   */
+  template <typename A, typename B, typename C, typename ... Args>
+  void unpack(Entity::Id id, ptr<A> &a, ptr<B> &b, ptr<C> &c, Args && ... args) {
+    unpack<A, B>(id, a, b);
+    unpack<C, Args ...>(id, c, args ...);
+  }
+
+  /**
+   * Unpack components directly into pointers.
+   *
+   * Components missing from the entity will be set to nullptr.
+   *
+   * Useful for fast bulk iterations.
+   *
+   * ptr<Position> p;
+   * ptr<Direction> d;
+   * unpack<Position, Direction>(e, p, d);
+   */
+  template <typename A, typename B, typename C, typename D, typename ... Args>
+  void unpack(Entity::Id id, ptr<A> &a, ptr<B> &b, ptr<C> &c, ptr<D> &d, Args && ... args) {
+    unpack<A, B, C>(id, a, b, c);
+    unpack<D, Args ...>(id, d, args ...);
+  }
+
+
+  /**
    * Destroy all entities from this EntityManager.
    */
   void destroy_all();
@@ -659,6 +712,18 @@ template <typename A, typename B, typename ... Args>
 void Entity::unpack(ptr<A> &a, ptr<B> &b, Args && ... args) {
   assert(valid());
   manager_.lock()->unpack(id_, a, b, args ...);
+}
+
+template <typename A, typename B, typename C, typename ... Args>
+void Entity::unpack(ptr<A> &a, ptr<B> &b, ptr<C> &c, Args && ... args) {
+  assert(valid());
+  manager_.lock()->unpack(id_, a, b, c, args ...);
+}
+
+template <typename A, typename B, typename C, typename D, typename ... Args>
+void Entity::unpack(ptr<A> &a, ptr<B> &b, ptr<C> &c, ptr<D> &d, Args && ... args) {
+  assert(valid());
+  manager_.lock()->unpack(id_, a, b, c, d, args ...);
 }
 
 }  // namespace entityx
