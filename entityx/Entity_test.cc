@@ -21,6 +21,7 @@ using namespace entityx;
 
 using std::ostream;
 using std::vector;
+using std::string;
 
 template <typename T>
 int size(const T &t) {
@@ -61,6 +62,18 @@ ostream &operator << (ostream &out, const Direction &direction) {
   return out;
 }
 
+struct Tag : Component<Tag> {
+  explicit Tag(string tag) : tag(tag) {}
+
+  bool operator == (const Tag &other) const { return tag == other.tag; }
+
+  string tag;
+};
+
+ostream &operator << (ostream &out, const Tag &tag) {
+  out << "Tag(" << tag.tag << ")";
+  return out;
+}
 
 class EntityManagerTest : public ::testing::Test {
  protected:
@@ -204,10 +217,14 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
   position_directions.push_back(std::make_pair(
           f.assign<Position>(7.0f, 8.0f),
           f.assign<Direction>(9.0f, 10.0f)));
+  auto thetag = f.assign<Tag>("tag");
   g.assign<Position>(5.0f, 6.0f);
   int i = 0;
 
+
   ptr<Position> position;
+  ASSERT_EQ(3, size(em->entities_with_components(position)));
+
   ptr<Direction> direction;
   for (auto unused_entity : em->entities_with_components(position, direction)) {
     (void)unused_entity;
@@ -219,18 +236,40 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
     ++i;
   }
   ASSERT_EQ(2, i);
+  ptr<Tag> tag;
+  i = 0;
+  for (auto unused_entity : em->entities_with_components(position, direction, tag)) {
+    (void)unused_entity;
+    ASSERT_TRUE(static_cast<bool>(position));
+    ASSERT_TRUE(static_cast<bool>(direction));
+    ASSERT_TRUE(static_cast<bool>(tag));
+    auto pd = position_directions.at(1);
+    ASSERT_EQ(position, pd.first);
+    ASSERT_EQ(direction, pd.second);
+    ASSERT_EQ(tag, thetag);
+    i++;
+  }
+  ASSERT_EQ(1, i);
 }
 
 TEST_F(EntityManagerTest, TestUnpack) {
   Entity e = em->create();
-  auto p = e.assign<Position>();
-  auto d = e.assign<Direction>();
+  auto p = e.assign<Position>(1.0, 2.0);
+  auto d = e.assign<Direction>(3.0, 4.0);
+  auto t = e.assign<Tag>("tag");
 
   ptr<Position> up;
   ptr<Direction> ud;
-  e.unpack<Position, Direction>(up, ud);
+  ptr<Tag> ut;
+  e.unpack(up);
+  ASSERT_EQ(p, up);
+  e.unpack(up, ud);
   ASSERT_EQ(p, up);
   ASSERT_EQ(d, ud);
+  e.unpack(up, ud, ut);
+  ASSERT_EQ(p, up);
+  ASSERT_EQ(d, ud);
+  ASSERT_EQ(t, ut);
 }
 
 // gcc 4.7.2 does not allow this struct to be declared locally inside the TEST_F.

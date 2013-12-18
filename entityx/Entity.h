@@ -121,10 +121,8 @@ public:
   template <typename C>
   ptr<C> component();
 
-  template <typename A>
-  void unpack(ptr<A> &a);
-  template <typename A, typename B, typename ... Args>
-  void unpack(ptr<A> &a, ptr<B> &b, Args && ... args);
+  template <typename A, typename ... Args>
+  void unpack(ptr<A> &a, ptr<Args> & ... args);
 
   /**
    * Destroy and invalidate this Entity.
@@ -347,7 +345,7 @@ class EntityManager : entityx::help::NonCopyable, public enable_shared_from_this
     }
 
     template <typename A, typename B, typename ... Args>
-    View &unpack_to(ptr<A> &a, ptr<B> &b, Args && ... args) {
+    View &unpack_to(ptr<A> &a, ptr<B> &b, ptr<Args> & ... args) {
       unpack_to<A>(a);
       return unpack_to<B, Args ...>(b, args ...);
     }
@@ -515,27 +513,17 @@ class EntityManager : entityx::help::NonCopyable, public enable_shared_from_this
   }
 
   /**
-   * Find Entities that have all of the specified Components.
+   * Find Entities that have all of the specified Components and assign them
+   * to the given parameters.
    */
   template <typename C, typename ... Components>
-  View entities_with_components(ptr<C> &c, Components && ... args) {
+  View entities_with_components(ptr<C> &c, ptr<Components> & ... args) {
     auto mask = component_mask(c, args ...);
     return
         View(shared_from_this(), View::ComponentMaskPredicate(entity_component_mask_, mask))
         .unpack_to(c, args ...);
   }
 
-  /**
-   * Unpack components directly into pointers.
-   *
-   * Components missing from the entity will be set to nullptr.
-   *
-   * Useful for fast bulk iterations.
-   *
-   * ptr<Position> p;
-   * ptr<Direction> d;
-   * unpack<Position, Direction>(e, p, d);
-   */
   template <typename A>
   void unpack(Entity::Id id, ptr<A> &a) {
     a = component<A>(id);
@@ -552,10 +540,10 @@ class EntityManager : entityx::help::NonCopyable, public enable_shared_from_this
    * ptr<Direction> d;
    * unpack<Position, Direction>(e, p, d);
    */
-  template <typename A, typename B, typename ... Args>
-  void unpack(Entity::Id id, ptr<A> &a, ptr<B> &b, Args && ... args) {
-    unpack<A>(id, a);
-    unpack<B, Args ...>(id, b, args ...);
+  template <typename A, typename ... Args>
+  void unpack(Entity::Id id, ptr<A> &a, ptr<Args> & ... args) {
+    a = component<A>(id);
+    unpack<Args ...>(id, args ...);
   }
 
   /**
@@ -582,7 +570,7 @@ class EntityManager : entityx::help::NonCopyable, public enable_shared_from_this
   }
 
   template <typename C1, typename C2, typename ... Components>
-  ComponentMask component_mask(const ptr<C1> &c1, const ptr<C2> &c2, Components && ... args) {
+  ComponentMask component_mask(const ptr<C1> &c1, const ptr<C2> &c2, ptr<Components> & ... args) {
     return component_mask<C1>(c1) | component_mask<C2, Components ...>(c2, args...);
   }
 
@@ -649,16 +637,10 @@ ptr<C> Entity::component() {
   return manager_.lock()->component<C>(id_);
 }
 
-template <typename A>
-void Entity::unpack(ptr<A> &a) {
+template <typename A, typename ... Args>
+void Entity::unpack(ptr<A> &a, ptr<Args> & ... args) {
   assert(valid());
-  manager_.lock()->unpack(id_, a);
-}
-
-template <typename A, typename B, typename ... Args>
-void Entity::unpack(ptr<A> &a, ptr<B> &b, Args && ... args) {
-  assert(valid());
-  manager_.lock()->unpack(id_, a, b, args ...);
+  manager_.lock()->unpack(id_, a, args ...);
 }
 
 }  // namespace entityx
