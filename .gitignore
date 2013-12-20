@@ -6,3 +6,5 @@ build/*
 entityx/config.h
 Makefile
 html/
+Vagrantfile
+.vagrant

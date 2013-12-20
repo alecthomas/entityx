@@ -36,12 +36,15 @@ To add scripting support to your system, something like the following steps shou
 
 ### Exposing C++ Components to Python
 
-In most cases, this should be pretty simple. Given a component, provide a `boost::python` class definition, with two extra methods defined with EntityX::Python helper functions `assign_to<Component>` and `get_component<Component>`. These are used from Python to assign Python-created components to an entity and to retrieve existing components from an entity, respectively.
+In most cases, this should be pretty simple. Given a component, provide a `boost::python` class definition wrapped in `entityx::ptr<T>`, with two extra methods defined with EntityX::Python helper functions `assign_to<Component>` and `get_component<Component>`. These are used from Python to assign Python-created components to an entity and to retrieve existing components from an entity, respectively.
 
 Here's an example:
 
 ```c++
 namespace py = boost::python;
+using namespace entityx;
+using namespace entityx::python;
+
 
 struct Position : public Component<Position> {
   Position(float x = 0.0, float y = 0.0) : x(x), y(y) {}
@@ -50,10 +53,10 @@ struct Position : public Component<Position> {
 };
 
 void export_position_to_python() {
-  py::class_<PythonPosition, entityx::ptr<PythonPosition>>("Position", py::init<py::optional<float, float>>())
-    .def("assign_to", &entityx::python::assign_to<Position>)
-    .def("get_component", &entityx::python::get_component<Position>)
-    .staticmethod("get_component")
+  py::class_<PythonPosition, ptr<PythonPosition>>("Position", py::init<py::optional<float, float>>())
+    .def("assign_to", &assign_to<Position>)          // Allows this component to be assigned to an entity
+    .def("get_component", &get_component<Position>)  // Allows this component to be retrieved from an entity.
+    .staticmethod("get_component")                   // (as above)
     .def_readwrite("x", &PythonPosition::x)
     .def_readwrite("y", &PythonPosition::y);
 }
@@ -109,7 +112,7 @@ struct CollisionEventProxy : public PythonEventProxy, public Receiver<CollisionE
 };
 
 void export_collision_event_to_python() {
-  py::class_<CollisionEvent>("Collision", py::init<Entity, Entity>())
+  py::class_<CollisionEvent, ptr<CollisionEvent>, py::bases<BaseEvent>>("Collision", py::init<Entity, Entity>())
     .def_readonly("a", &CollisionEvent::a)
     .def_readonly("b", &CollisionEvent::b);
 }
@@ -120,6 +123,23 @@ BOOST_PYTHON_MODULE(mygame) {
   export_collision_event_to_python();
 }
 ```
+
+
+### Sending events from Python
+
+This is relatively straight forward. Once you have exported a C++ event to Python:
+
+```python
+from entityx import Entity, emit
+from mygame import Collision
+
+
+class AnEntity(Entity): pass
+
+
+emit(Collision(AnEntity(), AnEntity()))
+```
+
 
 ### Initialization
 
@@ -138,8 +158,8 @@ Then create and destroy `PythonSystem` as necessary:
 vector<string> paths;
 paths.push_back(MYGAME_PYTHON_PATH);
 // +any other Python paths...
-entityx::ptr<PythonSystem> script_system = new PythonSystem(paths);
+ptr<PythonSystem> python(new PythonSystem(paths));
 
 // Add any Event proxies.
-script_system->add_event_proxy<CollisionEvent>(ev, new CollisionEventProxy());
+python->add_event_proxy<CollisionEvent>(ev, ptr<CollisionEventProxy>(new CollisionEventProxy()));
 ```

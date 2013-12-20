@@ -146,7 +146,6 @@ if (ENTITYX_BUILD_PYTHON AND Boost_PYTHON_LIBRARY)
         list(APPEND install_libs entityx_python_shared)
     endif (ENTITYX_BUILD_SHARED)
     set(CMAKE_REQUIRED_FLAGS ${CMAKE_CXX_FLAGS})
-    include(CheckNeedGetPointer.cmake)
 endif (ENTITYX_BUILD_PYTHON AND Boost_PYTHON_LIBRARY)
 
 if (ENTITYX_BUILD_TESTING)

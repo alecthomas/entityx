@@ -9,13 +9,13 @@
  */
 
 // http://docs.python.org/2/extending/extending.html
+#include <boost/noncopyable.hpp>
 #include <Python.h>
 #include <cassert>
 #include <string>
 #include <iostream>
 #include <sstream>
 #include "entityx/python/PythonSystem.h"
-#include "entityx/help/NonCopyable.h"
 
 namespace py = boost::python;
 
@@ -24,16 +24,6 @@ namespace python {
 
 
 static const py::object None;
-
-
-/**
- * Convert Entity::Id to a Python long.
- */
-struct EntityIdToPythonInteger {
-  static PyObject* convert(Entity::Id const& id) {
-    return py::incref(py::long_(id.id()).ptr());
-  }
-};
 
 
 class PythonEntityXLogger {
@@ -66,8 +56,12 @@ private:
 };
 
 
+/**
+ * Base class for Python entities.
+ */
 struct PythonEntity {
-  PythonEntity(Entity entity) : _entity(entity) {}  // NOLINT
+  explicit PythonEntity(ptr<EntityManager> entity_manager, Entity::Id id) : _entity(Entity(entity_manager, id)) {}  // NOLINT
+  virtual ~PythonEntity() {}
 
   void destroy() {
     _entity.destroy();
@@ -75,59 +69,87 @@ struct PythonEntity {
 
   operator Entity () const { return _entity; }
 
-  void update(float dt, int frame) {}
+  virtual void update(float dt, int frame) {}
+
+  Entity::Id _entity_id() const {
+    return _entity.id();
+  }
 
   Entity _entity;
 };
 
-static std::string python_entity_repr(const PythonEntity &entity) {
+static std::string PythonEntity_repr(const PythonEntity &entity) {
   std::stringstream repr;
   repr << "<Entity " << entity._entity.id().index() << "." << entity._entity.id().version() << ">";
   return repr.str();
 }
 
 
-static std::string entity_repr(Entity entity) {
+static std::string Entity_Id_repr(Entity::Id id) {
   std::stringstream repr;
-  repr << "<Entity::Id " << entity.id().index() << "." << entity.id().version() << ">";
+  repr << "<Entity::Id " << id.index() << "." << id.version() << ">";
   return repr.str();
 }
 
-static bool entity_eq(Entity left, Entity right) {
-  return left.id() == right.id();
+
+// static std::string entity_repr(Entity entity) {
+//   std::stringstream repr;
+//   repr << "<Entity::Id " << entity.id().index() << "." << entity.id().version() << ">";
+//   return repr.str();
+// }
+
+// static bool entity_eq(Entity left, Entity right) {
+//   return left.id() == right.id();
+// }
+
+
+// A to-Python converter from Entity to PythonEntity.
+struct EntityToPythonEntity {
+  static PyObject *convert(Entity entity) {
+    auto python = entity.component<PythonComponent>();
+    assert(python && "Entity does not have a PythonComponent");
+    return py::incref(python->object.ptr());
+  }
+};
+
+
+Entity::Id EntityManager_configure(ptr<EntityManager> entity_manager, py::object self) {
+  Entity entity = entity_manager->create();
+  entity.assign<PythonComponent>(self);
+  return entity.id();
 }
 
-
 BOOST_PYTHON_MODULE(_entityx) {
-  py::to_python_converter<Entity::Id, EntityIdToPythonInteger>();
+  py::to_python_converter<Entity, EntityToPythonEntity>();
 
   py::class_<PythonEntityXLogger>("Logger", py::no_init)
     .def("write", &PythonEntityXLogger::write);
 
-  py::class_<BaseEvent, ptr<BaseEvent>, entityx::help::NonCopyable>("BaseEvent", py::no_init);
+  py::class_<BaseEvent, ptr<BaseEvent>, boost::noncopyable>("BaseEvent", py::no_init);
 
-  py::class_<PythonEntity>("Entity", py::init<Entity>())
-    .def_readonly("_entity", &PythonEntity::_entity)
+  py::class_<PythonEntity>("Entity", py::init<ptr<EntityManager>, Entity::Id>())
+    .def_readonly("_entity_id", &PythonEntity::_entity_id)
     .def("update", &PythonEntity::update)
     .def("destroy", &PythonEntity::destroy)
-    .def("__repr__", &python_entity_repr);
+    .def("__repr__", &PythonEntity_repr);
 
-  py::class_<Entity>("RawEntity", py::no_init)
-    .add_property("id", &Entity::id)
-    .def("__eq__", &entity_eq)
-    .def("__repr__", &entity_repr);
+  py::class_<Entity::Id>("EntityId", py::no_init)
+    .def_readonly("id", &Entity::Id::id)
+    .def_readonly("index", &Entity::Id::index)
+    .def_readonly("version", &Entity::Id::version)
+    .def("__repr__", &Entity_Id_repr);
 
   py::class_<PythonComponent, ptr<PythonComponent>>("PythonComponent", py::init<py::object>())
     .def("assign_to", &assign_to<PythonComponent>)
     .def("get_component", &get_component<PythonComponent>)
     .staticmethod("get_component");
 
-  py::class_<EntityManager, ptr<EntityManager>, entityx::help::NonCopyable>("EntityManager", py::no_init)
-    .def("create", &EntityManager::create);
+  py::class_<EntityManager, ptr<EntityManager>, boost::noncopyable>("EntityManager", py::no_init)
+    .def("configure", &EntityManager_configure);
 
   void (EventManager::*emit)(const BaseEvent &) = &EventManager::emit;
 
-  py::class_<EventManager, ptr<EventManager>, entityx::help::NonCopyable>("EventManager", py::no_init)
+  py::class_<EventManager, ptr<EventManager>, boost::noncopyable>("EventManager", py::no_init)
     .def("emit", emit);
 
   py::implicitly_convertible<PythonEntity, Entity>();
@@ -253,10 +275,10 @@ void PythonSystem::receive(const ComponentAddedEvent<PythonComponent> &event) {
     py::object cls = module.attr(event.component->cls.c_str());
     py::object from_raw_entity = cls.attr("_from_raw_entity");
     if (py::len(event.component->args) == 0) {
-      event.component->object = from_raw_entity(event.entity);
+      event.component->object = from_raw_entity(event.entity.id());
     } else {
       py::list args;
-      args.append(event.entity);
+      args.append(event.entity.id());
       args.extend(event.component->args);
       event.component->object = from_raw_entity(*py::tuple(args));
     }

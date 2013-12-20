@@ -10,5 +10,4 @@ def emit_collision_from_python():
     a = AnEntity()
     b = AnEntity()
     collision = Collision(a, b)
-    print a, b, collision
-    emit(Collision(a, b))
+    emit(collision)

@@ -14,19 +14,19 @@ class EntityA(entityx.Entity):
 
 def create_entities_from_python_test():
     a = EntityA()
-    assert a._entity.id & 0xffffffff == 0
+    assert a._entity_id.index == 0
     assert a.position.x == 1.0
     assert a.position.y == 2.0
 
     b = EntityA()
-    assert b._entity.id & 0xffffffff == 1
+    assert b._entity_id.index == 1
 
     a.destroy()
     c = EntityA()
     # Reuse destroyed index of "a".
-    assert c._entity.id & 0xffffffff == 0
+    assert c._entity_id.index == 0
     # However, version is different
-    assert a._entity.id != c._entity.id and c._entity.id > a._entity.id
+    assert a._entity_id.id != c._entity_id.id and c._entity_id.id > a._entity_id.id
 
     d = EntityA(2.0, 3.0)
     assert d.position.x == 2.0

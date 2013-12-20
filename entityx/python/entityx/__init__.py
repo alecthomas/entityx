@@ -40,11 +40,11 @@ class Component(object):
         self._args = args
         self._kwargs = kwargs
 
-    def _build(self, entity):
-        component = self._cls.get_component(entity)
+    def _build(self, entity_id):
+        component = self._cls.get_component(_entityx._entity_manager, entity_id)
         if not component:
             component = self._cls(*self._args, **self._kwargs)
-            component.assign_to(entity)
+            component.assign_to(_entityx._entity_manager, entity_id)
         return component
 
 
@@ -77,27 +77,28 @@ class Entity(_entityx.Entity):
     __metaclass__ = EntityMetaClass
 
     def __new__(cls, *args, **kwargs):
-        entity = kwargs.pop('raw_entity', None)
+        entity_id = kwargs.pop('entity_id', None)
         self = _entityx.Entity.__new__(cls)
-        if entity is None:
-            entity = _entityx._entity_manager.create()
-            component = _entityx.PythonComponent(self)
-            component.assign_to(entity)
-        _entityx.Entity.__init__(self, entity)
+        if entity_id is None:
+            entity_id = _entityx._entity_manager.configure(self)
+        _entityx.Entity.__init__(self, _entityx._entity_manager, entity_id)
         for k, v in self._components.items():
-            setattr(self, k, v._build(self._entity))
+            setattr(self, k, v._build(self._entity_id))
         return self
 
     def __init__(self):
         """Default constructor."""
 
+    def __repr__(self):
+        return '<%s.%s %d.%d>' % (self.__class__.__module__, self.__class__.__name__, self._entity_id.index, self._entity_id.version)
+
     @classmethod
-    def _from_raw_entity(cls, raw_entity, *args, **kwargs):
+    def _from_raw_entity(cls, entity_id, *args, **kwargs):
         """Create a new Entity from a raw entity.
 
         This is called from C++.
         """
-        self = Entity.__new__(cls, raw_entity=raw_entity)
+        self = Entity.__new__(cls, entity_id=entity_id)
         cls.__init__(self, *args, **kwargs)
         return self
 

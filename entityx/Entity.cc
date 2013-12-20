@@ -27,8 +27,8 @@ void Entity::destroy() {
   invalidate();
 }
 
-bool Entity::valid() const {
-  return !manager_.expired() && manager_.lock()->valid(id_);
+std::bitset<entityx::MAX_COMPONENTS> Entity::component_mask() const {
+  return manager_.lock()->component_mask(id_);
 }
 
 EntityManager::EntityManager(ptr<EventManager> event_manager) : event_manager_(event_manager) {

@@ -8,18 +8,21 @@
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
-// http://docs.python.org/2/extending/extending.html
+// NOTE: MUST be first include. See http://docs.python.org/2/extending/extending.html
 #include <Python.h>
+#include <gtest/gtest.h>
+#include <boost/python.hpp>
 #include <cassert>
 #include <vector>
 #include <string>
-#include <gtest/gtest.h>
-#include <boost/python.hpp>
+#include <iostream>
 #include "entityx/Entity.h"
 #include "entityx/Event.h"
 #include "entityx/python/PythonSystem.h"
 
 namespace py = boost::python;
+using std::cerr;
+using std::endl;
 using namespace entityx;
 using namespace entityx::python;
 
@@ -50,8 +53,8 @@ struct CollisionEventProxy : public PythonEventProxy, public Receiver<CollisionE
 
   void receive(const CollisionEvent &event) {
     for (auto entity : entities) {
-      auto py_entity = entity.component<PythonComponent>();
       if (entity == event.a || entity == event.b) {
+        auto py_entity = entity.component<PythonComponent>();
         py_entity->object.attr("on_collision")(event);
       }
     }
@@ -75,8 +78,8 @@ BOOST_PYTHON_MODULE(entityx_python_test) {
     .def_readwrite("y", &Direction::y);
 
   py::class_<CollisionEvent, ptr<CollisionEvent>, py::bases<BaseEvent>>("Collision", py::init<Entity, Entity>())
-    .def_readonly("a", &CollisionEvent::a)
-    .def_readonly("b", &CollisionEvent::b);
+    .add_property("a", py::make_getter(&CollisionEvent::a, py::return_value_policy<py::return_by_value>()))
+    .add_property("b", py::make_getter(&CollisionEvent::b, py::return_value_policy<py::return_by_value>()));
 }
 
 
@@ -95,7 +98,7 @@ protected:
       initentityx_python_test();
       initialized = true;
     }
-    system->add_event_proxy<CollisionEvent, CollisionEventProxy>(ev, ptr<CollisionEventProxy>(new CollisionEventProxy()));
+    system->add_event_proxy<CollisionEvent>(ev, ptr<CollisionEventProxy>(new CollisionEventProxy()));
     system->configure(ev);
   }
 
@@ -196,6 +199,7 @@ TEST_F(PythonSystemTest, TestEventDelivery) {
     Entity g = em->create();
     auto scripte = e.assign<PythonComponent>("entityx.tests.event_test", "EventTest");
     auto scriptf = f.assign<PythonComponent>("entityx.tests.event_test", "EventTest");
+    auto scriptg = g.assign<PythonComponent>("entityx.tests.event_test", "EventTest");
     ASSERT_FALSE(scripte->object.attr("collided"));
     ASSERT_FALSE(scriptf->object.attr("collided"));
     ev->emit<CollisionEvent>(f, g);
