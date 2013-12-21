@@ -13,7 +13,6 @@ set(ENTITYX_RUN_BENCHMARKS false CACHE BOOL "Run benchmarks (in conjunction with
 set(ENTITYX_MAX_COMPONENTS 64 CACHE STRING "Set the maximum number of components.")
 set(ENTITYX_USE_CPP11_STDLIB true CACHE BOOL "For Clang, specify whether to use libc++ (-stdlib=libc++).")
 set(ENTITYX_BUILD_SHARED false CACHE BOOL "Build shared libraries?")
-set(ENTITYX_BUILD_PYTHON false CACHE BOOL "Build entityx::python?")
 
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 include(CheckCXXSourceCompiles)
@@ -91,13 +90,6 @@ require(HAS_CXX11_LONG_LONG "C++11 lambdas")
 message("-- Checking misc features")
 require(HAVE_STDINT_H "stdint.h")
 
-if (ENTITYX_BUILD_PYTHON)
-    message("-- Building with Python support (-DENTITYX_BUILD_PYTHON=0 to disable)")
-    find_package(Boost 1.48.0 COMPONENTS python)
-else (ENTITYX_BUILD_PYTHON)
-    message("-- Python support disabled")
-endif (ENTITYX_BUILD_PYTHON)
-
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
@@ -119,35 +111,6 @@ if (ENTITYX_BUILD_SHARED)
     list(APPEND install_libs entityx_shared)
 endif (ENTITYX_BUILD_SHARED)
 
-if (ENTITYX_BUILD_PYTHON AND Boost_PYTHON_LIBRARY)
-    message("-- Found boost::python, building entityx/python")
-    find_package(PythonLibs REQUIRED)
-    include_directories(${PYTHON_INCLUDE_DIRS})
-    set(ENTITYX_HAVE_BOOST_PYTHON 1)
-    set(python_sources entityx/python/PythonSystem.cc)
-    add_library(entityx_python STATIC ${python_sources})
-    list(APPEND install_libs entityx_python)
-    install(
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/entityx/python/entityx/__init__.py
-        DESTINATION share/entityx/python/
-        RENAME entityx.py
-    )
-    message("-- Installing entityx Python package to ${CMAKE_INSTALL_PREFIX}/share/entityx/python")
-    set(ENTITYX_INSTALLED_PYTHON_PACKAGE_DIR ${CMAKE_INSTALL_PREFIX}/share/entityx/python/)
-    if (ENTITYX_BUILD_SHARED)
-        add_library(entityx_python_shared SHARED ${python_sources})
-        target_link_libraries(
-            entityx_python_shared
-            entityx_shared
-            ${Boost_PYTHON_LIBRARY}
-            ${PYTHON_LIBRARIES}
-        )
-        set_target_properties(entityx_python_shared PROPERTIES OUTPUT_NAME entityx_python)
-        list(APPEND install_libs entityx_python_shared)
-    endif (ENTITYX_BUILD_SHARED)
-    set(CMAKE_REQUIRED_FLAGS ${CMAKE_CXX_FLAGS})
-endif (ENTITYX_BUILD_PYTHON AND Boost_PYTHON_LIBRARY)
-
 if (ENTITYX_BUILD_TESTING)
     #find_package(Boost 1.48.0 REQUIRED COMPONENTS timer system)
     add_subdirectory(gtest-1.6.0)
@@ -158,10 +121,6 @@ if (ENTITYX_BUILD_TESTING)
     create_test(system_test entityx/System_test.cc)
     create_test(tags_component_test entityx/tags/TagsComponent_test.cc)
     create_test(dependencies_test entityx/deps/Dependencies_test.cc)
-    if (Boost_PYTHON_LIBRARY)
-        add_definitions(-DENTITYX_PYTHON_TEST_DATA=\"${CMAKE_CURRENT_SOURCE_DIR}/entityx/python\")
-        create_test(python_test entityx/python/PythonSystem_test.cc entityx_python ${Boost_PYTHON_LIBRARY} ${PYTHON_LIBRARIES})
-    endif (Boost_PYTHON_LIBRARY)
     if (ENTITYX_RUN_BENCHMARKS)
         message("-- Running benchmarks")
         add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1 -DBOOST_NO_CXX11_NUMERIC_LIMITS=1)
