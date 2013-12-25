@@ -17,6 +17,8 @@ static const uint64_t MAX_COMPONENTS = ENTITYX_MAX_COMPONENTS;
 
 // Which shared_ptr implementation should we use?
 #include <memory>
+// for std::forward()
+#include <utility>
 
 namespace entityx {
 
@@ -34,6 +36,11 @@ using enable_shared_from_this = std::enable_shared_from_this<T>;
 }  // namespace entityx
 
 namespace entityx {
+
+template <typename T, typename... Args>
+ptr<T> make_ptr(Args&&... args) {
+    return ptr<T>(::new T(std::forward<Args>(args)...));
+}
 
 template <typename T>
 bool operator == (const weak_ptr<T> &a, const weak_ptr<T> &b) {
