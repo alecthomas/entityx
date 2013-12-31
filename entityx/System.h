@@ -12,6 +12,7 @@
 
 
 #include <unordered_map>
+#include <utility>
 #include <stdint.h>
 #include <cassert>
 #include "entityx/config.h"
@@ -108,7 +109,7 @@ class SystemManager : entityx::help::NonCopyable, public enable_shared_from_this
    */
   template <typename S, typename ... Args>
   ptr<S> add(Args && ... args) {
-    ptr<S> s(new S(args ...));
+    ptr<S> s(new S(std::forward<Args>(args) ...));
     add(s);
     return s;
   }

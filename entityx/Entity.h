@@ -474,7 +474,7 @@ class EntityManager : entityx::help::NonCopyable, public enable_shared_from_this
    */
   template <typename C, typename ... Args>
   ptr<C> assign(Entity::Id entity, Args && ... args) {
-    return assign<C>(entity, ptr<C>(new C(args ...)));
+    return assign<C>(entity, ptr<C>(new C(std::forward<Args>(args) ...)));
   }
 
   /**
@@ -630,7 +630,7 @@ ptr<C> Entity::assign(ptr<C> component) {
 template <typename C, typename ... Args>
 ptr<C> Entity::assign(Args && ... args) {
   assert(valid());
-  return manager_.lock()->assign<C>(id_, args ...);
+  return manager_.lock()->assign<C>(id_, std::forward<Args>(args) ...);
 }
 
 template <typename C>
