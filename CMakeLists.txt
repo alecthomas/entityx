@@ -136,6 +136,21 @@ configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/entityx/config.h
 )
 
+
+if (NOT WINDOWS OR CYGWIN)
+    set(entityx_libs -lentityx)
+
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/entityx.pc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/entityx.pc
+        )
+
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/entityx.pc
+        DESTINATION "lib/pkgconfig"
+        )
+endif()
+
 install(
     DIRECTORY "entityx"
     DESTINATION "include"
