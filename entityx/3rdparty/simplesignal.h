@@ -2,10 +2,10 @@
 #ifndef SIMPLE_SIGNAL_H__
 #define SIMPLE_SIGNAL_H__
 
-#include <unistd.h>
 #include <assert.h>
 #include <stdint.h>
 #include <vector>
+#include <functional>
 
 namespace Simple {
 
@@ -81,7 +81,7 @@ private:
     void
     unlink ()
     {
-      function = 0;
+      function = nullptr;
       if (next)
         next->prev = prev;
       if (prev)

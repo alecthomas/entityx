@@ -27,6 +27,7 @@ You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitte
 
 ## Recent Notable Changes
 
+- 2014-02-13 - Visual C++ support thanks to [Jarrett Chisholm](https://github.com/jarrettchisholm)!
 - 2013-10-29 - Boost has been removed as a primary dependency for builds not using python.
 - 2013-08-21 - Remove dependency on `boost::signal` and switch to embedded [Simple::Signal](http://timj.testbit.eu/2013/cpp11-signal-system-performance/).
 - 2013-08-18 - Destroying an entity invalidates all other references
@@ -320,12 +321,13 @@ while (true) {
 
 EntityX has the following build and runtime requirements:
 
-- A C++ compiler that supports a basic set of C++11 features (ie. Clang >= 3.1, GCC >= 4.7, and maybe (untested) VC++ with the [Nov 2012 CTP](http://www.microsoft.com/en-us/download/details.aspx?id=35515)).
+- A C++ compiler that supports a basic set of C++11 features (ie. Clang >= 3.1, GCC >= 4.7, and Visual C++.
+- For Visual C++ support you will need at least [Visual Studio 2013](http://www.microsoft.com/en-ca/download/details.aspx?id=40787) with [Update 1](http://www.microsoft.com/en-us/download/details.aspx?id=41650) and [Update 2 CTP](http://www.microsoft.com/en-us/download/details.aspx?id=41699) installed.
 - [CMake](http://cmake.org/)
 
 ### C++11 compiler and library support
 
-C++11 support is quite...raw. To make life more interesting, C++ support really means two things: language features supported by the compiler, and library features.
+C++11 support is quite...raw. To make life more interesting, C++ support really means two things: language features supported by the compiler, and library features. EntityX tries to support the most common options, including the default C++ library for the compiler/platform, and libstdc++.
 
 ### Installing on OSX Mountain Lion
 

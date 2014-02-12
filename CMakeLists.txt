@@ -18,18 +18,31 @@ include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 include(CheckCXXSourceCompiles)
 
 # Default compiler args
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=sign-compare -std=c++11")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=sign-compare -std=c++11")
+	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+	set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
+	set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	# /Zi - Produces a program database (PDB) that contains type information and symbolic debugging information for use with the debugger.
+	# /FS - Allows multiple cl.exe processes to write to the same .pdb file
+	# /DEBUG - Enable debug during linking
+	# /Od - Disables optimization
+	set(CMAKE_CXX_FLAGS_DEBUG "/Zi /FS /DEBUG /Od")
+	# /Ox - Full optimization
+	set(CMAKE_CXX_FLAGS_RELEASE "/Ox -DNDEBUG")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Ox /Zi /FS /DEBUG")
+endif()
 
 # C++11 feature checks
 include(CheckCXX11Features.cmake)
 
 add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1)
 set(OLD_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+endif()
 check_cxx_source_compiles(
 "
 #include <memory>
@@ -90,10 +103,21 @@ require(HAS_CXX11_LONG_LONG "C++11 lambdas")
 message("-- Checking misc features")
 require(HAVE_STDINT_H "stdint.h")
 
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+	set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
+	set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	# /Zi - Produces a program database (PDB) that contains type information and symbolic debugging information for use with the debugger.
+	# /FS - Allows multiple cl.exe processes to write to the same .pdb file
+	# /DEBUG - Enable debug during linking
+	# /Od - Disables optimization
+	set(CMAKE_CXX_FLAGS_DEBUG "/Zi /FS /DEBUG /Od")
+	# /Ox - Full optimization
+	set(CMAKE_CXX_FLAGS_RELEASE "/Ox -DNDEBUG")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Ox /Zi /FS /DEBUG")
+endif()
 
 # Things to install
 set(install_libs entityx)

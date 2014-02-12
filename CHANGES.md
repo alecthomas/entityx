@@ -1,5 +1,11 @@
 # Change Log
 
+## 2014-02-13 - Support for Visual C++
+
+[Jarrett Chisholm](https://github.com/jarrettchisholm) has added conditional compilation support for VC++ and fixed some issues that prevented compilation, so EntityX now fully supports Visual C++!
+
+You will need at least [Visual Studio 2013](http://www.microsoft.com/en-ca/download/details.aspx?id=40787) with [Update 1](http://www.microsoft.com/en-us/download/details.aspx?id=41650) and [Update 2 CTP](http://www.microsoft.com/en-us/download/details.aspx?id=41699) installed. The usual CMake installation instructions should "just work" and correctly provide VC++ support.
+
 ## 2013-10-29 [no-boost branch] - Removed boost dependency for everything except python integration.
 
 This branch requires C++11 support and has removed all the non-boost::python dependecies, reducing the overhead of running entityx.
