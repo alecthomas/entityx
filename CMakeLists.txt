@@ -122,7 +122,7 @@ endif()
 # Things to install
 set(install_libs entityx)
 
-set(sources entityx/tags/TagsComponent.cc entityx/deps/Dependencies.cc entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/Manager.cc entityx/help/Timer.cc)
+set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc)
 add_library(entityx STATIC ${sources})
 
 if (ENTITYX_BUILD_SHARED)

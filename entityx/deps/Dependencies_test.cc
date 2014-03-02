@@ -10,6 +10,7 @@
 
 #include <gtest/gtest.h>
 #include "entityx/deps/Dependencies.h"
+#include "entityx/quick.h"
 
 
 namespace ex = entityx;
@@ -25,25 +26,15 @@ struct B : public ex::Component<B> {
 struct C : public ex::Component<C> {};
 
 
-class DepsTest : public ::testing::Test {
- protected:
-  DepsTest() : events(ex::EventManager::make()),
-               entities(ex::EntityManager::make(events)),
-               systems(ex::SystemManager::make(entities, events)) {}
-
-  ex::ptr<ex::EventManager> events;
-  ex::ptr<ex::EntityManager> entities;
-  ex::ptr<ex::SystemManager> systems;
-
-  virtual void SetUp() {}
+class DepsTest : public ::testing::Test, public ex::EntityX {
 };
 
 
 TEST_F(DepsTest, TestSingleDependency) {
-  systems->add<deps::Dependency<A, B>>();
-  systems->configure();
+  systems.add<deps::Dependency<A, B>>();
+  systems.configure();
 
-  ex::Entity e = entities->create();
+  ex::Entity e = entities.create();
   ASSERT_FALSE(static_cast<bool>(e.component<A>()));
   ASSERT_FALSE(static_cast<bool>(e.component<B>()));
   e.assign<A>();
@@ -52,10 +43,10 @@ TEST_F(DepsTest, TestSingleDependency) {
 }
 
 TEST_F(DepsTest, TestMultipleDependencies) {
-  systems->add<deps::Dependency<A, B, C>>();
-  systems->configure();
+  systems.add<deps::Dependency<A, B, C>>();
+  systems.configure();
 
-  ex::Entity e = entities->create();
+  ex::Entity e = entities.create();
   ASSERT_FALSE(static_cast<bool>(e.component<A>()));
   ASSERT_FALSE(static_cast<bool>(e.component<B>()));
   ASSERT_FALSE(static_cast<bool>(e.component<C>()));
@@ -66,10 +57,10 @@ TEST_F(DepsTest, TestMultipleDependencies) {
 }
 
 TEST_F(DepsTest, TestDependencyDoesNotRecreateComponent) {
-  systems->add<deps::Dependency<A, B>>();
-  systems->configure();
+  systems.add<deps::Dependency<A, B>>();
+  systems.configure();
 
-  ex::Entity e = entities->create();
+  ex::Entity e = entities.create();
   e.assign<B>(true);
   ASSERT_TRUE(e.component<B>()->b);
   e.assign<A>();

@@ -11,9 +11,9 @@
 #pragma once
 
 
+#include <stdint.h>
 #include <unordered_map>
 #include <utility>
-#include <stdint.h>
 #include <cassert>
 #include "entityx/config.h"
 #include "entityx/Entity.h"
@@ -22,6 +22,10 @@
 
 
 namespace entityx {
+
+
+class SystemManager;
+
 
 /**
  * Base System class. Generally should not be directly used, instead see System<Derived>.
@@ -37,14 +41,14 @@ class BaseSystem : entityx::help::NonCopyable {
    *
    * Typically used to set up event handlers.
    */
-  virtual void configure(ptr<EventManager> events) {}
+  virtual void configure(EventManager &events) {}
 
   /**
    * Apply System behavior.
    *
    * Called every game step.
    */
-  virtual void update(ptr<EntityManager> entities, ptr<EventManager> events, double dt) = 0;
+  virtual void update(EntityManager &entities, EventManager &events, double dt) = 0;
 
   static Family family_counter_;
 
@@ -56,7 +60,7 @@ class BaseSystem : entityx::help::NonCopyable {
  * Use this class when implementing Systems.
  *
  * struct MovementSystem : public System<MovementSystem> {
- *   void update(ptr<EntityManager> entities, EventManager &events, double dt) {
+ *   void update(EntityManager &entities, EventManager &events, double dt) {
  *     // Do stuff to/with entities...
  *   }
  * }
@@ -66,6 +70,9 @@ class System : public BaseSystem {
  public:
   virtual ~System() {}
 
+private:
+  friend class SystemManager;
+
   static Family family() {
     static Family family = family_counter_++;
     return family;
@@ -73,17 +80,12 @@ class System : public BaseSystem {
 };
 
 
-class SystemManager : entityx::help::NonCopyable, public enable_shared_from_this<SystemManager> {
+class SystemManager : entityx::help::NonCopyable {
  public:
-  SystemManager(ptr<EntityManager> entity_manager,
-                ptr<EventManager> event_manager) :
+  SystemManager(EntityManager &entity_manager,
+                EventManager &event_manager) :
                 entity_manager_(entity_manager),
                 event_manager_(event_manager) {}
-
-  static ptr<SystemManager> make(ptr<EntityManager> entity_manager,
-                  ptr<EventManager> event_manager) {
-    return ptr<SystemManager>(new SystemManager(entity_manager, event_manager));
-  }
 
   /**
    * Add a System to the SystemManager.
@@ -91,11 +93,11 @@ class SystemManager : entityx::help::NonCopyable, public enable_shared_from_this
    * Must be called before Systems can be used.
    *
    * eg.
-   * ptr<MovementSystem> movement = entityx::make_shared<MovementSystem>();
+   * std::shared_ptr<MovementSystem> movement = entityx::make_shared<MovementSystem>();
    * system.add(movement);
    */
   template <typename S>
-  void add(ptr<S> system) {
+  void add(std::shared_ptr<S> system) {
     systems_.insert(std::make_pair(S::family(), system));
   }
 
@@ -108,8 +110,8 @@ class SystemManager : entityx::help::NonCopyable, public enable_shared_from_this
    * auto movement = system.add<MovementSystem>();
    */
   template <typename S, typename ... Args>
-  ptr<S> add(Args && ... args) {
-    ptr<S> s(new S(std::forward<Args>(args) ...));
+  std::shared_ptr<S> add(Args && ... args) {
+    std::shared_ptr<S> s(new S(std::forward<Args>(args) ...));
     add(s);
     return s;
   }
@@ -117,17 +119,17 @@ class SystemManager : entityx::help::NonCopyable, public enable_shared_from_this
   /**
    * Retrieve the registered System instance, if any.
    *
-   *   ptr<CollisionSystem> collisions = systems.system<CollisionSystem>();
+   *   std::shared_ptr<CollisionSystem> collisions = systems.system<CollisionSystem>();
    *
-   * @return System instance or empty shared_ptr<S>.
+   * @return System instance or empty shared_std::shared_ptr<S>.
    */
   template <typename S>
-  ptr<S> system() {
+  std::shared_ptr<S> system() {
     auto it = systems_.find(S::family());
     assert(it != systems_.end());
     return it == systems_.end()
-        ? ptr<S>()
-        : ptr<S>(static_pointer_cast<S>(it->second));
+        ? std::shared_ptr<S>()
+        : std::shared_ptr<S>(std::static_pointer_cast<S>(it->second));
   }
 
   /**
@@ -136,7 +138,7 @@ class SystemManager : entityx::help::NonCopyable, public enable_shared_from_this
   template <typename S>
   void update(double dt) {
     assert(initialized_ && "SystemManager::configure() not called");
-    ptr<S> s = system<S>();
+    std::shared_ptr<S> s = system<S>();
     s->update(entity_manager_, event_manager_, dt);
   }
 
@@ -149,9 +151,9 @@ class SystemManager : entityx::help::NonCopyable, public enable_shared_from_this
 
  private:
   bool initialized_ = false;
-  ptr<EntityManager> entity_manager_;
-  ptr<EventManager> event_manager_;
-  std::unordered_map<BaseSystem::Family, ptr<BaseSystem>> systems_;
+  EntityManager &entity_manager_;
+  EventManager &event_manager_;
+  std::unordered_map<BaseSystem::Family, std::shared_ptr<BaseSystem>> systems_;
 };
 
 }  // namespace entityx

@@ -10,10 +10,11 @@
 
 #pragma once
 
+#include <unordered_map>
 #include <stdint.h>
 #include <list>
+#include <memory>
 #include <utility>
-#include <unordered_map>
 #include "entityx/config.h"
 #include "entityx/3rdparty/simplesignal.h"
 #include "entityx/help/NonCopyable.h"
@@ -37,8 +38,8 @@ class BaseEvent {
 
 
 typedef Simple::Signal<void (const BaseEvent*)> EventSignal;
-typedef ptr<EventSignal> EventSignalPtr;
-typedef weak_ptr<EventSignal> EventSignalWeakPtr;
+typedef std::shared_ptr<EventSignal> EventSignalPtr;
+typedef std::weak_ptr<EventSignal> EventSignalWeakPtr;
 
 
 /**
@@ -107,10 +108,6 @@ class EventManager : entityx::help::NonCopyable {
   EventManager();
   virtual ~EventManager();
 
-  static ptr<EventManager> make() {
-    return ptr<EventManager>(new EventManager());
-  }
-
   /**
    * Subscribe an object to receive events of type E.
    *
@@ -142,7 +139,7 @@ class EventManager : entityx::help::NonCopyable {
    * Emit an already constructed event.
    */
   template <typename E>
-  void emit(ptr<E> event) {
+  void emit(std::unique_ptr<E> event) {
     auto sig = signal_for(E::family());
     sig->emit(static_cast<BaseEvent*>(event.get()));
   }
@@ -154,7 +151,7 @@ class EventManager : entityx::help::NonCopyable {
    *
    * eg.
    *
-   * ptr<EventManager> em = new EventManager();
+   * std::shared_ptr<EventManager> em = new EventManager();
    * em->emit<Explosion>(10);
    *
    */

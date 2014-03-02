@@ -5,3 +5,4 @@
 #include "entityx/Entity.h"
 #include "entityx/System.h"
 #include "entityx/Manager.h"
+#include "entityx/quick.h"

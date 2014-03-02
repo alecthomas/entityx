@@ -18,20 +18,20 @@ BaseComponent::Family BaseComponent::family_counter_ = 0;
 
 void Entity::invalidate() {
   id_ = INVALID;
-  manager_.reset();
+  manager_ = nullptr;
 }
 
 void Entity::destroy() {
   assert(valid());
-  manager_.lock()->destroy(id_);
+  manager_->destroy(id_);
   invalidate();
 }
 
 std::bitset<entityx::MAX_COMPONENTS> Entity::component_mask() const {
-  return manager_.lock()->component_mask(id_);
+  return manager_->component_mask(id_);
 }
 
-EntityManager::EntityManager(ptr<EventManager> event_manager) : event_manager_(event_manager) {
+EntityManager::EntityManager(EventManager &event_manager) : event_manager_(event_manager) {
 }
 
 EntityManager::~EntityManager() {

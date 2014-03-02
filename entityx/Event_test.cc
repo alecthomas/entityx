@@ -33,49 +33,49 @@ struct ExplosionSystem : public Receiver<ExplosionSystem> {
 };
 
 TEST(EventManagerTest, TestEmitReceive) {
-  auto em = EventManager::make();
+  EventManager em;
   ExplosionSystem explosion_system;
-  em->subscribe<Explosion>(explosion_system);
+  em.subscribe<Explosion>(explosion_system);
   ASSERT_EQ(0, explosion_system.damage_received);
-  em->emit<Explosion>(10);
+  em.emit<Explosion>(10);
   ASSERT_EQ(10, explosion_system.damage_received);
 }
 
 
 TEST(EventManagerTest, TestUntypedEmitReceive) {
-  auto em = EventManager::make();
+  EventManager em;
   ExplosionSystem explosion_system;
-  em->subscribe<Explosion>(explosion_system);
+  em.subscribe<Explosion>(explosion_system);
   ASSERT_EQ(0, explosion_system.damage_received);
   Explosion explosion(10);
-  em->emit(explosion);
+  em.emit(explosion);
   ASSERT_EQ(10, explosion_system.damage_received);
 }
 
 
 TEST(EventManagerTest, TestReceiverExpired) {
-  auto em = EventManager::make();
+  EventManager em;
   {
     ExplosionSystem explosion_system;
-    em->subscribe<Explosion>(explosion_system);
-    em->emit<Explosion>(10);
+    em.subscribe<Explosion>(explosion_system);
+    em.emit<Explosion>(10);
     ASSERT_EQ(10, explosion_system.damage_received);
     ASSERT_EQ(1, explosion_system.connected_signals());
-    ASSERT_EQ(1, em->connected_receivers());
+    ASSERT_EQ(1, em.connected_receivers());
   }
-  ASSERT_EQ(0, em->connected_receivers());
+  ASSERT_EQ(0, em.connected_receivers());
 }
 
 
 TEST(EventManagerTest, TestSenderExpired) {
   ExplosionSystem explosion_system;
   {
-    auto em = EventManager::make();
-    em->subscribe<Explosion>(explosion_system);
-    em->emit<Explosion>(10);
+    EventManager em;
+    em.subscribe<Explosion>(explosion_system);
+    em.emit<Explosion>(10);
     ASSERT_EQ(10, explosion_system.damage_received);
     ASSERT_EQ(1, explosion_system.connected_signals());
-    ASSERT_EQ(1, em->connected_receivers());
+    ASSERT_EQ(1, em.connected_receivers());
   }
   ASSERT_EQ(0, explosion_system.connected_signals());
 }

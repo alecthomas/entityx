@@ -8,11 +8,11 @@
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
+#include <gtest/gtest.h>
 #include <string>
 #include <vector>
-#include <gtest/gtest.h>
-#include "entityx/Manager.h"
 #include "entityx/System.h"
+#include "entityx/quick.h"
 
 
 // using namespace std;
@@ -36,8 +36,8 @@ class MovementSystem : public System<MovementSystem> {
  public:
   explicit MovementSystem(string label = "") : label(label) {}
 
-  void update(ptr<EntityManager> es, ptr<EventManager> events, double) override {
-    EntityManager::View entities = es->entities_with_components<Position, Direction>();
+  void update(EntityManager &es, EventManager &events, double) override {
+    EntityManager::View entities = es.entities_with_components<Position, Direction>();
     ComponentPtr<Position> position;
     ComponentPtr<Direction> direction;
     for (auto entity : entities) {
@@ -51,59 +51,49 @@ class MovementSystem : public System<MovementSystem> {
 };
 
 
-class TestManager : public entityx::Manager {
+class TestContainer : public EntityX {
  public:
-  std::vector<Entity> entities;
+  std::vector<Entity> created_entities;
 
-  ptr<SystemManager> sm() { return system_manager; }
-  ptr<EntityManager> em() { return entity_manager; }
-
- protected:
-  void configure() override {
-  }
-
-  void initialize() override {
+  void initialize() {
     for (int i = 0; i < 150; ++i) {
-      Entity e = entity_manager->create();
-      entities.push_back(e);
+      Entity e = entities.create();
+      created_entities.push_back(e);
       if (i % 2 == 0)
         e.assign<Position>(1, 2);
       if (i % 3 == 0)
         e.assign<Direction>(1, 1);
     }
   }
-
-  void update(double dt) override {
-  }
 };
 
 
 class SystemManagerTest : public ::testing::Test {
  protected:
-  TestManager manager;
+  TestContainer manager;
 
   virtual void SetUp() override {
-    manager.start();
+    manager.initialize();
   }
 };
 
 
 TEST_F(SystemManagerTest, TestConstructSystemWithArgs) {
-  manager.sm()->add<MovementSystem>("movement");
-  manager.sm()->configure();
+  manager.systems.add<MovementSystem>("movement");
+  manager.systems.configure();
 
-  ASSERT_EQ("movement", manager.sm()->system<MovementSystem>()->label);
+  ASSERT_EQ("movement", manager.systems.system<MovementSystem>()->label);
 }
 
 
 TEST_F(SystemManagerTest, TestApplySystem) {
-  manager.sm()->add<MovementSystem>();
-  manager.sm()->configure();
+  manager.systems.add<MovementSystem>();
+  manager.systems.configure();
 
-  manager.sm()->update<MovementSystem>(0.0);
+  manager.systems.update<MovementSystem>(0.0);
   ComponentPtr<Position> position;
   ComponentPtr<Direction> direction;
-  for (auto entity : manager.entities) {
+  for (auto entity : manager.created_entities) {
     entity.unpack<Position, Direction>(position, direction);
     if (position && direction) {
       ASSERT_FLOAT_EQ(2.0, position->x);

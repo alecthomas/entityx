@@ -19,10 +19,10 @@ private:
 
 class BenchmarksTest : public ::testing::Test {
 protected:
-  BenchmarksTest() : ev(EventManager::make()), em(EntityManager::make(ev)) {}
+  BenchmarksTest() : em(ev) {}
 
-  ptr<EventManager> ev;
-  ptr<EntityManager> em;
+  EventManager ev;
+  EntityManager em;
 };
 
 
@@ -33,7 +33,7 @@ TEST_F(BenchmarksTest, TestCreateEntities) {
   cout << "creating " << count << " entities" << endl;
 
   for (uint64_t i = 0; i < count; i++) {
-    em->create();
+    em.create();
   }
 }
 
@@ -42,7 +42,7 @@ TEST_F(BenchmarksTest, TestDestroyEntities) {
   uint64_t count = 10000000L;
   vector<Entity> entities;
   for (uint64_t i = 0; i < count; i++) {
-    entities.push_back(em->create());
+    entities.push_back(em.create());
   }
 
   AutoTimer t;
@@ -60,7 +60,7 @@ struct Listener : public Receiver<Listener> {
 
 TEST_F(BenchmarksTest, TestCreateEntitiesWithListener) {
   Listener listen;
-  ev->subscribe<EntityCreatedEvent>(listen);
+  ev.subscribe<EntityCreatedEvent>(listen);
 
   uint64_t count = 10000000L;
 
@@ -69,18 +69,18 @@ TEST_F(BenchmarksTest, TestCreateEntitiesWithListener) {
 
   vector<Entity> entities;
   for (uint64_t i = 0; i < count; i++) {
-    entities.push_back(em->create());
+    entities.push_back(em.create());
   }
 }
 
 TEST_F(BenchmarksTest, TestDestroyEntitiesWithListener) {
   Listener listen;
-  ev->subscribe<EntityDestroyedEvent>(listen);
+  ev.subscribe<EntityDestroyedEvent>(listen);
 
   uint64_t count = 10000000L;
   vector<Entity> entities;
   for (uint64_t i = 0; i < count; i++) {
-    entities.push_back(em->create());
+    entities.push_back(em.create());
   }
 
   AutoTimer t;
@@ -98,7 +98,7 @@ TEST_F(BenchmarksTest, TestEntityIteration) {
   uint64_t count = 10000000L;
   vector<Entity> entities;
   for (uint64_t i = 0; i < count; i++) {
-    auto e = em->create();
+    auto e = em.create();
     e.assign<Position>();
     entities.push_back(e);
   }
@@ -108,7 +108,7 @@ TEST_F(BenchmarksTest, TestEntityIteration) {
 
   for (int i = 0; i < 10; ++i) {
     ComponentPtr<Position> position;
-    for (auto e : em->entities_with_components<Position>(position)) {
+    for (auto e : em.entities_with_components<Position>(position)) {
     }
   }
 }

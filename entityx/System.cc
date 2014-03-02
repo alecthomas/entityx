@@ -15,10 +15,10 @@ namespace entityx {
 BaseSystem::Family BaseSystem::family_counter_;
 
 void SystemManager::configure() {
-  for (auto pair : systems_) {
+  for (auto &pair : systems_) {
     pair.second->configure(event_manager_);
   }
   initialized_ = true;
 }
 
-}
+}  // namespace entityx
