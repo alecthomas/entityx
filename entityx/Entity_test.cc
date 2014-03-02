@@ -144,24 +144,14 @@ TEST_F(EntityManagerTest, TestComponentConstruction) {
   ASSERT_FLOAT_EQ(2.0, cp->y);
 }
 
-TEST_F(EntityManagerTest, TestComponentCreationWithObject) {
-  auto e = em->create();
-  auto p = e.assign(ptr<Position>(new Position(1.0, 2.0)));
-  auto cp = e.component<Position>();
-  ASSERT_EQ(p, cp);
-  ASSERT_FLOAT_EQ(1.0, cp->x);
-  ASSERT_FLOAT_EQ(2.0, cp->y);
-}
-
 TEST_F(EntityManagerTest, TestDestroyEntity) {
   Entity e = em->create();
   Entity f = em->create();
-  auto ep = e.assign<Position>();
+  e.assign<Position>();
   f.assign<Position>();
   e.assign<Direction>();
   f.assign<Direction>();
 
-  ASSERT_EQ(2, use_count(ep));
   ASSERT_TRUE(e.valid());
   ASSERT_TRUE(f.valid());
   ASSERT_TRUE(static_cast<bool>(e.component<Position>()));
@@ -175,7 +165,6 @@ TEST_F(EntityManagerTest, TestDestroyEntity) {
   ASSERT_TRUE(f.valid());
   ASSERT_TRUE(static_cast<bool>(f.component<Position>()));
   ASSERT_TRUE(static_cast<bool>(f.component<Direction>()));
-  ASSERT_EQ(1, use_count(ep));
 }
 
 TEST_F(EntityManagerTest, TestGetEntitiesWithComponent) {
@@ -210,7 +199,7 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
   Entity e = em->create();
   Entity f = em->create();
   Entity g = em->create();
-  std::vector<std::pair<ptr<Position>, ptr<Direction>>> position_directions;
+  std::vector<std::pair<ComponentPtr<Position>, ComponentPtr<Direction>>> position_directions;
   position_directions.push_back(std::make_pair(
           e.assign<Position>(1.0f, 2.0f),
           e.assign<Direction>(3.0f, 4.0f)));
@@ -222,10 +211,10 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
   int i = 0;
 
 
-  ptr<Position> position;
+  ComponentPtr<Position> position;
   ASSERT_EQ(3, size(em->entities_with_components(position)));
 
-  ptr<Direction> direction;
+  ComponentPtr<Direction> direction;
   for (auto unused_entity : em->entities_with_components(position, direction)) {
     (void)unused_entity;
     ASSERT_TRUE(static_cast<bool>(position));
@@ -236,7 +225,7 @@ TEST_F(EntityManagerTest, TestGetEntitiesWithComponentAndUnpacking) {
     ++i;
   }
   ASSERT_EQ(2, i);
-  ptr<Tag> tag;
+  ComponentPtr<Tag> tag;
   i = 0;
   for (auto unused_entity : em->entities_with_components(position, direction, tag)) {
     (void)unused_entity;
@@ -258,9 +247,9 @@ TEST_F(EntityManagerTest, TestUnpack) {
   auto d = e.assign<Direction>(3.0, 4.0);
   auto t = e.assign<Tag>("tag");
 
-  ptr<Position> up;
-  ptr<Direction> ud;
-  ptr<Tag> ut;
+  ComponentPtr<Position> up;
+  ComponentPtr<Direction> ud;
+  ComponentPtr<Tag> ut;
   e.unpack(up);
   ASSERT_EQ(p, up);
   e.unpack(up, ud);
@@ -378,7 +367,7 @@ TEST_F(EntityManagerTest, TestComponentRemovedEvent) {
       removed = event.component;
     }
 
-    ptr<Direction> removed;
+    ComponentPtr<Direction> removed;
   };
 
   ComponentRemovedReceiver receiver;
@@ -386,8 +375,8 @@ TEST_F(EntityManagerTest, TestComponentRemovedEvent) {
 
   ASSERT_FALSE(receiver.removed);
   Entity e = em->create();
-  e.assign<Direction>(1.0, 2.0);
-  auto p = e.remove<Direction>();
+  auto p = e.assign<Direction>(1.0, 2.0);
+  e.remove<Direction>();
   ASSERT_EQ(receiver.removed, p);
   ASSERT_FALSE(e.component<Direction>());
 }
@@ -404,7 +393,7 @@ TEST_F(EntityManagerTest, TestEntityAssignment) {
 
 TEST_F(EntityManagerTest, TestEntityDestroyAll) {
   Entity a = em->create(), b = em->create();
-  em->destroy_all();
+  em->reset();
   ASSERT_FALSE(a.valid());
   ASSERT_FALSE(b.valid());
 }

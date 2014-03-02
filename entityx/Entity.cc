@@ -35,13 +35,18 @@ EntityManager::EntityManager(ptr<EventManager> event_manager) : event_manager_(e
 }
 
 EntityManager::~EntityManager() {
+  reset();
 }
 
-void EntityManager::destroy_all() {
-  entity_components_.clear();
+void EntityManager::reset() {
+  for (auto allocator : component_allocators_) {
+    if (allocator) delete allocator;
+  }
+  component_allocators_.clear();
   entity_component_mask_.clear();
   entity_version_.clear();
   free_list_.clear();
+  index_counter_ = 0;
 }
 
 
