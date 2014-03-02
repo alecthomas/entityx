@@ -79,7 +79,7 @@ entity.destroy();
 - When an entity is destroyed the manager adds its ID to a free list and invalidates the `entityx::Entity` handle.
 - When an entity is created IDs are recycled from the free list first, before allocating new ones.
 - An `entityx::Entity` ID contains an index and a version. When an entity is destroyed, the version associated with the index is incremented, invalidating all previous entities referencing the previous ID.
-- To improve cache coherence, components are constructed in contiguous memory ranges by using `entityx::EntityManager::assign<C>(id, ...)`. A light weight smart pointer (`ComponentPtr<C>`) is used to access the component.
+- To improve cache coherence, components are constructed in contiguous memory ranges by using `entityx::EntityManager::assign<C>(id, ...)`.
 
 ### Components (entity data)
 
@@ -120,8 +120,8 @@ To query all entities with a set of components assigned, use ``entityx::EntityMa
 
 ```c++
 for (Entity entity : entities.entities_with_components<Position, Direction>()) {
-  ComponentPtr<Position> position = entity.component<Position>();
-  ComponentPtr<Direction> direction = entity.component<Direction>();
+  Position *position = entity.component<Position>();
+  Direction *direction = entity.component<Direction>();
 
   // Do things with entity, position and direction.
 }
@@ -130,7 +130,7 @@ for (Entity entity : entities.entities_with_components<Position, Direction>()) {
 To retrieve a component associated with an entity use ``entityx::Entity::component<C>()``:
 
 ```c++
-ComponentPtr<Position> position = entity.component<Position>();
+Position *position = entity.component<Position>();
 if (position) {
   // Do stuff with position
 }
@@ -152,6 +152,7 @@ system_manager->add<entityx::deps::Dependency<Physics, Position, Direction>>();
 
 - Components must provide a no-argument constructor.
 - The default implementation can handle up to 64 components in total. This can be extended by changing the `entityx::EntityManager::MAX_COMPONENTS` constant.
+- Each type of component is allocated in (mostly) contiguous blocks to improve cache coherency.
 
 ### Systems (implementing behavior)
 
@@ -162,10 +163,9 @@ A basic movement system might be implemented with something like the following:
 ```c++
 struct MovementSystem : public System<MovementSystem> {
   void update(entityx::EntityManager &es, entityx::EventManager &events, double dt) override {
-    for (Entity entity : es.entities_with_components<Position, Direction>()) {
-      ComponentPtr<Position> position = entity.component<Position>();
-      ComponentPtr<Direction> direction = entity.component<Direction>();
-
+    Position *position;
+    Direction *direction;
+    for (Entity entity : es.entities_with_components(position, direction)) {
       position->x += direction->x * dt;
       position->y += direction->y * dt;
     }
@@ -200,7 +200,7 @@ Next we implement our collision system, which emits ``Collision`` objects via an
 class CollisionSystem : public System<CollisionSystem> {
  public:
   void update(entityx::EntityManager &es, entityx::EventManager &events, double dt) override {
-    ComponentPtr<Position> left_position, right_position;
+    Position *left_position, *right_position;
     for (Entity left_entity : es.entities_with_components<Position>(left_position)) {
       for (auto right_entity : es.entities_with_components<Position>(right_position)) {
         if (collide(left_position, right_position)) {
@@ -240,10 +240,10 @@ Several events are emitted by EntityX itself:
   - `entityx::Entity entity` - entityx::Entity about to be destroyed.
 - `ComponentAddedEvent<T>` - emitted when a new component is added to an entity.
   - `entityx::Entity entity` - entityx::Entity that component was added to.
-  - `ComponentPtr<T> component` - The component added.
+  - `T *component` - The component added.
 - `ComponentRemovedEvent<T>` - emitted when a component is removed from an entity.
   - `entityx::Entity entity` - entityx::Entity that component was removed from.
-  - `ComponentPtr<T> component` - The component removed.
+  - `T *component` - The component removed.
 
 #### Implementation notes
 
