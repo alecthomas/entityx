@@ -41,7 +41,6 @@ TEST(EventManagerTest, TestEmitReceive) {
   ASSERT_EQ(10, explosion_system.damage_received);
 }
 
-
 TEST(EventManagerTest, TestUntypedEmitReceive) {
   EventManager em;
   ExplosionSystem explosion_system;

@@ -39,10 +39,10 @@ EntityManager::~EntityManager() {
 }
 
 void EntityManager::reset() {
-  for (auto allocator : component_allocators_) {
-    if (allocator) delete allocator;
+  for (BasePool *pool : component_pools_) {
+    if (pool) delete pool;
   }
-  component_allocators_.clear();
+  component_pools_.clear();
   entity_component_mask_.clear();
   entity_version_.clear();
   free_list_.clear();

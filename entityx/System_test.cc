@@ -14,7 +14,6 @@
 #include "entityx/System.h"
 #include "entityx/quick.h"
 
-
 // using namespace std;
 using namespace entityx;
 using std::string;
@@ -31,15 +30,15 @@ struct Direction : Component<Direction> {
   float x, y;
 };
 
-
 class MovementSystem : public System<MovementSystem> {
  public:
   explicit MovementSystem(string label = "") : label(label) {}
 
   void update(EntityManager &es, EventManager &events, double) override {
-    EntityManager::View entities = es.entities_with_components<Position, Direction>();
-    ComponentPtr<Position> position;
-    ComponentPtr<Direction> direction;
+    EntityManager::View entities =
+        es.entities_with_components<Position, Direction>();
+    Position *position;
+    Direction *direction;
     for (auto entity : entities) {
       entity.unpack<Position, Direction>(position, direction);
       position->x += direction->x;
@@ -50,7 +49,6 @@ class MovementSystem : public System<MovementSystem> {
   string label;
 };
 
-
 class TestContainer : public EntityX {
  public:
   std::vector<Entity> created_entities;
@@ -59,24 +57,18 @@ class TestContainer : public EntityX {
     for (int i = 0; i < 150; ++i) {
       Entity e = entities.create();
       created_entities.push_back(e);
-      if (i % 2 == 0)
-        e.assign<Position>(1, 2);
-      if (i % 3 == 0)
-        e.assign<Direction>(1, 1);
+      if (i % 2 == 0) e.assign<Position>(1, 2);
+      if (i % 3 == 0) e.assign<Direction>(1, 1);
     }
   }
 };
-
 
 class SystemManagerTest : public ::testing::Test {
  protected:
   TestContainer manager;
 
-  virtual void SetUp() override {
-    manager.initialize();
-  }
+  virtual void SetUp() override { manager.initialize(); }
 };
-
 
 TEST_F(SystemManagerTest, TestConstructSystemWithArgs) {
   manager.systems.add<MovementSystem>("movement");
@@ -85,14 +77,13 @@ TEST_F(SystemManagerTest, TestConstructSystemWithArgs) {
   ASSERT_EQ("movement", manager.systems.system<MovementSystem>()->label);
 }
 
-
 TEST_F(SystemManagerTest, TestApplySystem) {
   manager.systems.add<MovementSystem>();
   manager.systems.configure();
 
   manager.systems.update<MovementSystem>(0.0);
-  ComponentPtr<Position> position;
-  ComponentPtr<Direction> direction;
+  Position *position;
+  Direction *direction;
   for (auto entity : manager.created_entities) {
     entity.unpack<Position, Direction>(position, direction);
     if (position && direction) {

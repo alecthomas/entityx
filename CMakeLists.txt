@@ -122,7 +122,7 @@ endif()
 # Things to install
 set(install_libs entityx)
 
-set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc)
+set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
 add_library(entityx STATIC ${sources})
 
 if (ENTITYX_BUILD_SHARED)
@@ -140,6 +140,7 @@ if (ENTITYX_BUILD_TESTING)
     add_subdirectory(gtest-1.6.0)
     include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
     enable_testing()
+    create_test(pool_test entityx/help/Pool_test.cc)
     create_test(entity_test entityx/Entity_test.cc)
     create_test(event_test entityx/Event_test.cc)
     create_test(system_test entityx/System_test.cc)

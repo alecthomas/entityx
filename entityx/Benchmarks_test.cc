@@ -107,7 +107,7 @@ TEST_F(BenchmarksTest, TestEntityIteration) {
   cout << "iterating over " << count << " entities with a component 10 times" << endl;
 
   for (int i = 0; i < 10; ++i) {
-    ComponentPtr<Position> position;
+    Position *position;
     for (auto e : em.entities_with_components<Position>(position)) {
     }
   }

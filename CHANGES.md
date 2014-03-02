@@ -1,5 +1,9 @@
 # Change Log
 
+## 2014-03-02 - Version 1.0.0alpha1 - Removed most uses of shared_ptr
+
+I've been slightly discontent with the use of `std::shared_ptr` in EntityX since soon after release, but didn't want to break the API immediately after releasing it. But I've decided that it's time.
+
 ## 2014-02-13 - Support for Visual C++
 
 [Jarrett Chisholm](https://github.com/jarrettchisholm) has added conditional compilation support for VC++ and fixed some issues that prevented compilation, so EntityX now fully supports Visual C++!
