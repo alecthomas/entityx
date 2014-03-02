@@ -199,16 +199,19 @@ struct Component : public BaseComponent {
 };
 
 
+/**
+ * Managed pointer for components.
+ */
 template <typename T>
 class ComponentPtr {
 public:
   ComponentPtr() : id_(0), manager_(nullptr) {}
 
   T *operator -> ();
-
   const T *operator -> () const;
 
-  operator bool () const;
+  operator bool () const { return valid(); }
+  bool valid() const;
 
   bool operator == (const ComponentPtr<T> &other) const {
     return other.id_ == id_ && other.manager_ == manager_;
@@ -219,12 +222,16 @@ private:
 
   ComponentPtr(Entity::Id id, EntityManager *manager) : id_(id), manager_(manager) {}
 
+  T *get_component_ptr();
+  const T *get_component_ptr() const;
+
   template <typename R>
   friend inline std::ostream &operator << (std::ostream &out, const ComponentPtr<R> &ptr);
 
   Entity::Id id_;
   EntityManager *manager_;
 };
+
 
 
 /**
@@ -339,12 +346,6 @@ public:
     ptr->~T();
   }
 };
-
-
-template <typename T>
-inline std::ostream &operator << (std::ostream &out, const ComponentPtr<T> &ptr) {
-  return out << *(ptr.manager_->template get_component_ptr<T>(ptr.id_));
-}
 
 
 /**
@@ -751,12 +752,14 @@ class EntityManager : entityx::help::NonCopyable, public enable_shared_from_this
   std::list<uint32_t> free_list_;
 };
 
+
 template <typename C>
 BaseComponent::Family Component<C>::family() {
   static Family family = family_counter_++;
   assert(family < entityx::MAX_COMPONENTS);
   return family;
 }
+
 
 template <typename C, typename ... Args>
 ComponentPtr<C> Entity::assign(Args && ... args) {
@@ -786,6 +789,7 @@ inline bool Entity::valid() const {
   return !manager_.expired() && manager_.lock()->valid(id_);
 }
 
+
 template <typename T>
 inline T *ComponentPtr<T>::operator -> () {
   return manager_->get_component_ptr<T>(id_);
@@ -797,9 +801,23 @@ inline const T *ComponentPtr<T>::operator -> () const {
 }
 
 template <typename T>
-inline ComponentPtr<T>::operator bool () const {
+inline bool ComponentPtr<T>::valid() const {
   return manager_ && manager_->valid(id_);
 }
 
+template <typename T>
+inline T *ComponentPtr<T>::get_component_ptr() {
+  return manager_->get_component_ptr<T>(id_);
+}
 
+template <typename T>
+inline const T *ComponentPtr<T>::get_component_ptr() const {
+  return manager_->get_component_ptr<T>(id_);
+}
+
+
+template <typename T>
+inline std::ostream &operator << (std::ostream &out, const ComponentPtr<T> &ptr) {
+  return out << *(ptr.get_component_ptr());
+}
 }  // namespace entityx
