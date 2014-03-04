@@ -27,87 +27,90 @@ struct Listener : public Receiver<Listener> {
 struct Position : public Component<Position> {
 };
 
-TEST_CASE("BenchmarksTest", "[entitymanager]") {
+
+struct BenchmarkFixture {
+  BenchmarkFixture() : em(ev) {}
+
   EventManager ev;
-  EntityManager em(ev);
+  EntityManager em;
+};
 
 
-  SECTION("TestCreateEntities") {
-    AutoTimer t;
+TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntities") {
+  AutoTimer t;
 
-    uint64_t count = 10000000L;
-    cout << "creating " << count << " entities" << endl;
+  uint64_t count = 10000000L;
+  cout << "creating " << count << " entities" << endl;
 
-    for (uint64_t i = 0; i < count; i++) {
-      em.create();
-    }
+  for (uint64_t i = 0; i < count; i++) {
+    em.create();
+  }
+}
+
+
+TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntities") {
+  uint64_t count = 10000000L;
+  vector<Entity> entities;
+  for (uint64_t i = 0; i < count; i++) {
+    entities.push_back(em.create());
   }
 
+  AutoTimer t;
+  cout << "destroying " << count << " entities" << endl;
 
-  SECTION("TestDestroyEntities") {
-    uint64_t count = 10000000L;
-    vector<Entity> entities;
-    for (uint64_t i = 0; i < count; i++) {
-      entities.push_back(em.create());
-    }
+  for (auto e : entities) {
+    e.destroy();
+  }
+}
 
-    AutoTimer t;
-    cout << "destroying " << count << " entities" << endl;
+TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntitiesWithListener") {
+  Listener listen;
+  ev.subscribe<EntityCreatedEvent>(listen);
 
-    for (auto e : entities) {
-      e.destroy();
-    }
+  uint64_t count = 10000000L;
+
+  AutoTimer t;
+  cout << "creating " << count << " entities while notifying a single EntityCreatedEvent listener" << endl;
+
+  vector<Entity> entities;
+  for (uint64_t i = 0; i < count; i++) {
+    entities.push_back(em.create());
+  }
+}
+
+TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntitiesWithListener") {
+  Listener listen;
+  ev.subscribe<EntityDestroyedEvent>(listen);
+
+  uint64_t count = 10000000L;
+  vector<Entity> entities;
+  for (uint64_t i = 0; i < count; i++) {
+    entities.push_back(em.create());
   }
 
-  SECTION("TestCreateEntitiesWithListener") {
-    Listener listen;
-    ev.subscribe<EntityCreatedEvent>(listen);
+  AutoTimer t;
+  cout << "destroying " << count << " entities" << endl;
 
-    uint64_t count = 10000000L;
+  for (auto &e : entities) {
+    e.destroy();
+  }
+}
 
-    AutoTimer t;
-    cout << "creating " << count << " entities while notifying a single EntityCreatedEvent listener" << endl;
-
-    vector<Entity> entities;
-    for (uint64_t i = 0; i < count; i++) {
-      entities.push_back(em.create());
-    }
+TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIteration") {
+  uint64_t count = 10000000L;
+  vector<Entity> entities;
+  for (uint64_t i = 0; i < count; i++) {
+    auto e = em.create();
+    e.assign<Position>();
+    entities.push_back(e);
   }
 
-  SECTION("TestDestroyEntitiesWithListener") {
-    Listener listen;
-    ev.subscribe<EntityDestroyedEvent>(listen);
+  AutoTimer t;
+  cout << "iterating over " << count << " entities with a component 10 times" << endl;
 
-    uint64_t count = 10000000L;
-    vector<Entity> entities;
-    for (uint64_t i = 0; i < count; i++) {
-      entities.push_back(em.create());
-    }
-
-    AutoTimer t;
-    cout << "destroying " << count << " entities" << endl;
-
-    for (auto &e : entities) {
-      e.destroy();
-    }
-  }
-
-  SECTION("TestEntityIteration") {
-    uint64_t count = 10000000L;
-    vector<Entity> entities;
-    for (uint64_t i = 0; i < count; i++) {
-      auto e = em.create();
-      e.assign<Position>();
-      entities.push_back(e);
-    }
-
-    AutoTimer t;
-    cout << "iterating over " << count << " entities with a component 10 times" << endl;
-
-    for (int i = 0; i < 10; ++i) {
-      Position *position;
-      for (auto e : em.entities_with_components<Position>(position)) {
-      }
+  for (int i = 0; i < 10; ++i) {
+    Position *position;
+    for (auto e : em.entities_with_components<Position>(position)) {
     }
   }
 }

@@ -27,7 +27,7 @@ struct Position {
 };
 
 
-TEST_CASE("TestPoolReserve", "[pool]") {
+TEST_CASE("TestPoolReserve") {
   entityx::Pool<Position, 8> pool;
   REQUIRE(0 ==  pool.capacity());
   REQUIRE(0 ==  pool.chunks());
@@ -41,7 +41,7 @@ TEST_CASE("TestPoolReserve", "[pool]") {
   REQUIRE(2 ==  pool.chunks());
 }
 
-TEST_CASE("TestPoolPointers", "[pool]") {
+TEST_CASE("TestPoolPointers") {
   entityx::Pool<Position, 8> pool;
   std::vector<char*> ptrs;
   for (int i = 0; i < 4; i++) {
@@ -66,7 +66,7 @@ TEST_CASE("TestPoolPointers", "[pool]") {
   REQUIRE(extrapolated_p24 !=  p24);
 }
 
-TEST_CASE("TestDeconstruct", "[pool]") {
+TEST_CASE("TestDeconstruct") {
   entityx::Pool<Position, 8> pool;
   pool.expand(8);
 

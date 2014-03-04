@@ -51,11 +51,11 @@ class MovementSystem : public System<MovementSystem> {
   string label;
 };
 
-class TestContainer : public EntityX {
+class EntitiesFixture : public EntityX {
  public:
   std::vector<Entity> created_entities;
 
-  void initialize() {
+  EntitiesFixture() {
     for (int i = 0; i < 150; ++i) {
       Entity e = entities.create();
       created_entities.push_back(e);
@@ -65,33 +65,28 @@ class TestContainer : public EntityX {
   }
 };
 
-TEST_CASE("SystemManagerTest", "[systemmanager]") {
-  TestContainer manager;
-  manager.initialize();
+TEST_CASE_METHOD(EntitiesFixture, "TestConstructSystemWithArgs") {
+  systems.add<MovementSystem>("movement");
+  systems.configure();
 
-  SECTION("TestConstructSystemWithArgs") {
-    manager.systems.add<MovementSystem>("movement");
-    manager.systems.configure();
+  REQUIRE("movement" == systems.system<MovementSystem>()->label);
+}
 
-    REQUIRE("movement" == manager.systems.system<MovementSystem>()->label);
-  }
+TEST_CASE_METHOD(EntitiesFixture, "TestApplySystem") {
+  systems.add<MovementSystem>();
+  systems.configure();
 
-  SECTION("TestApplySystem") {
-    manager.systems.add<MovementSystem>();
-    manager.systems.configure();
-
-    manager.systems.update<MovementSystem>(0.0);
-    Position *position;
-    Direction *direction;
-    for (auto entity : manager.created_entities) {
-      entity.unpack<Position, Direction>(position, direction);
-      if (position && direction) {
-        REQUIRE(2.0 == Approx(position->x));
-        REQUIRE(3.0 == Approx(position->y));
-      } else if (position) {
-        REQUIRE(1.0 == Approx(position->x));
-        REQUIRE(2.0 == Approx(position->y));
-      }
+  systems.update<MovementSystem>(0.0);
+  Position *position;
+  Direction *direction;
+  for (auto entity : created_entities) {
+    entity.unpack<Position, Direction>(position, direction);
+    if (position && direction) {
+      REQUIRE(2.0 == Approx(position->x));
+      REQUIRE(3.0 == Approx(position->y));
+    } else if (position) {
+      REQUIRE(1.0 == Approx(position->x));
+      REQUIRE(2.0 == Approx(position->y));
     }
   }
 }
