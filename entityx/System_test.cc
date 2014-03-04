@@ -8,9 +8,11 @@
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
-#include <gtest/gtest.h>
+#define CATCH_CONFIG_MAIN
+
 #include <string>
 #include <vector>
+#include "entityx/3rdparty/catch.hpp"
 #include "entityx/System.h"
 #include "entityx/quick.h"
 
@@ -63,35 +65,33 @@ class TestContainer : public EntityX {
   }
 };
 
-class SystemManagerTest : public ::testing::Test {
- protected:
+TEST_CASE("SystemManagerTest", "[systemmanager]") {
   TestContainer manager;
+  manager.initialize();
 
-  virtual void SetUp() override { manager.initialize(); }
-};
+  SECTION("TestConstructSystemWithArgs") {
+    manager.systems.add<MovementSystem>("movement");
+    manager.systems.configure();
 
-TEST_F(SystemManagerTest, TestConstructSystemWithArgs) {
-  manager.systems.add<MovementSystem>("movement");
-  manager.systems.configure();
+    REQUIRE("movement" == manager.systems.system<MovementSystem>()->label);
+  }
 
-  ASSERT_EQ("movement", manager.systems.system<MovementSystem>()->label);
-}
+  SECTION("TestApplySystem") {
+    manager.systems.add<MovementSystem>();
+    manager.systems.configure();
 
-TEST_F(SystemManagerTest, TestApplySystem) {
-  manager.systems.add<MovementSystem>();
-  manager.systems.configure();
-
-  manager.systems.update<MovementSystem>(0.0);
-  Position *position;
-  Direction *direction;
-  for (auto entity : manager.created_entities) {
-    entity.unpack<Position, Direction>(position, direction);
-    if (position && direction) {
-      ASSERT_FLOAT_EQ(2.0, position->x);
-      ASSERT_FLOAT_EQ(3.0, position->y);
-    } else if (position) {
-      ASSERT_FLOAT_EQ(1.0, position->x);
-      ASSERT_FLOAT_EQ(2.0, position->y);
+    manager.systems.update<MovementSystem>(0.0);
+    Position *position;
+    Direction *direction;
+    for (auto entity : manager.created_entities) {
+      entity.unpack<Position, Direction>(position, direction);
+      if (position && direction) {
+        REQUIRE(2.0 == Approx(position->x));
+        REQUIRE(3.0 == Approx(position->y));
+      } else if (position) {
+        REQUIRE(1.0 == Approx(position->x));
+        REQUIRE(2.0 == Approx(position->y));
+      }
     }
   }
 }

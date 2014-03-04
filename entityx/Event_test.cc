@@ -8,9 +8,11 @@
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
-#include <gtest/gtest.h>
+#define CATCH_CONFIG_MAIN
+
 #include <string>
 #include <vector>
+#include "entityx/3rdparty/catch.hpp"
 #include "entityx/Event.h"
 
 
@@ -32,49 +34,49 @@ struct ExplosionSystem : public Receiver<ExplosionSystem> {
   int damage_received = 0;
 };
 
-TEST(EventManagerTest, TestEmitReceive) {
+TEST_CASE("TestEmitReceive", "[eventmanager]") {
   EventManager em;
   ExplosionSystem explosion_system;
   em.subscribe<Explosion>(explosion_system);
-  ASSERT_EQ(0, explosion_system.damage_received);
+  REQUIRE(0 == explosion_system.damage_received);
   em.emit<Explosion>(10);
-  ASSERT_EQ(10, explosion_system.damage_received);
+  REQUIRE(10 == explosion_system.damage_received);
 }
 
-TEST(EventManagerTest, TestUntypedEmitReceive) {
+TEST_CASE("TestUntypedEmitReceive", "[eventmanager]") {
   EventManager em;
   ExplosionSystem explosion_system;
   em.subscribe<Explosion>(explosion_system);
-  ASSERT_EQ(0, explosion_system.damage_received);
+  REQUIRE(0 == explosion_system.damage_received);
   Explosion explosion(10);
   em.emit(explosion);
-  ASSERT_EQ(10, explosion_system.damage_received);
+  REQUIRE(10 == explosion_system.damage_received);
 }
 
 
-TEST(EventManagerTest, TestReceiverExpired) {
+TEST_CASE("TestReceiverExpired", "[eventmanager]") {
   EventManager em;
   {
     ExplosionSystem explosion_system;
     em.subscribe<Explosion>(explosion_system);
     em.emit<Explosion>(10);
-    ASSERT_EQ(10, explosion_system.damage_received);
-    ASSERT_EQ(1, explosion_system.connected_signals());
-    ASSERT_EQ(1, em.connected_receivers());
+    REQUIRE(10 == explosion_system.damage_received);
+    REQUIRE(1 == explosion_system.connected_signals());
+    REQUIRE(1 == em.connected_receivers());
   }
-  ASSERT_EQ(0, em.connected_receivers());
+  REQUIRE(0 == em.connected_receivers());
 }
 
 
-TEST(EventManagerTest, TestSenderExpired) {
+TEST_CASE("TestSenderExpired", "[eventmanager]") {
   ExplosionSystem explosion_system;
   {
     EventManager em;
     em.subscribe<Explosion>(explosion_system);
     em.emit<Explosion>(10);
-    ASSERT_EQ(10, explosion_system.damage_received);
-    ASSERT_EQ(1, explosion_system.connected_signals());
-    ASSERT_EQ(1, em.connected_receivers());
+    REQUIRE(10 == explosion_system.damage_received);
+    REQUIRE(1 == explosion_system.connected_signals());
+    REQUIRE(1 == em.connected_receivers());
   }
-  ASSERT_EQ(0, explosion_system.connected_signals());
+  REQUIRE(0 == explosion_system.connected_signals());
 }

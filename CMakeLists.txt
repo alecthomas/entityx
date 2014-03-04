@@ -38,7 +38,6 @@ endif()
 # C++11 feature checks
 include(CheckCXX11Features.cmake)
 
-add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1)
 set(OLD_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
@@ -78,8 +77,6 @@ macro(create_test TARGET_NAME SOURCE)
     target_link_libraries(
         ${TARGET_NAME}
         entityx
-        gtest
-        gtest_main
         ${ARGN}
         )
     add_test(${TARGET_NAME} ${TARGET_NAME})
@@ -136,9 +133,6 @@ if (ENTITYX_BUILD_SHARED)
 endif (ENTITYX_BUILD_SHARED)
 
 if (ENTITYX_BUILD_TESTING)
-    #find_package(Boost 1.48.0 REQUIRED COMPONENTS timer system)
-    add_subdirectory(gtest-1.6.0)
-    include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
     enable_testing()
     create_test(pool_test entityx/help/Pool_test.cc)
     create_test(entity_test entityx/Entity_test.cc)
@@ -148,7 +142,6 @@ if (ENTITYX_BUILD_TESTING)
     create_test(dependencies_test entityx/deps/Dependencies_test.cc)
     if (ENTITYX_RUN_BENCHMARKS)
         message("-- Running benchmarks")
-        add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1 -DBOOST_NO_CXX11_NUMERIC_LIMITS=1)
         create_test(benchmarks_test entityx/Benchmarks_test.cc)
     else ()
         message("-- Not running benchmarks (use -DENTITYX_RUN_BENCHMARKS=1 to enable)")

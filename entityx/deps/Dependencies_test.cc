@@ -8,61 +8,62 @@
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
-#include <gtest/gtest.h>
+#define CATCH_CONFIG_MAIN
+
+#include "entityx/3rdparty/catch.hpp"
 #include "entityx/deps/Dependencies.h"
 #include "entityx/quick.h"
 
 
-namespace ex = entityx;
 namespace deps = entityx::deps;
 
 
-struct A : public ex::Component<A> {};
-struct B : public ex::Component<B> {
+struct A : public entityx::Component<A> {};
+struct B : public entityx::Component<B> {
   explicit B(bool b = false) : b(b) {}
 
   bool b;
 };
-struct C : public ex::Component<C> {};
+struct C : public entityx::Component<C> {};
 
 
-class DepsTest : public ::testing::Test, public ex::EntityX {
-};
+TEST_CASE("DepsTest", "[deps]") {
+  entityx::EntityX ex;
 
+  SECTION("TestSingleDependency") {
+    ex.systems.add<deps::Dependency<A, B>>();
+    ex.systems.configure();
 
-TEST_F(DepsTest, TestSingleDependency) {
-  systems.add<deps::Dependency<A, B>>();
-  systems.configure();
+    entityx::Entity e = ex.entities.create();
+    REQUIRE(!static_cast<bool>(e.component<A>()));
+    REQUIRE(!static_cast<bool>(e.component<B>()));
+    e.assign<A>();
+    REQUIRE(static_cast<bool>(e.component<A>()));
+    REQUIRE(static_cast<bool>(e.component<B>()));
+  }
 
-  ex::Entity e = entities.create();
-  ASSERT_FALSE(static_cast<bool>(e.component<A>()));
-  ASSERT_FALSE(static_cast<bool>(e.component<B>()));
-  e.assign<A>();
-  ASSERT_TRUE(static_cast<bool>(e.component<A>()));
-  ASSERT_TRUE(static_cast<bool>(e.component<B>()));
-}
+  SECTION("TestMultipleDependencies") {
+    ex.systems.add<deps::Dependency<A, B, C>>();
+    ex.systems.configure();
 
-TEST_F(DepsTest, TestMultipleDependencies) {
-  systems.add<deps::Dependency<A, B, C>>();
-  systems.configure();
+    entityx::Entity e = ex.entities.create();
+    REQUIRE(!static_cast<bool>(e.component<A>()));
+    REQUIRE(!static_cast<bool>(e.component<B>()));
+    REQUIRE(!static_cast<bool>(e.component<C>()));
+    e.assign<A>();
+    REQUIRE(static_cast<bool>(e.component<A>()));
+    REQUIRE(static_cast<bool>(e.component<B>()));
+    REQUIRE(static_cast<bool>(e.component<C>()));
+  }
 
-  ex::Entity e = entities.create();
-  ASSERT_FALSE(static_cast<bool>(e.component<A>()));
-  ASSERT_FALSE(static_cast<bool>(e.component<B>()));
-  ASSERT_FALSE(static_cast<bool>(e.component<C>()));
-  e.assign<A>();
-  ASSERT_TRUE(static_cast<bool>(e.component<A>()));
-  ASSERT_TRUE(static_cast<bool>(e.component<B>()));
-  ASSERT_TRUE(static_cast<bool>(e.component<C>()));
-}
+  SECTION("TestDependencyDoesNotRecreateComponent") {
+    ex.systems.add<deps::Dependency<A, B>>();
+    ex.systems.configure();
 
-TEST_F(DepsTest, TestDependencyDoesNotRecreateComponent) {
-  systems.add<deps::Dependency<A, B>>();
-  systems.configure();
-
-  ex::Entity e = entities.create();
-  e.assign<B>(true);
-  ASSERT_TRUE(e.component<B>()->b);
-  e.assign<A>();
-  ASSERT_TRUE(e.component<B>()->b);
+    entityx::Entity e = ex.entities.create();
+    e.assign<B>(true);
+    REQUIRE(e.component<B>()->b);
+    e.assign<A>();
+    REQUIRE(e.component<B>()->b);
+  }
 }

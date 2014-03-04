@@ -8,9 +8,10 @@
  * Author: Alec Thomas <alec@swapoff.org>
  */
 
+#define CATCH_CONFIG_MAIN
 
-#include <gtest/gtest.h>
 #include <vector>
+#include "entityx/3rdparty/catch.hpp"
 #include "entityx/help/Pool.h"
 
 struct Position {
@@ -26,21 +27,21 @@ struct Position {
 };
 
 
-TEST(PoolTest, TestPoolReserve) {
+TEST_CASE("TestPoolReserve", "[pool]") {
   entityx::Pool<Position, 8> pool;
-  ASSERT_EQ(0, pool.capacity());
-  ASSERT_EQ(0, pool.chunks());
+  REQUIRE(0 ==  pool.capacity());
+  REQUIRE(0 ==  pool.chunks());
   pool.reserve(8);
-  ASSERT_EQ(0, pool.size());
-  ASSERT_EQ(8, pool.capacity());
-  ASSERT_EQ(1, pool.chunks());
+  REQUIRE(0 ==  pool.size());
+  REQUIRE(8 ==  pool.capacity());
+  REQUIRE(1 ==  pool.chunks());
   pool.reserve(16);
-  ASSERT_EQ(0, pool.size());
-  ASSERT_EQ(16, pool.capacity());
-  ASSERT_EQ(2, pool.chunks());
+  REQUIRE(0 ==  pool.size());
+  REQUIRE(16 ==  pool.capacity());
+  REQUIRE(2 ==  pool.chunks());
 }
 
-TEST(PoolTest, TestPoolPointers) {
+TEST_CASE("TestPoolPointers", "[pool]") {
   entityx::Pool<Position, 8> pool;
   std::vector<char*> ptrs;
   for (int i = 0; i < 4; i++) {
@@ -55,13 +56,17 @@ TEST(PoolTest, TestPoolPointers) {
   char *p16 = static_cast<char*>(pool.get(16));
   char *p24 = static_cast<char*>(pool.get(24));
 
-  ASSERT_EQ(p0 + 7 * sizeof(Position), p7);
-  ASSERT_NE(p0 + 8 * sizeof(Position), p8);
-  ASSERT_NE(p8 + 8 * sizeof(Position), p16);
-  ASSERT_NE(p16 + 8 * sizeof(Position), p24);
+  char *expected_p7 = p0 + 7 * sizeof(Position);
+  REQUIRE(expected_p7 == p7);
+  char *extrapolated_p8 = p0 + 8 * sizeof(Position);
+  REQUIRE(extrapolated_p8 !=  p8);
+  char *extrapolated_p16 = p8 + 8 * sizeof(Position);
+  REQUIRE(extrapolated_p16 !=  p16);
+  char *extrapolated_p24 = p16 + 8 * sizeof(Position);
+  REQUIRE(extrapolated_p24 !=  p24);
 }
 
-TEST(PoolTest, TestDeconstruct) {
+TEST_CASE("TestDeconstruct", "[pool]") {
   entityx::Pool<Position, 8> pool;
   pool.expand(8);
 
@@ -69,7 +74,7 @@ TEST(PoolTest, TestDeconstruct) {
 
   int counter = 0;
   new(p0) Position(&counter);
-  ASSERT_EQ(1, counter);
+  REQUIRE(1 ==  counter);
   pool.destroy(0);
-  ASSERT_EQ(2, counter);
+  REQUIRE(2 ==  counter);
 }
