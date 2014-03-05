@@ -56,14 +56,14 @@ TEST_CASE("TestPoolPointers") {
   char *p16 = static_cast<char*>(pool.get(16));
   char *p24 = static_cast<char*>(pool.get(24));
 
-  char *expected_p7 = p0 + 7 * sizeof(Position);
-  REQUIRE(expected_p7 == p7);
-  char *extrapolated_p8 = p0 + 8 * sizeof(Position);
-  REQUIRE(extrapolated_p8 !=  p8);
-  char *extrapolated_p16 = p8 + 8 * sizeof(Position);
-  REQUIRE(extrapolated_p16 !=  p16);
-  char *extrapolated_p24 = p16 + 8 * sizeof(Position);
-  REQUIRE(extrapolated_p24 !=  p24);
+  void *expected_p7 = p0 + 7 * sizeof(Position);
+  REQUIRE(expected_p7 == static_cast<void*>(p7));
+  void *extrapolated_p8 = p0 + 8 * sizeof(Position);
+  REQUIRE(extrapolated_p8 !=  static_cast<void*>(p8));
+  void *extrapolated_p16 = p8 + 8 * sizeof(Position);
+  REQUIRE(extrapolated_p16 !=  static_cast<void*>(p16));
+  void *extrapolated_p24 = p16 + 8 * sizeof(Position);
+  REQUIRE(extrapolated_p24 !=  static_cast<void*>(p24));
 }
 
 TEST_CASE("TestDeconstruct") {

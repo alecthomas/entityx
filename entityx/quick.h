@@ -10,9 +10,7 @@
 
 #pragma once
 
-
 #include "entityx/config.h"
-
 
 namespace entityx {
 
@@ -21,7 +19,7 @@ namespace entityx {
  * SystemManager.
  */
 class EntityX {
-public:
+ public:
   EntityX() : entities(events), systems(entities, events) {}
 
   EventManager events;

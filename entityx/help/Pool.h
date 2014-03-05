@@ -1,5 +1,3 @@
-#pragma once
-
 /*
  * Copyright (C) 2012-2014 Alec Thomas <alec@swapoff.org>
  * All rights reserved.
@@ -9,6 +7,8 @@
  *
  * Author: Alec Thomas <alec@swapoff.org>
  */
+
+#pragma once
 
 #include <cassert>
 #include <vector>
@@ -21,6 +21,9 @@ namespace entityx {
  * destroyed.
  *
  * The semi-contiguous nature aims to provide cache-friendly iteration.
+ *
+ * Lookups are O(1).
+ * Appends are amortized O(1).
  */
 class BasePool {
  public:

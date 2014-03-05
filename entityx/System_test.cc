@@ -39,8 +39,8 @@ class MovementSystem : public System<MovementSystem> {
   void update(EntityManager &es, EventManager &events, double) override {
     EntityManager::View entities =
         es.entities_with_components<Position, Direction>();
-    Position *position;
-    Direction *direction;
+    ComponentHandle<Position> position;
+    ComponentHandle<Direction> direction;
     for (auto entity : entities) {
       entity.unpack<Position, Direction>(position, direction);
       position->x += direction->x;
@@ -77,8 +77,8 @@ TEST_CASE_METHOD(EntitiesFixture, "TestApplySystem") {
   systems.configure();
 
   systems.update<MovementSystem>(0.0);
-  Position *position;
-  Direction *direction;
+  ComponentHandle<Position> position;
+  ComponentHandle<Direction> direction;
   for (auto entity : created_entities) {
     entity.unpack<Position, Direction>(position, direction);
     if (position && direction) {
