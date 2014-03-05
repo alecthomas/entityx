@@ -34,7 +34,7 @@ struct ExplosionSystem : public Receiver<ExplosionSystem> {
   int damage_received = 0;
 };
 
-TEST_CASE("TestEmitReceive", "[eventmanager]") {
+TEST_CASE("TestEmitReceive") {
   EventManager em;
   ExplosionSystem explosion_system;
   em.subscribe<Explosion>(explosion_system);
@@ -43,7 +43,7 @@ TEST_CASE("TestEmitReceive", "[eventmanager]") {
   REQUIRE(10 == explosion_system.damage_received);
 }
 
-TEST_CASE("TestUntypedEmitReceive", "[eventmanager]") {
+TEST_CASE("TestUntypedEmitReceive") {
   EventManager em;
   ExplosionSystem explosion_system;
   em.subscribe<Explosion>(explosion_system);
@@ -54,7 +54,7 @@ TEST_CASE("TestUntypedEmitReceive", "[eventmanager]") {
 }
 
 
-TEST_CASE("TestReceiverExpired", "[eventmanager]") {
+TEST_CASE("TestReceiverExpired") {
   EventManager em;
   {
     ExplosionSystem explosion_system;
@@ -68,7 +68,7 @@ TEST_CASE("TestReceiverExpired", "[eventmanager]") {
 }
 
 
-TEST_CASE("TestSenderExpired", "[eventmanager]") {
+TEST_CASE("TestSenderExpired") {
   ExplosionSystem explosion_system;
   {
     EventManager em;

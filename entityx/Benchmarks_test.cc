@@ -20,8 +20,11 @@ private:
 };
 
 struct Listener : public Receiver<Listener> {
-  void receive(const EntityCreatedEvent &event) {}
-  void receive(const EntityDestroyedEvent &event) {}
+  void receive(const EntityCreatedEvent &event) { ++created; }
+  void receive(const EntityDestroyedEvent &event) { ++destroyed; }
+
+  int created = 0;
+  int destroyed = 0;
 };
 
 struct Position : public Component<Position> {
@@ -67,39 +70,45 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntitiesWithListener") {
   Listener listen;
   ev.subscribe<EntityCreatedEvent>(listen);
 
-  uint64_t count = 10000000L;
+  int count = 10000000L;
 
   AutoTimer t;
   cout << "creating " << count << " entities while notifying a single EntityCreatedEvent listener" << endl;
 
   vector<Entity> entities;
-  for (uint64_t i = 0; i < count; i++) {
+  for (int i = 0; i < count; i++) {
     entities.push_back(em.create());
   }
+
+  REQUIRE(entities.size() == count);
+  REQUIRE(listen.created == count);
 }
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntitiesWithListener") {
-  Listener listen;
-  ev.subscribe<EntityDestroyedEvent>(listen);
-
-  uint64_t count = 10000000L;
+  int count = 10000000;
   vector<Entity> entities;
-  for (uint64_t i = 0; i < count; i++) {
+  for (int i = 0; i < count; i++) {
     entities.push_back(em.create());
   }
 
+  Listener listen;
+  ev.subscribe<EntityDestroyedEvent>(listen);
+
   AutoTimer t;
-  cout << "destroying " << count << " entities" << endl;
+  cout << "destroying " << count << " entities while notifying a single EntityDestroyedEvent listener" << endl;
 
   for (auto &e : entities) {
     e.destroy();
   }
+
+  REQUIRE(entities.size() == count);
+  REQUIRE(listen.destroyed == count);
 }
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIteration") {
-  uint64_t count = 10000000L;
+  int count = 10000000;
   vector<Entity> entities;
-  for (uint64_t i = 0; i < count; i++) {
+  for (int i = 0; i < count; i++) {
     auto e = em.create();
     e.assign<Position>();
     entities.push_back(e);
