@@ -27,7 +27,7 @@ You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitte
 
 ## Recent Notable Changes
 
-- 2014-03-02 - (1.0.0alpha1) Switch to using cache friendly component storage (big breaking change). Also largely eradicated use of `std::shared_ptr`.
+- 2014-03-02 - (1.0.0alpha1) Switch to using cache friendly component storage (big breaking change). Also eradicated use of `std::shared_ptr` for components.
 - 2014-02-13 - Visual C++ support thanks to [Jarrett Chisholm](https://github.com/jarrettchisholm)!
 - 2013-10-29 - Boost has been removed as a primary dependency for builds not using python.
 - 2013-08-21 - Remove dependency on `boost::signal` and switch to embedded [Simple::Signal](http://timj.testbit.eu/2013/cpp11-signal-system-performance/).
@@ -119,10 +119,9 @@ entity.assign<Position>(1.0f, 2.0f);
 To query all entities with a set of components assigned, use ``entityx::EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
 
 ```c++
-for (Entity entity : entities.entities_with_components<Position, Direction>()) {
-  Position *position = entity.component<Position>();
-  Direction *direction = entity.component<Direction>();
-
+ComponentHandle<Position> position;
+ComponentHandle<Direction> direction;
+for (Entity entity : entities.entities_with_components(position, direction)) {
   // Do things with entity, position and direction.
 }
 ```
@@ -130,7 +129,7 @@ for (Entity entity : entities.entities_with_components<Position, Direction>()) {
 To retrieve a component associated with an entity use ``entityx::Entity::component<C>()``:
 
 ```c++
-Position *position = entity.component<Position>();
+ComponentHandle<Position> position = entity.component<Position>();
 if (position) {
   // Do stuff with position
 }
@@ -163,8 +162,8 @@ A basic movement system might be implemented with something like the following:
 ```c++
 struct MovementSystem : public System<MovementSystem> {
   void update(entityx::EntityManager &es, entityx::EventManager &events, double dt) override {
-    Position *position;
-    Direction *direction;
+    ComponentHandle<Position> position;
+    ComponentHandle<Direction> direction;
     for (Entity entity : es.entities_with_components(position, direction)) {
       position->x += direction->x * dt;
       position->y += direction->y * dt;
@@ -200,9 +199,9 @@ Next we implement our collision system, which emits ``Collision`` objects via an
 class CollisionSystem : public System<CollisionSystem> {
  public:
   void update(entityx::EntityManager &es, entityx::EventManager &events, double dt) override {
-    Position *left_position, *right_position;
-    for (Entity left_entity : es.entities_with_components<Position>(left_position)) {
-      for (auto right_entity : es.entities_with_components<Position>(right_position)) {
+    ComponentHandle<Position> left_position, right_position;
+    for (Entity left_entity : es.entities_with_components(left_position)) {
+      for (Entity right_entity : es.entities_with_components(right_position)) {
         if (collide(left_position, right_position)) {
           events->emit<Collision>(left_entity, right_entity);
         }
@@ -238,12 +237,12 @@ Several events are emitted by EntityX itself:
   - `entityx::Entity entity` - Newly created entityx::Entity.
 - `EntityDestroyedEvent` - emitted when an entityx::Entity is *about to be* destroyed.
   - `entityx::Entity entity` - entityx::Entity about to be destroyed.
-- `ComponentAddedEvent<T>` - emitted when a new component is added to an entity.
+- `ComponentAddedEvent<C>` - emitted when a new component is added to an entity.
   - `entityx::Entity entity` - entityx::Entity that component was added to.
-  - `T *component` - The component added.
-- `ComponentRemovedEvent<T>` - emitted when a component is removed from an entity.
+  - `ComponentHandle<C> component` - The component added.
+- `ComponentRemovedEvent<C>` - emitted when a component is removed from an entity.
   - `entityx::Entity entity` - entityx::Entity that component was removed from.
-  - `T *component` - The component removed.
+  - `ComponentHandle<C> component` - The component removed.
 
 #### Implementation notes
 
@@ -362,7 +361,6 @@ CC=clang-3.1 CXX=clang++3.1 cmake ...
 
 Once these dependencies are installed you should be able to build and install EntityX as below. The following options can be passed to cmake to modify how EntityX is built:
 
-- `-DENTITYX_BUILD_PYTHON=1` - Build Python scripting integration.
 - `-DENTITYX_BUILD_TESTING=1` - Build tests (run with `make test`).
 - `-DENTITYX_RUN_BENCHMARKS=1` - In conjunction with `-DENTITYX_BUILD_TESTING=1`, also build benchmarks.
 - `-DENTITYX_MAX_COMPONENTS=64` - Override the maximum number of components that can be assigned to each entity.
