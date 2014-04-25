@@ -14,6 +14,7 @@
 #include <vector>
 #include "entityx/3rdparty/catch.hpp"
 #include "entityx/Event.h"
+#include "entityx/entityx.h"
 
 
 using entityx::EventManager;
@@ -32,6 +33,34 @@ struct ExplosionSystem : public Receiver<ExplosionSystem> {
   }
 
   int damage_received = 0;
+};
+
+struct DestroySystem : public entityx::System<DestroySystem>, public Receiver<DestroySystem> {
+
+    void configure(entityx::EventManager &event_manager) {}
+
+    void receive(const entityx::EntityDestroyedEvent &entity_destruction) {
+        destroy_count += 1;
+    }
+    
+    void update(entityx::EntityManager &es, entityx::EventManager &events, double dt) override {}
+    
+    int destroy_count = 0;
+};
+
+//includes DestroySystem
+class Manager : public entityx::EntityX {
+public:
+    void configure() {
+        systems.add<DestroySystem>();
+        systems.configure();
+    }
+
+    void initialize() {}
+    
+    entityx::Entity create_entity() {
+        return entities.create();
+    }
 };
 
 TEST_CASE("TestEmitReceive") {
@@ -79,4 +108,20 @@ TEST_CASE("TestSenderExpired") {
     REQUIRE(1 == em.connected_receivers());
   }
   REQUIRE(0 == explosion_system.connected_signals());
+}
+
+
+TEST_CASE("TestEntityDestroyed") {
+  Manager m;
+  {
+    m.configure();
+
+    std::shared_ptr<DestroySystem> system = m.systems.system<DestroySystem>();
+    
+    //segfault here:
+    m.events.subscribe<entityx::EntityDestroyedEvent>(*system);
+    entityx::Entity e = m.create_entity();
+    e.destroy();
+    REQUIRE(1 == system->destroy_count);
+  }
 }
