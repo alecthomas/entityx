@@ -317,6 +317,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityDestroyedEvent") {
   for (auto e : entities) {
     e.destroy();
   }
+  REQUIRE(10UL == receiver.destroyed.size());
   REQUIRE(entities ==  receiver.destroyed);
 }
 
