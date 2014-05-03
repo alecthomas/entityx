@@ -27,7 +27,7 @@ int size(const T &t) {
   int n = 0;
   for (auto i : t) {
     ++n;
-    (void)i; // Unused on purpose, suppress warning
+    (void)i;  // Unused on purpose, suppress warning
   }
   return n;
 }
