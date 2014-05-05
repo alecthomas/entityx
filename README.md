@@ -1,6 +1,6 @@
-# EntityX - A fast, type-safe C++ Entity Component System 
+# EntityX - A fast, type-safe C++ Entity Component System [![Build Status](https://travis-ci.org/alecthomas/entityx.png)](https://travis-ci.org/alecthomas/entityx)
 
-[![Build Status](https://travis-ci.org/alecthomas/entityx.png)](https://travis-ci.org/alecthomas/entityx)
+***NOTE: The current version 1.0.0alpha1 breaks backwards compataibility. See the [change log](CHANGES.md) for details.***
 
 Entity Component Systems (ECS) are a form of decomposition that completely decouples entity logic and data from the entity "objects" themselves. The [Evolve your Hierarchy](http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/) article provides a solid overview of EC systems and why you should use them.
 
@@ -23,7 +23,6 @@ See [below](#installation) for installation instructions.
 EntityX now has a mailing list! Send a mail to [entityx@librelist.com](mailto:entityx@librelist.com) to subscribe. Instructions will follow.
 
 You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitter](https://twitter.com/alecthomas).
-
 
 ## Recent Notable Changes
 
