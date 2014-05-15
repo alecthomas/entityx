@@ -449,3 +449,10 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenCompon
   a.remove<Position>();
   REQUIRE(!position);
 }
+
+TEST_CASE_METHOD(EntityManagerFixture, "TestDeleteEntityWithNoComponents") {
+  Entity a = em.create();
+  a.assign<Position>(1, 2);
+  Entity b = em.create();
+  b.destroy();
+}

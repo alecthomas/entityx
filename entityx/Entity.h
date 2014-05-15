@@ -456,9 +456,12 @@ class EntityManager : entityx::help::NonCopyable {
   void destroy(Entity::Id entity) {
     assert_valid(entity);
     int index = entity.index();
+    auto mask = entity_component_mask_[entity.index()];
     event_manager_.emit<EntityDestroyedEvent>(Entity(this, entity));
-    for (BasePool *pool : component_pools_) {
-      if (pool) pool->destroy(index);
+    for (size_t i = 0; i < component_pools_.size(); i++) {
+      BasePool *pool = component_pools_[i];
+      if (pool && mask.test(i))
+        pool->destroy(index);
     }
     entity_component_mask_[index] = 0;
     entity_version_[index]++;
