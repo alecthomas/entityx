@@ -13,7 +13,7 @@ You can acquire stable releases [here](https://github.com/alecthomas/entityx/rel
 Alternatively, you can check out the current development version with:
 
 ```
-git checkout https://github.com/alecthomas/entityx.git
+git clone https://github.com/alecthomas/entityx.git
 ```
 
 See [below](#installation) for installation instructions.
@@ -252,61 +252,45 @@ Several events are emitted by EntityX itself:
 
 ### Manager (tying it all together)
 
-Managing systems, components and entities can be streamlined by subclassing `Manager`. It is not necessary, but it provides callbacks for configuring systems, initializing entities, and so on.
+Managing systems, components and entities can be streamlined by using the
+"quick start" class `EntityX`. It simply provides pre-initialized
+`EventManager`, `EntityManager` and `SystemManager` instances.
 
-To use it, subclass `Manager` and implement `configure()`, `initialize()` and `update()`. In this example a new `Manager` is created for each level.
+To use it, subclass `EntityX`:
 
 ```c++
-class Level : public Manager {
+class Level : public EntityX {
 public:
-  explicit Level(filename string) : filename_(filename) {}
+  explicit Level(filename string) {
+    systems.add<DebugSystem>();
+    systems.add<MovementSystem>();
+    systems.add<CollisionSystem>();
 
- protected:
-  void configure() {
-    system_manager->add<DebugSystem>();
-    system_manager->add<MovementSystem>();
-    system_manager->add<CollisionSystem>();
-  };
-
-  void initialize() {
-    level_.load(filename_);
+    level.load(filename);
 
     for (auto e : level.entity_data()) {
-      entityx::Entity entity = entity_manager->create();
+      entityx::Entity entity = entities.create();
       entity.assign<Position>(rand() % 100, rand() % 100);
       entity.assign<Direction>((rand() % 10) - 5, (rand() % 10) - 5);
     }
   }
 
   void update(double dt) {
-    system_manager->update<MovementSystem>(dt);
-    system_manager->update<CollisionSystem>(dt);
+    systems.update<DebugSystem>(dt);
+    systems.update<MovementSystem>(dt);
+    systems.update<CollisionSystem>(dt);
   }
 
-  string filename_;
-  Level level_;
+  Level level;
 };
 ```
 
 
-Once created, start the manager:
-
-```c++
-Level level("mylevel.dat");
-level.start();
-```
-
-You can then either start the (simplistic) main loop:
-
-```c++
-level.run();
-```
-
-Or step the entities explicitly inside your own game loop (recommended):
+You can then step the entities explicitly inside your own game loop:
 
 ```c++
 while (true) {
-  level.step(0.1);
+  level.update(0.1);
 }
 ```
 
@@ -360,11 +344,10 @@ CC=clang-3.1 CXX=clang++3.1 cmake ...
 
 Once these dependencies are installed you should be able to build and install EntityX as below. The following options can be passed to cmake to modify how EntityX is built:
 
-- `-DENTITYX_BUILD_TESTING=1` - Build tests (run with `make test`).
 - `-DENTITYX_RUN_BENCHMARKS=1` - In conjunction with `-DENTITYX_BUILD_TESTING=1`, also build benchmarks.
 - `-DENTITYX_MAX_COMPONENTS=64` - Override the maximum number of components that can be assigned to each entity.
 - `-DENTITYX_BUILD_SHARED=1` - Whether to build shared libraries (defaults to 1).
-- `-DENTITYX_BUILD_TESTING=0` - Whether to build tests (defaults to 0). Run with "make && make test".
+- `-DENTITYX_BUILD_TESTING=1` - Whether to build tests (defaults to 0). Run with "make && make test".
 
 Once you have selected your flags, build and install with:
 
