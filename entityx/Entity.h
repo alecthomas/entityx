@@ -240,6 +240,8 @@ struct BaseComponent {
 template <typename Derived>
 struct Component : public BaseComponent {
  public:
+  typedef ComponentHandle<Derived> Handle;
+
   /// Used internally for registration.
   static Family family();
 };
