@@ -265,6 +265,7 @@ public:
     systems.add<DebugSystem>();
     systems.add<MovementSystem>();
     systems.add<CollisionSystem>();
+    systems.configure();
 
     level.load(filename);
 
