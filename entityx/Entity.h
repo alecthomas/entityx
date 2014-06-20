@@ -130,7 +130,10 @@ public:
 
   template <typename C>
   ComponentHandle<C> component();
-
+  
+  template <typename C>
+  const ComponentHandle<const C> component() const;
+    
   template <typename C>
   bool has_component() const;
 
@@ -781,6 +784,12 @@ template <typename C>
 ComponentHandle<C> Entity::component() {
   assert(valid());
   return manager_->component<C>(id_);
+}
+
+template <typename C>
+const ComponentHandle<const C> Entity::component() const {
+  assert(valid());
+  return manager_->component<const C>(id_);
 }
 
 template <typename C>
