@@ -133,10 +133,10 @@ public:
 
   template <typename C>
   ComponentHandle<C> component();
-  
+
   template <typename C>
   const ComponentHandle<const C> component() const;
-    
+
   template <typename C>
   bool has_component() const;
 
@@ -626,6 +626,19 @@ class EntityManager : entityx::help::NonCopyable {
         .unpack_to(c, args ...);
   }
 
+  /**
+   * Iterate over all *valid* entities (ie. not in the free list). Not fast,
+   * so should only be used for debugging.
+   *
+   * @code
+   * for (Entity entity : entity_manager.entities_for_debugging()) {}
+   *
+   * @return An iterator view over all valid entities.
+   */
+  View entities_for_debugging() {
+    return View(this, ValidEntityPredicate());
+  }
+
   template <typename C>
   void unpack(Entity::Id id, ComponentHandle<C> &a) {
     assert_valid(id);
@@ -660,6 +673,17 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   friend class ComponentHandle;
 
+  // Only returns entities that are valid (ie. not in the free list). Should
+  // only be used for debugging.
+  struct ValidEntityPredicate {
+    bool operator()(const EntityManager &entities, const Entity::Id &entity) {
+      for (uint32_t i : entities.free_list_) {
+        if (entity.index() == i) return false;
+      }
+      return true;
+    }
+  };
+
   /// A predicate that matches valid entities with the given component mask.
   class ComponentMaskPredicate {
    public:
@@ -667,8 +691,7 @@ class EntityManager : entityx::help::NonCopyable {
         : entity_component_masks_(entity_component_masks), mask_(mask) {}
 
     bool operator()(const EntityManager &entities, const Entity::Id &entity) {
-      return entities.entity_version_[entity.index()] == entity.version()
-          && (entity_component_masks_[entity.index()] & mask_) == mask_;
+      return (entity_component_masks_[entity.index()] & mask_) == mask_;
     }
 
    private:

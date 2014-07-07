@@ -237,6 +237,19 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithComponentAndUnpacking
   REQUIRE(1 ==  i);
 }
 
+TEST_CASE_METHOD(EntityManagerFixture, "TestIterateAllEntitiesSkipsDestroyed") {
+  Entity a = em.create();
+  Entity b = em.create();
+  Entity c = em.create();
+
+  b.destroy();
+
+  EntityManager::View::Iterator it = em.entities_for_debugging().begin();
+  REQUIRE(a.id() == (*it).id());
+  ++it;
+  REQUIRE(c.id() == (*it).id());
+}
+
 TEST_CASE_METHOD(EntityManagerFixture, "TestUnpack") {
   Entity e = em.create();
   auto p = e.assign<Position>(1.0, 2.0);
