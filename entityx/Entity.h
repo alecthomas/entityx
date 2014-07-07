@@ -124,6 +124,9 @@ public:
 
   template <typename C, typename ... Args>
   ComponentHandle<C> assign(Args && ... args);
+  
+  template <typename C, typename ... Args>
+  ComponentHandle<C> assign_from_copy(C comp);
 
   template <typename C>
   void remove();
@@ -772,6 +775,12 @@ template <typename C, typename ... Args>
 ComponentHandle<C> Entity::assign(Args && ... args) {
   assert(valid());
   return manager_->assign<C>(id_, std::forward<Args>(args) ...);
+}
+
+template <typename C, typename ... Args>
+ComponentHandle<C> Entity::assign_from_copy(C comp) {
+  assert(valid());
+  return manager_->assign<C>(id_, std::forward<C>(comp));
 }
 
 template <typename C>
