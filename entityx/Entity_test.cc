@@ -439,6 +439,24 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenEntity
   REQUIRE(!position);
 }
 
+struct CopyVerifier : Component<CopyVerifier> {
+  CopyVerifier() : copied(false) {}
+  CopyVerifier(const CopyVerifier &other) {
+    copied = other.copied + 1;
+  }
+
+  int copied;
+};
+
+TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAssignmentFromCopy") {
+  Entity a = em.create();
+  CopyVerifier original;
+  CopyVerifier::Handle copy = a.assign_from_copy(original);
+  REQUIRE(copy);
+  REQUIRE(copy->copied == 1);
+  a.destroy();
+  REQUIRE(!copy);
+}
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenComponentDestroyed") {
   Entity a = em.create();
