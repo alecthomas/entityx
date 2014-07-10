@@ -28,7 +28,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	# /FS - Allows multiple cl.exe processes to write to the same .pdb file
 	# /DEBUG - Enable debug during linking
 	# /Od - Disables optimization
-	set(CMAKE_CXX_FLAGS_DEBUG "/Zi /FS /DEBUG /Od")
+	set(CMAKE_CXX_FLAGS_DEBUG "/Zi /FS /DEBUG /Od /MDd")
 	# /Ox - Full optimization
 	set(CMAKE_CXX_FLAGS_RELEASE "/Ox -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Ox /Zi /FS /DEBUG")
@@ -109,7 +109,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	# /FS - Allows multiple cl.exe processes to write to the same .pdb file
 	# /DEBUG - Enable debug during linking
 	# /Od - Disables optimization
-	set(CMAKE_CXX_FLAGS_DEBUG "/Zi /FS /DEBUG /Od")
+	set(CMAKE_CXX_FLAGS_DEBUG "/Zi /FS /DEBUG /Od /MDd")
 	# /Ox - Full optimization
 	set(CMAKE_CXX_FLAGS_RELEASE "/Ox -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Ox /Zi /FS /DEBUG")
