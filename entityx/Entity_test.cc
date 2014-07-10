@@ -337,6 +337,10 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityDestroyedEvent") {
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAddedEvent") {
   struct ComponentAddedEventReceiver
       : public Receiver<ComponentAddedEventReceiver> {
+
+    ComponentAddedEventReceiver()
+      : position_events(0), direction_events(0) {}
+
     void receive(const ComponentAddedEvent<Position> &event) {
       auto p = event.component;
       float n = static_cast<float>(position_events);
@@ -353,8 +357,8 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAddedEvent") {
       direction_events++;
     }
 
-    int position_events = 0;
-    int direction_events = 0;
+    int position_events;
+    int direction_events;
   };
 
   ComponentAddedEventReceiver receiver;
