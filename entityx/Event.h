@@ -159,7 +159,7 @@ class EventManager : entityx::help::NonCopyable {
   template <typename E, typename ... Args>
   void emit(Args && ... args) {
     E event(std::forward<Args>(args) ...);
-    auto sig = signal_for(E::family());
+    auto sig = signal_for(size_t(E::family()));
     BaseEvent *base = &event;
     sig->emit(base);
   }
