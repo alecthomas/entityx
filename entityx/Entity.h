@@ -506,7 +506,7 @@ class EntityManager : entityx::help::NonCopyable {
     Pool<C> *pool = accomodate_component<C>();
     new(pool->get(id.index())) C(std::forward<Args>(args) ...);
     ComponentHandle<C> component(this, id);
-    entity_component_mask_[id.index()] |= uint64_t(1) << family;
+    entity_component_mask_[id.index()].set(family);
     event_manager_.emit<ComponentAddedEvent<C>>(Entity(this, id), component);
     return component;
   }
@@ -524,7 +524,7 @@ class EntityManager : entityx::help::NonCopyable {
     ComponentHandle<C> component(this, id);
     BasePool *pool = component_pools_[family];
     event_manager_.emit<ComponentRemovedEvent<C>>(Entity(this, id), component);
-    entity_component_mask_[id.index()] &= ~(uint64_t(1) << family);
+    entity_component_mask_[id.index()].reset(family);
     pool->destroy(index);
   }
 
