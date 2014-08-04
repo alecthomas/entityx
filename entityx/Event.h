@@ -26,7 +26,7 @@ namespace entityx {
 /// Used internally by the EventManager.
 class BaseEvent {
  public:
-  typedef uint64_t Family;
+  typedef size_t Family;
 
   virtual ~BaseEvent() {}
 
