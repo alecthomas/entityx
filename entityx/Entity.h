@@ -212,7 +212,7 @@ private:
  */
 struct BaseComponent {
  public:
-  typedef uint64_t Family;
+  typedef size_t Family;
 
   // NOTE: Component memory is *always* managed by the EntityManager.
   // Use Entity::destroy() instead.
@@ -506,7 +506,7 @@ class EntityManager : entityx::help::NonCopyable {
     Pool<C> *pool = accomodate_component<C>();
     new(pool->get(id.index())) C(std::forward<Args>(args) ...);
     ComponentHandle<C> component(this, id);
-    entity_component_mask_[id.index()] |= uint64_t(1) << family;
+    entity_component_mask_[id.index()].set(family);
     event_manager_.emit<ComponentAddedEvent<C>>(Entity(this, id), component);
     return component;
   }
@@ -519,12 +519,12 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   void remove(Entity::Id id) {
     assert_valid(id);
-    const int family = C::family();
-    const int index = id.index();
+    const BaseComponent::Family family = C::family();
+    const uint32_t index = id.index();
     ComponentHandle<C> component(this, id);
     BasePool *pool = component_pools_[family];
     event_manager_.emit<ComponentRemovedEvent<C>>(Entity(this, id), component);
-    entity_component_mask_[id.index()] &= ~(uint64_t(1) << family);
+    entity_component_mask_[id.index()].reset(family);
     pool->destroy(index);
   }
 

@@ -32,7 +32,7 @@ class SystemManager;
  */
 class BaseSystem : entityx::help::NonCopyable {
  public:
-  typedef uint64_t Family;
+  typedef size_t Family;
 
   virtual ~BaseSystem() {}
 
