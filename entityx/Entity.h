@@ -102,6 +102,10 @@ public:
     return !(other == *this);
   }
 
+  bool operator < (const Entity &other) const {
+    return other.id_ < id_;
+  }
+
   /**
    * Is this Entity handle valid?
    *

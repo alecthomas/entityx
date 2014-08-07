@@ -15,6 +15,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <set>
+#include <map>
 #include "entityx/3rdparty/catch.hpp"
 #include "entityx/Entity.h"
 
@@ -23,6 +25,9 @@ using namespace entityx;
 
 using std::ostream;
 using std::vector;
+using std::set;
+using std::map;
+using std::pair;
 using std::string;
 
 template <typename T>
@@ -490,4 +495,27 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestDeleteEntityWithNoComponents") {
   a.assign<Position>(1, 2);
   Entity b = em.create();
   b.destroy();
+}
+
+TEST_CASE_METHOD(EntityManagerFixture, "TestEntityInStdSet") {
+  Entity a = em.create();
+  Entity b = em.create();
+  Entity c = em.create();
+  set<Entity> entitySet;
+  REQUIRE(entitySet.insert(a).second);
+  REQUIRE(entitySet.insert(b).second);
+  REQUIRE(entitySet.insert(c).second);
+}
+
+TEST_CASE_METHOD(EntityManagerFixture, "TestEntityInStdMap") {
+  Entity a = em.create();
+  Entity b = em.create();
+  Entity c = em.create();
+  map<Entity, int> entityMap;
+  REQUIRE(entityMap.insert(pair<Entity, int>(a, 1)).second);
+  REQUIRE(entityMap.insert(pair<Entity, int>(b, 2)).second);
+  REQUIRE(entityMap.insert(pair<Entity, int>(c, 3)).second);
+  REQUIRE(entityMap[a] == 1);
+  REQUIRE(entityMap[b] == 2);
+  REQUIRE(entityMap[c] == 3);
 }
