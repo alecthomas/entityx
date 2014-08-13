@@ -225,7 +225,7 @@ struct BaseComponent {
 
 
  protected:
-  void fail() {
+  static void fail() {
 #if defined(_HAS_EXCEPTIONS) || defined(__EXCEPTIONS)
     throw std::bad_alloc();
 #else
