@@ -220,8 +220,21 @@ struct BaseComponent {
 
   // NOTE: Component memory is *always* managed by the EntityManager.
   // Use Entity::destroy() instead.
-  void operator delete(void *p) { throw std::bad_alloc(); }
-  void operator delete[](void *p) { throw std::bad_alloc(); }
+  void operator delete(void *p) {
+#ifdef _HAS_EXCEPTIONS
+    throw std::bad_alloc();
+#else
+    abort();
+#endif
+  }
+
+  void operator delete[](void *p) {
+#ifdef _HAS_EXCEPTIONS
+    throw std::bad_alloc();
+#else
+    abort();
+#endif
+  }
 
 
  protected:
