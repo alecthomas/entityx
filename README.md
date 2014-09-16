@@ -35,6 +35,17 @@ You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitte
 
 See the [ChangeLog](https://github.com/alecthomas/entityx/blob/master/CHANGES.md) for details.
 
+## EntityX extensions and example applications
+
+- [Will Usher](https://github.com/Twinklebear) has also written an [Asteroids clone](https://github.com/Twinklebear/asteroids).
+- [Roc Solid Productions](https://github.com/RocSolidProductions) have written a [space shooter](https://github.com/RocSolidProductions/Space-Shooter)!
+
+**DEPRECATED - 0.1.x ONLY**
+
+- [Wu Zhenwei](https://github.com/acaly) has written [Lua bindings](https://github.com/acaly/entityx_lua) for EntityX, allowing entity logic to be extended through Lua scripts.
+- [Python bindings](https://github.com/alecthomas/entityx_python) allowing entity logic to be extended through Python scripts.
+- [Rodrigo Setti](https://github.com/rodrigosetti) has written an OpenGL [Asteroids clone](https://github.com/rodrigosetti/azteroids) which uses EntityX.
+
 ## Overview
 
 In EntityX data associated with an entity is called a `entityx::Component`. `Systems` encapsulate logic and can use as many component types as necessary. An `entityx::EventManager` allows systems to interact without being tightly coupled. Finally, a `Manager` object ties all of the systems together for convenience.

@@ -750,7 +750,7 @@ class EntityManager : entityx::help::NonCopyable {
   }
 
   template <typename C>
-  ComponentMask component_mask(const ComponentHandle<C> c) {
+  ComponentMask component_mask(const ComponentHandle<C> &c) {
     return component_mask<C>();
   }
 
