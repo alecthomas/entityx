@@ -514,11 +514,16 @@ class EntityManager : entityx::help::NonCopyable {
   ComponentHandle<C> assign(Entity::Id id, Args && ... args) {
     assert_valid(id);
     const BaseComponent::Family family = C::family();
+
     // Placement new into the component pool.
     Pool<C> *pool = accomodate_component<C>();
     new(pool->get(id.index())) C(std::forward<Args>(args) ...);
-    ComponentHandle<C> component(this, id);
+
+    // Set the bit for this component.
     entity_component_mask_[id.index()].set(family);
+
+    // Create and return handle.
+    ComponentHandle<C> component(this, id);
     event_manager_.emit<ComponentAddedEvent<C>>(Entity(this, id), component);
     return component;
   }
@@ -533,10 +538,16 @@ class EntityManager : entityx::help::NonCopyable {
     assert_valid(id);
     const BaseComponent::Family family = C::family();
     const uint32_t index = id.index();
-    ComponentHandle<C> component(this, id);
+
+    // Find the pool for this component family.
     BasePool *pool = component_pools_[family];
+    ComponentHandle<C> component(this, id);
     event_manager_.emit<ComponentRemovedEvent<C>>(Entity(this, id), component);
+
+    // Remove component bit.
     entity_component_mask_[id.index()].reset(family);
+
+    // Call destructor.
     pool->destroy(index);
   }
 
