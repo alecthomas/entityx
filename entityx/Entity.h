@@ -231,8 +231,8 @@ struct BaseComponent {
 #else
     std::abort();
 #endif
-
   }
+
   static Family family_counter_;
 };
 

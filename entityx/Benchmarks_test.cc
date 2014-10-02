@@ -117,5 +117,7 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIteration") {
 
   ComponentHandle<Position> position;
   for (auto e : em.entities_with_components<Position>(position)) {
+    (void)e;
+    position.valid();
   }
 }
