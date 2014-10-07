@@ -18,6 +18,11 @@ struct Position {
   explicit Position(int *ptr = nullptr) : ptr(ptr) {
     if (ptr) (*ptr)++;
   }
+  Position(const Position &copy) : ptr(copy.ptr) {
+    if (ptr) (*ptr)++;
+    x = copy.x;
+    y = copy.y;
+  }
   ~Position() {
     if (ptr) (*ptr)++;
   }
@@ -26,9 +31,10 @@ struct Position {
   int *ptr;
 };
 
+void emit_added(uint32_t index) {}
 
 TEST_CASE("TestPoolReserve") {
-  entityx::Pool<Position, 8> pool;
+  entityx::Pool<Position, 8> pool(emit_added);
   REQUIRE(0 ==  pool.capacity());
   REQUIRE(0 ==  pool.chunks());
   pool.reserve(8);
@@ -42,7 +48,7 @@ TEST_CASE("TestPoolReserve") {
 }
 
 TEST_CASE("TestPoolPointers") {
-  entityx::Pool<Position, 8> pool;
+  entityx::Pool<Position, 8> pool(emit_added);
   std::vector<char*> ptrs;
   for (int i = 0; i < 4; i++) {
     pool.expand(i * 8 + 8);
@@ -67,7 +73,7 @@ TEST_CASE("TestPoolPointers") {
 }
 
 TEST_CASE("TestDeconstruct") {
-  entityx::Pool<Position, 8> pool;
+  entityx::Pool<Position, 8> pool(emit_added);
   pool.expand(8);
 
   void *p0 = pool.get(0);
@@ -77,4 +83,27 @@ TEST_CASE("TestDeconstruct") {
   REQUIRE(1 ==  counter);
   pool.destroy(0);
   REQUIRE(2 ==  counter);
+}
+
+TEST_CASE("TestCopy") {
+  int added_event_called = 0;
+  entityx::Pool<Position, 8> pool([&](uint32_t) { added_event_called++; });
+  pool.expand(8);
+
+  void *p0 = pool.get(0);
+
+  int counter = 0;
+  Position *pos0 = new(p0) Position(&counter);
+  pos0->x = 1.0;
+  pos0->y = 2.0;
+
+  REQUIRE(1 ==  counter);
+
+  pool.copy(0, 1);
+  REQUIRE(2 ==  counter);
+  Position *pos1 = static_cast<Position*>(pool.get(1));
+  REQUIRE(pos0->x == pos1->x);
+  REQUIRE(pos0->y == pos1->y);
+
+  REQUIRE(added_event_called == 1);
 }

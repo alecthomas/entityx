@@ -132,6 +132,8 @@ public:
   template <typename C>
   ComponentHandle<C> assign_from_copy(const C &component);
 
+  Entity clone() const;
+
   template <typename C>
   void remove();
 
@@ -448,7 +450,7 @@ class EntityManager : entityx::help::NonCopyable {
   }
 
   /**
-   * Create a new Entity::Id.
+   * Create a new Entity.
    *
    * Emits EntityCreatedEvent.
    */
@@ -469,6 +471,27 @@ class EntityManager : entityx::help::NonCopyable {
   }
 
   /**
+   * Create a new Entity from an existing one, copying all of its components.
+   *
+   * Emits EntityCreatedEvent and ComponentAddedEvent<C> for each component copied.
+   */
+  Entity clone(Entity::Id from) {
+    Entity to = create();  // emits EntityCreatedEvent
+    uint32_t to_index = to.id().index();
+    auto from_mask = entity_component_mask_[from.index()];
+    auto &to_mask = entity_component_mask_[to_index];
+    const size_t size = component_pools_.size();
+    for (size_t i = 0; i < size; i++) {
+      BasePool *pool = component_pools_[i];
+      if (pool && from_mask.test(i)) {
+        pool->copy(from.index(), to_index);  // emits ComponentAddedEvent<C>
+        to_mask.set(i);
+      }
+    }
+    return to;
+  }
+
+  /**
    * Destroy an existing Entity::Id and its associated Components.
    *
    * Emits EntityDestroyedEvent.
@@ -478,7 +501,8 @@ class EntityManager : entityx::help::NonCopyable {
     int index = entity.index();
     auto mask = entity_component_mask_[entity.index()];
     event_manager_.emit<EntityDestroyedEvent>(Entity(this, entity));
-    for (size_t i = 0; i < component_pools_.size(); i++) {
+    const size_t size = component_pools_.size();
+    for (size_t i = 0; i < size; i++) {
       BasePool *pool = component_pools_[i];
       if (pool && mask.test(i))
         pool->destroy(index);
@@ -786,11 +810,19 @@ class EntityManager : entityx::help::NonCopyable {
       component_pools_.resize(family + 1, nullptr);
     }
     if (!component_pools_[family]) {
-      Pool<T> *pool = new Pool<T>();
+      Pool<T> *pool = new Pool<T>(make_emit_added_event_callback<T>());
       pool->expand(index_counter_);
       component_pools_[family] = pool;
     }
     return static_cast<Pool<T>*>(component_pools_[family]);
+  }
+
+  template <typename C>
+  std::function<void(uint32_t)> make_emit_added_event_callback() {
+    return [this](uint32_t index) {
+      Entity::Id id = create_id(index);
+      event_manager_.emit<ComponentAddedEvent<C>>(Entity(this, id), ComponentHandle<C>(this, id));
+    };
   }
 
 
@@ -861,6 +893,11 @@ void Entity::unpack(ComponentHandle<A> &a, ComponentHandle<Args> & ... args) {
 
 inline bool Entity::valid() const {
   return manager_ && manager_->valid(id_);
+}
+
+inline Entity Entity::clone() const {
+  assert(valid());
+  return manager_->clone(id_);
 }
 
 inline std::ostream &operator << (std::ostream &out, const Entity::Id &id) {

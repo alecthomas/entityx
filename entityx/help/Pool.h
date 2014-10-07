@@ -11,6 +11,8 @@
 #pragma once
 
 #include <cassert>
+#include <cstdint>
+#include <functional>
 #include <vector>
 
 namespace entityx {
@@ -52,16 +54,17 @@ class BasePool {
   }
 
   inline void *get(int n) {
-    assert(n < size_);
+    assert(n >= 0 && n < size_);
     return blocks_[n / chunk_size_] + (n % chunk_size_) * element_size_;
   }
 
   inline const void *get(int n) const {
-    assert(n < size_);
+    assert(n >= 0 && n < size_);
     return blocks_[n / chunk_size_] + (n % chunk_size_) * element_size_;
   }
 
   virtual void destroy(int n) = 0;
+  virtual void copy(int from, int to) = 0;
 
  protected:
   std::vector<char *> blocks_;
@@ -79,14 +82,26 @@ class BasePool {
 template <typename T, int ChunkSize = 8192>
 class Pool : public BasePool {
  public:
-  Pool() : BasePool(sizeof(T), ChunkSize) {}
+  Pool(std::function<void(uint32_t)> added_component_callback) : BasePool(sizeof(T), ChunkSize), added_component_callback_(added_component_callback) {}
   virtual ~Pool() {}
 
   virtual void destroy(int n) override {
-    assert(n < size_);
+    assert(n >= 0 && n < size_);
     T *ptr = static_cast<T*>(get(n));
     ptr->~T();
   }
+
+  // Copy (via copy constructor) a component and call added_component_callback callback.
+  virtual void copy(int from, int to) override {
+    assert(from >= 0 && from < size_);
+    assert(to >= 0 && to < size_);
+    T *from_ptr = static_cast<T*>(get(from));
+    new(static_cast<T*>(get(to))) T(*from_ptr);
+    added_component_callback_(static_cast<uint32_t>(to));
+  }
+
+private:
+  std::function<void(uint32_t)> added_component_callback_;
 };
 
 }  // namespace entityx

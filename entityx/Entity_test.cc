@@ -519,3 +519,16 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityInStdMap") {
   REQUIRE(entityMap[b] == 2);
   REQUIRE(entityMap[c] == 3);
 }
+
+
+TEST_CASE_METHOD(EntityManagerFixture, "TestEntityClone") {
+  Entity a = em.create();
+  a.assign<Position>(1.0, 2.0);
+  Entity b = a.clone();
+
+  REQUIRE(a != b);
+  Position::Handle position = b.component<Position>();
+  REQUIRE(position);
+  REQUIRE(position->x == 1);
+  REQUIRE(position->y == 2);
+}
