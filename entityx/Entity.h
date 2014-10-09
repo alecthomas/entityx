@@ -322,8 +322,6 @@ class EntityManager : entityx::help::NonCopyable {
 
   class View {
    public:
-    typedef std::function<bool (const EntityManager &, const Entity::Id &)> Predicate;
-
     struct BaseUnpacker {
       virtual ~BaseUnpacker() {}
       virtual void unpack(const Entity::Id &id) = 0;
@@ -346,10 +344,10 @@ class EntityManager : entityx::help::NonCopyable {
       friend class View;
 
       Iterator(EntityManager *manager,
-               const std::vector<Predicate> &predicates,
+               const ComponentMask mask,
                const std::vector<std::shared_ptr<BaseUnpacker>> &unpackers,
                uint32_t index)
-          : manager_(manager), predicates_(predicates), unpackers_(unpackers), i_(index), capacity_(manager_->capacity()) {
+          : manager_(manager), mask_(mask), unpackers_(unpackers), i_(index), capacity_(manager_->capacity()) {
         next();
       }
 
@@ -366,32 +364,21 @@ class EntityManager : entityx::help::NonCopyable {
         }
       }
 
-      bool predicate() {
-        Entity::Id id = manager_->create_id(i_);
-        for (auto &p : predicates_) {
-          if (!p(*manager_, id)) {
-            return false;
-          }
-        }
-        return true;
+      inline bool predicate() {
+        return (manager_->entity_component_mask_[i_] & mask_) == mask_;
       }
 
       EntityManager *manager_;
-      std::vector<Predicate> predicates_;
+      ComponentMask mask_;
       std::vector<std::shared_ptr<BaseUnpacker>> unpackers_;
       uint32_t i_;
       size_t capacity_;
     };
 
-    // Create a sub-view with an additional predicate.
-    View(const View &view, Predicate predicate) : manager_(view.manager_), predicates_(view.predicates_) {
-      predicates_.push_back(predicate);
-    }
-
-    Iterator begin() { return Iterator(manager_, predicates_, unpackers_, 0); }
-    Iterator end() { return Iterator(manager_, predicates_, unpackers_, manager_->capacity()); }
-    const Iterator begin() const { return Iterator(manager_, predicates_, unpackers_, 0); }
-    const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_->capacity()); }
+    Iterator begin() { return Iterator(manager_, mask_, unpackers_, 0); }
+    Iterator end() { return Iterator(manager_, mask_, unpackers_, manager_->capacity()); }
+    const Iterator begin() const { return Iterator(manager_, mask_, unpackers_, 0); }
+    const Iterator end() const { return Iterator(manager_, mask_, unpackers_, manager_->capacity()); }
 
     template <typename A>
     View &unpack_to(ComponentHandle<A> &a) {
@@ -421,12 +408,10 @@ class EntityManager : entityx::help::NonCopyable {
       ComponentHandle<C> &c;
     };
 
-    View(EntityManager *manager, Predicate predicate) : manager_(manager) {
-      predicates_.push_back(predicate);
-    }
+    View(EntityManager *manager, ComponentMask mask) : manager_(manager), mask_(mask) {}
 
     EntityManager *manager_;
-    std::vector<Predicate> predicates_;
+    ComponentMask mask_;
     std::vector<std::shared_ptr<BaseUnpacker>> unpackers_;
   };
 
@@ -618,15 +603,13 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C, typename ... Components>
   View entities_with_components() {
     auto mask = component_mask<C, Components ...>();
-    return View(this, ComponentMaskPredicate(entity_component_mask_, mask));
+    return View(this, mask);
   }
 
   template <typename C>
   View entities_with_components(ComponentHandle<C> &c) {
     auto mask = component_mask<C>();
-    return
-        View(this, ComponentMaskPredicate(entity_component_mask_, mask))
-        .unpack_to(c);
+    return View(this, mask).unpack_to(c);
   }
 
   /**
@@ -644,9 +627,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C, typename ... Components>
   View entities_with_components(ComponentHandle<C> &c, ComponentHandle<Components> & ... args) {
     auto mask = component_mask<C, Components...>();
-    return
-        View(this, ComponentMaskPredicate(entity_component_mask_, mask))
-        .unpack_to(c, args ...);
+    return View(this, mask).unpack_to(c, args ...);
   }
 
   /**
@@ -659,7 +640,9 @@ class EntityManager : entityx::help::NonCopyable {
    * @return An iterator view over all valid entities.
    */
   View entities_for_debugging() {
-    return View(this, ValidEntityPredicate());
+    ComponentMask mask;
+    for (size_t i = 0; i < mask.size(); i++) mask.set(i);
+    return View(this, mask);
   }
 
   template <typename C>
@@ -705,21 +688,6 @@ class EntityManager : entityx::help::NonCopyable {
       }
       return true;
     }
-  };
-
-  /// A predicate that matches valid entities with the given component mask.
-  class ComponentMaskPredicate {
-   public:
-    ComponentMaskPredicate(const std::vector<ComponentMask> &entity_component_masks, ComponentMask mask)
-        : entity_component_masks_(entity_component_masks), mask_(mask) {}
-
-    bool operator()(const EntityManager &entities, const Entity::Id &entity) {
-      return (entity_component_masks_[entity.index()] & mask_) == mask_;
-    }
-
-   private:
-    const std::vector<ComponentMask> &entity_component_masks_;
-    ComponentMask mask_;
   };
 
   inline void assert_valid(Entity::Id id) const {

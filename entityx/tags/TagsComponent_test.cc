@@ -40,19 +40,3 @@ TEST_CASE("TestVariadicConstruction", "TagsComponentTest") {
   expected.insert("indestructible");
   REQUIRE(expected == tags.tags);
 }
-
-TEST_CASE("TestEntitiesWithTag", "TagsComponentTest") {
-  EventManager ev;
-  EntityManager en(ev);
-  Entity a = en.create();
-  a.assign<Position>();
-  for (int i = 0; i < 99; ++i) {
-    auto e = en.create();
-    e.assign<Position>();
-    e.assign<TagsComponent>("positionable");
-  }
-  a.assign<TagsComponent>("player", "indestructible");
-  auto entities = en.entities_with_components<Position>();
-  REQUIRE(100 == size(entities));
-  REQUIRE(1 == size(TagsComponent::view(entities, "player")));
-}

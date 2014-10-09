@@ -24,21 +24,8 @@ namespace tags {
  *
  * ComponentPtr<TagsComponent> tags;
  * for (Entity entity : entity_manager.entities_with_components(tags))
- * for (Entity entity : TagsComponent::view(entity_manager, "tag1")) {
- * }
  */
 class TagsComponent : public Component<TagsComponent> {
-  struct TagsPredicate {
-    explicit TagsPredicate(const std::string &tag) : tag(tag) {}
-
-    bool operator() (const EntityManager &manager, Entity::Id id) {
-      auto tags = manager.component<TagsComponent>(id);
-      return tags && tags->tags.find(tag) != tags->tags.end();
-    }
-
-    std::string tag;
-  };
-
  public:
   /**
    * Construct a new TagsComponent with the given tags.
@@ -48,13 +35,6 @@ class TagsComponent : public Component<TagsComponent> {
   template <typename ... Args>
   TagsComponent(const std::string &tag, const Args & ... tags) {
     set_tags(tag, tags ...);
-  }
-
-  /**
-   * Filter the provided view to only those entities with the given tag.
-   */
-  static EntityManager::View view(const EntityManager::View &view, const std::string &tag) {
-    return EntityManager::View(view, TagsPredicate(tag));
   }
 
   std::unordered_set<std::string> tags;
