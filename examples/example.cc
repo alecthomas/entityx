@@ -16,8 +16,8 @@
  *    c++ -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics -lentityx readme.cc -o readme
  */
 #include <unordered_set>
+#include <sstream>
 #include <cstdlib>
-#include <strstream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -248,11 +248,10 @@ public:
     }
     last_update += dt;
     if (last_update >= 1.0) {
-      std::strstream out;
+      std::ostringstream out;
       out << es.size() << " entities (" << static_cast<int>(1.0 / dt) << " fps)";
       text.setString(out.str());
       last_update = 0.0;
-      out.freeze(false);
     }
     target.draw(text);
   }
@@ -280,7 +279,7 @@ public:
       ex::Entity entity = entities.create();
 
       // Mark as collideable (explosion particles will not be collideable).
-      Collideable::Handle collideable = entity.assign<Collideable>(r(8, 2));
+      Collideable::Handle collideable = entity.assign<Collideable>(r(10, 5));
 
       // "Physical" attributes.
       entity.assign<Body>(
