@@ -143,31 +143,76 @@ private:
 // particles, but it could be used by a SoundSystem to play an explosion
 // sound, etc..
 class CollisionSystem : public ex::System<CollisionSystem> {
+  static const int PARTITIONS = 200;
+
+  struct Candidate {
+    sf::Vector2f position;
+    float radius;
+    ex::Entity entity;
+  };
+
  public:
+  explicit CollisionSystem(sf::RenderTarget &target) : size(target.getSize()) {
+    size.x = size.x / PARTITIONS + 1;
+    size.y = size.y / PARTITIONS + 1;
+  }
+
   void update(ex::EntityManager &es, ex::EventManager &events, double dt) override {
-    Body::Handle left_body;
-    Collideable::Handle left_collideable;
-    for (ex::Entity left_entity : es.entities_with_components(left_body, left_collideable)) {
-
-      for (ex::Entity right_entity : es.entities_with_components<Body, Collideable>()) {
-        if (left_entity == right_entity) continue;
-
-        Body::Handle right_body = right_entity.component<Body>();
-        Collideable::Handle right_collideable = right_entity.component<Collideable>();
-        if (collided(left_body, left_collideable, right_body, right_collideable))
-          events.emit<CollisionEvent>(left_entity, right_entity);
-      }
-    }
+    reset();
+    collect(es);
+    collide(events);
   };
 
 private:
+  std::vector<std::vector<Candidate>> grid;
+  sf::Vector2u size;
+
+  void reset() {
+    grid.clear();
+    grid.resize(size.x * size.y);
+  }
+
+  void collect(ex::EntityManager &entities) {
+    Body::Handle body;
+    Collideable::Handle collideable;
+    for (ex::Entity entity : entities.entities_with_components(body, collideable)) {
+      unsigned int
+          left = static_cast<int>(body->position.x - collideable->radius) / PARTITIONS,
+          top = static_cast<int>(body->position.y - collideable->radius) / PARTITIONS,
+          right = static_cast<int>(body->position.x + collideable->radius) / PARTITIONS,
+          bottom = static_cast<int>(body->position.y + collideable->radius) / PARTITIONS;
+        Candidate candidate {body->position, collideable->radius, entity};
+        unsigned int slots[4] = {
+          left + top * size.x,
+          right + top * size.x,
+          left  + bottom * size.x,
+          right + bottom * size.x,
+        };
+        grid[slots[0]].push_back(candidate);
+        if (slots[0] != slots[1]) grid[slots[1]].push_back(candidate);
+        if (slots[1] != slots[2]) grid[slots[2]].push_back(candidate);
+        if (slots[2] != slots[3]) grid[slots[3]].push_back(candidate);
+    }
+  }
+
+  void collide(ex::EventManager &events) {
+    for (const std::vector<Candidate> &candidates : grid) {
+      for (const Candidate &left : candidates) {
+        for (const Candidate &right : candidates) {
+          if (left.entity == right.entity) continue;
+          if (collided(left, right))
+            events.emit<CollisionEvent>(left.entity, right.entity);
+        }
+      }
+    }
+  }
+
   float length(const sf::Vector2f &v) {
     return std::sqrt(v.x * v.x + v.y * v.y);
   }
 
-
-  bool collided(Body::Handle r1, Collideable::Handle c1, Body::Handle r2, Collideable::Handle c2) {
-    return length(r1->position - r2->position) < c1->radius + c2->radius;
+  bool collided(const Candidate &left, const Candidate &right) {
+    return length(left.position - right.position) < left.radius + right.radius;
   }
 };
 
@@ -269,7 +314,7 @@ public:
     systems.add<BodySystem>();
     systems.add<FadeOutSystem>();
     systems.add<BounceSystem>(target);
-    systems.add<CollisionSystem>();
+    systems.add<CollisionSystem>(target);
     systems.add<ExplosionSystem>();
     systems.add<RenderSystem>(target, font);
     systems.configure();
