@@ -46,6 +46,20 @@ See the [ChangeLog](https://github.com/alecthomas/entityx/blob/master/CHANGES.md
 - [Python bindings](https://github.com/alecthomas/entityx_python) allowing entity logic to be extended through Python scripts.
 - [Rodrigo Setti](https://github.com/rodrigosetti) has written an OpenGL [Asteroids clone](https://github.com/rodrigosetti/azteroids) which uses EntityX.
 
+## Example
+
+An SFML2 example application is [available](/examples/example.cc) that shows most of EntityX's concepts. It spawns random circles on a 2D plane moving in random directions. If two circles collide they will explode and emit particles. All circles and particles are entities.
+
+It illustrates:
+
+- Separation of data via components.
+- Separation of logic via systems.
+- Use of events (colliding bodies trigger a CollisionEvent).
+
+Compile with:
+
+    c++ -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics -lentityx example.cc -o example
+
 ## Overview
 
 In EntityX data associated with an entity is called a `entityx::Component`. `Systems` encapsulate logic and can use as many component types as necessary. An `entityx::EventManager` allows systems to interact without being tightly coupled. Finally, a `Manager` object ties all of the systems together for convenience.
