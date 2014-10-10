@@ -249,7 +249,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestIterateAllEntitiesSkipsDestroyed") {
 
   b.destroy();
 
-  EntityManager::View::Iterator it = em.entities_for_debugging().begin();
+  auto it = em.entities_for_debugging().begin();
   REQUIRE(a.id() == (*it).id());
   ++it;
   REQUIRE(c.id() == (*it).id());

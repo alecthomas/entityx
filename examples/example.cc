@@ -142,6 +142,8 @@ private:
 // CollisionEvent. This is used by ExplosionSystem to create explosion
 // particles, but it could be used by a SoundSystem to play an explosion
 // sound, etc..
+//
+// Uses a fairly rudimentary 2D partition system, but performs reasonably well.
 class CollisionSystem : public ex::System<CollisionSystem> {
   static const int PARTITIONS = 200;
 
@@ -292,7 +294,7 @@ public:
       target.draw(*renderable->shape.get());
     }
     last_update += dt;
-    if (last_update >= 1.0) {
+    if (last_update >= 0.5) {
       std::ostringstream out;
       out << es.size() << " entities (" << static_cast<int>(1.0 / dt) << " fps)";
       text.setString(out.str());
