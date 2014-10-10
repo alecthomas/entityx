@@ -31,6 +31,10 @@ struct Position : public Component<Position> {
 };
 
 
+struct Direction : public Component<Direction> {
+};
+
+
 struct BenchmarkFixture {
   BenchmarkFixture() : em(ev) {}
 
@@ -116,8 +120,25 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIteration") {
   cout << "iterating over " << count << " entities, unpacking one component" << endl;
 
   ComponentHandle<Position> position;
-  for (auto e : em.entities_with_components<Position>(position)) {
+  for (auto e : em.entities_with_components(position)) {
     (void)e;
-    position.valid();
+  }
+}
+
+TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIterationUnpackTwo") {
+  int count = 10000000;
+  for (int i = 0; i < count; i++) {
+    auto e = em.create();
+    e.assign<Position>();
+    e.assign<Direction>();
+  }
+
+  AutoTimer t;
+  cout << "iterating over " << count << " entities, unpacking two components" << endl;
+
+  ComponentHandle<Position> position;
+  ComponentHandle<Direction> direction;
+  for (auto e : em.entities_with_components(position, direction)) {
+    (void)e;
   }
 }
