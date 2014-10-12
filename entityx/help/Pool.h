@@ -27,13 +27,13 @@ namespace entityx {
  */
 class BasePool {
  public:
-  explicit BasePool(int element_size, int chunk_size = 8192)
+  explicit BasePool(size_t element_size, size_t chunk_size = 8192)
       : element_size_(element_size), chunk_size_(chunk_size), capacity_(0) {}
   virtual ~BasePool();
 
-  int size() const { return size_; }
-  int capacity() const { return capacity_; }
-  int chunks() const { return blocks_.size(); }
+  size_t size() const { return size_; }
+  size_t capacity() const { return capacity_; }
+  size_t chunks() const { return blocks_.size(); }
 
   /// Ensure at least n elements will fit in the pool.
   inline void expand(int n) {
@@ -65,10 +65,10 @@ class BasePool {
 
  protected:
   std::vector<char *> blocks_;
-  int element_size_;
-  int chunk_size_;
-  int size_ = 0;
-  int capacity_;
+  size_t element_size_;
+  size_t chunk_size_;
+  size_t size_ = 0;
+  size_t capacity_;
 };
 
 

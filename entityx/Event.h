@@ -75,7 +75,7 @@ class BaseReceiver {
   }
 
   // Return number of signals connected to this receiver.
-  int connected_signals() const {
+  size_t connected_signals() const {
     size_t size = 0;
     for (auto connection : connections_) {
       if (!connection.first.expired()) {
