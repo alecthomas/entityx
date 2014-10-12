@@ -11,6 +11,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <cstddef>
 #include <vector>
 #include <list>
 #include <memory>
@@ -164,8 +165,8 @@ class EventManager : entityx::help::NonCopyable {
     sig->emit(base);
   }
 
-  int connected_receivers() const {
-    int size = 0;
+  std::size_t connected_receivers() const {
+    std::size_t size = 0;
     for (EventSignalPtr handler : handlers_) {
       if (handler) size += handler->size();
     }
