@@ -12,7 +12,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR})
 set(ENTITYX_BUILD_TESTING false CACHE BOOL "Enable building of tests.")
 set(ENTITYX_RUN_BENCHMARKS false CACHE BOOL "Run benchmarks (in conjunction with -DENTITYX_BUILD_TESTING=1).")
 set(ENTITYX_MAX_COMPONENTS 64 CACHE STRING "Set the maximum number of components.")
-set(ENTITYX_BUILD_SHARED false CACHE BOOL "Build shared libraries?")
+set(ENTITYX_BUILD_SHARED true CACHE BOOL "Build shared libraries?")
 
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 include(CheckCXXSourceCompiles)
