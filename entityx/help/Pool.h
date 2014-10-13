@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cassert>
 #include <vector>
 
@@ -27,23 +28,23 @@ namespace entityx {
  */
 class BasePool {
  public:
-  explicit BasePool(int element_size, int chunk_size = 8192)
+  explicit BasePool(std::size_t element_size, std::size_t chunk_size = 8192)
       : element_size_(element_size), chunk_size_(chunk_size), capacity_(0) {}
   virtual ~BasePool();
 
-  int size() const { return size_; }
-  int capacity() const { return capacity_; }
-  int chunks() const { return blocks_.size(); }
+  std::size_t size() const { return size_; }
+  std::size_t capacity() const { return capacity_; }
+  std::size_t chunks() const { return blocks_.size(); }
 
   /// Ensure at least n elements will fit in the pool.
-  inline void expand(int n) {
+  inline void expand(std::size_t n) {
     if (n >= size_) {
       if (n >= capacity_) reserve(n);
       size_ = n;
     }
   }
 
-  inline void reserve(int n) {
+  inline void reserve(std::size_t n) {
     while (capacity_ < n) {
       char *chunk = new char[element_size_ * chunk_size_];
       blocks_.push_back(chunk);
@@ -51,24 +52,24 @@ class BasePool {
     }
   }
 
-  inline void *get(int n) {
+  inline void *get(std::size_t n) {
     assert(n < size_);
     return blocks_[n / chunk_size_] + (n % chunk_size_) * element_size_;
   }
 
-  inline const void *get(int n) const {
+  inline const void *get(std::size_t n) const {
     assert(n < size_);
     return blocks_[n / chunk_size_] + (n % chunk_size_) * element_size_;
   }
 
-  virtual void destroy(int n) = 0;
+  virtual void destroy(std::size_t n) = 0;
 
  protected:
   std::vector<char *> blocks_;
-  int element_size_;
-  int chunk_size_;
-  int size_ = 0;
-  int capacity_;
+  std::size_t element_size_;
+  std::size_t chunk_size_;
+  std::size_t size_ = 0;
+  std::size_t capacity_;
 };
 
 
@@ -76,13 +77,13 @@ class BasePool {
  * Implementation of BasePool that provides type-"safe" deconstruction of
  * elements in the pool.
  */
-template <typename T, int ChunkSize = 8192>
+template <typename T, std::size_t ChunkSize = 8192>
 class Pool : public BasePool {
  public:
   Pool() : BasePool(sizeof(T), ChunkSize) {}
   virtual ~Pool() {}
 
-  virtual void destroy(int n) override {
+  virtual void destroy(std::size_t n) override {
     assert(n < size_);
     T *ptr = static_cast<T*>(get(n));
     ptr->~T();

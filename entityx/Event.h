@@ -11,6 +11,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <cstddef>
 #include <vector>
 #include <list>
 #include <memory>
@@ -26,7 +27,7 @@ namespace entityx {
 /// Used internally by the EventManager.
 class BaseEvent {
  public:
-  typedef size_t Family;
+  typedef std::size_t Family;
 
   virtual ~BaseEvent() {}
 
@@ -75,8 +76,8 @@ class BaseReceiver {
   }
 
   // Return number of signals connected to this receiver.
-  int connected_signals() const {
-    size_t size = 0;
+  std::size_t connected_signals() const {
+    std::size_t size = 0;
     for (auto connection : connections_) {
       if (!connection.first.expired()) {
         size++;
@@ -87,7 +88,7 @@ class BaseReceiver {
 
  private:
   friend class EventManager;
-  std::list<std::pair<EventSignalWeakPtr, size_t>> connections_;
+  std::list<std::pair<EventSignalWeakPtr, std::size_t>> connections_;
 };
 
 
@@ -159,13 +160,13 @@ class EventManager : entityx::help::NonCopyable {
   template <typename E, typename ... Args>
   void emit(Args && ... args) {
     E event(std::forward<Args>(args) ...);
-    auto sig = signal_for(size_t(E::family()));
+    auto sig = signal_for(std::size_t(E::family()));
     BaseEvent *base = &event;
     sig->emit(base);
   }
 
-  int connected_receivers() const {
-    int size = 0;
+  std::size_t connected_receivers() const {
+    std::size_t size = 0;
     for (EventSignalPtr handler : handlers_) {
       if (handler) size += handler->size();
     }
@@ -173,7 +174,7 @@ class EventManager : entityx::help::NonCopyable {
   }
 
  private:
-  EventSignalPtr &signal_for(size_t id) {
+  EventSignalPtr &signal_for(std::size_t id) {
     if (id >= handlers_.size())
       handlers_.resize(id + 1);
     if (!handlers_[id])
