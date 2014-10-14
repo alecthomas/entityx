@@ -1,4 +1,4 @@
-project(entityx)
+project(EntityX)
 cmake_minimum_required(VERSION 2.8)
 
 set(ENTITYX_MAJOR_VERSION 1)
