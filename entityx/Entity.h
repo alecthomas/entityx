@@ -552,6 +552,7 @@ class EntityManager : entityx::help::NonCopyable {
   ComponentHandle<C> assign(Entity::Id id, Args && ... args) {
     assert_valid(id);
     const BaseComponent::Family family = C::family();
+    assert(!entity_component_mask_[id.index()].test(family));
 
     // Placement new into the component pool.
     Pool<C> *pool = accomodate_component<C>();

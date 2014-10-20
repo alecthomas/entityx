@@ -39,6 +39,7 @@ EntityManager::~EntityManager() {
 }
 
 void EntityManager::reset() {
+  for (Entity entity : entities_for_debugging()) entity.destroy();
   for (BasePool *pool : component_pools_) {
     if (pool) delete pool;
   }
