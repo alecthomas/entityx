@@ -542,3 +542,26 @@ TEST_CASE("TestComponentDestructorCalledWhenManagerDestroyed") {
   }
   REQUIRE(freed == true);
 }
+
+TEST_CASE("TestComponentDestructorCalledWhenEntityDestroyed") {
+  struct Freed {
+    explicit Freed(bool &yes) : yes(yes) {}
+    ~Freed() { yes = true; }
+
+    bool &yes;
+  };
+
+  struct Test : Component<Test> {
+    Test(bool &yes) : freed(yes) {}
+
+    Freed freed;
+  };
+
+  bool freed = false;
+  EntityX e;
+  auto test = e.entities.create();
+  test.assign<Test>(freed);
+  REQUIRE(freed == false);
+  test.destroy();
+  REQUIRE(freed == true);
+}
