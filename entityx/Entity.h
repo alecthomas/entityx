@@ -324,8 +324,8 @@ class EntityManager : entityx::help::NonCopyable {
   virtual ~EntityManager();
 
   /// An iterator over a view of the entities in an EntityManager.
-  /// If Debug is true it will iterate over all valid entities and will ignore the entity mask.
-  template <class Delegate, bool Debug = false>
+  /// If All is true it will iterate over all valid entities and will ignore the entity mask.
+  template <class Delegate, bool All = false>
   class ViewIterator : public std::iterator<std::input_iterator_tag, Entity::Id> {
    public:
     Delegate &operator ++() {
@@ -341,14 +341,14 @@ class EntityManager : entityx::help::NonCopyable {
    protected:
     ViewIterator(EntityManager *manager, uint32_t index)
         : manager_(manager), i_(index), capacity_(manager_->capacity()) {
-      if (Debug) {
+      if (All) {
         manager_->free_list_.sort();
         free_cursor_ = manager_->free_list_.begin();
       }
     }
     ViewIterator(EntityManager *manager, const ComponentMask mask, uint32_t index)
         : manager_(manager), mask_(mask), i_(index), capacity_(manager_->capacity()) {
-      if (Debug) {
+      if (All) {
         manager_->free_list_.sort();
         free_cursor_ = manager_->free_list_.begin();
       }
@@ -366,7 +366,7 @@ class EntityManager : entityx::help::NonCopyable {
     }
 
     inline bool predicate() {
-      return (Debug && valid_entity()) || (manager_->entity_component_mask_[i_] & mask_) == mask_;
+      return (All && valid_entity()) || (manager_->entity_component_mask_[i_] & mask_) == mask_;
     }
 
     inline bool valid_entity() {
@@ -384,15 +384,15 @@ class EntityManager : entityx::help::NonCopyable {
     std::list<uint32_t>::iterator free_cursor_;
   };
 
-  template <bool Debug>
+  template <bool All>
   class BaseView {
   public:
-    class Iterator : public ViewIterator<Iterator, Debug> {
+    class Iterator : public ViewIterator<Iterator, All> {
     public:
       Iterator(EntityManager *manager,
         const ComponentMask mask,
-        uint32_t index) : ViewIterator<Iterator, Debug>(manager, mask, index) {
-        ViewIterator<Iterator, Debug>::next();
+        uint32_t index) : ViewIterator<Iterator, All>(manager, mask, index) {
+        ViewIterator<Iterator, All>::next();
       }
 
       void next_entity(Entity &entity) {}
