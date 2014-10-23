@@ -340,9 +340,19 @@ class EntityManager : entityx::help::NonCopyable {
 
    protected:
     ViewIterator(EntityManager *manager, uint32_t index)
-        : manager_(manager), i_(index), capacity_(manager_->capacity()) {}
+        : manager_(manager), i_(index), capacity_(manager_->capacity()) {
+      if (Debug) {
+        manager_->free_list_.sort();
+        free_cursor_ = manager_->free_list_.begin();
+      }
+    }
     ViewIterator(EntityManager *manager, const ComponentMask mask, uint32_t index)
-        : manager_(manager), mask_(mask), i_(index), capacity_(manager_->capacity()) {}
+        : manager_(manager), mask_(mask), i_(index), capacity_(manager_->capacity()) {
+      if (Debug) {
+        manager_->free_list_.sort();
+        free_cursor_ = manager_->free_list_.begin();
+      }
+    }
 
     void next() {
       while (i_ < capacity_ && !predicate()) {
@@ -355,13 +365,14 @@ class EntityManager : entityx::help::NonCopyable {
       }
     }
 
-    inline bool predicate() const {
+    inline bool predicate() {
       return (Debug && valid_entity()) || (manager_->entity_component_mask_[i_] & mask_) == mask_;
     }
 
-    inline bool valid_entity() const {
-      for (uint32_t i : manager_->free_list_) {
-        if (i_ == i) return false;
+    inline bool valid_entity() {
+      if (free_cursor_ != manager_->free_list_.end() && *free_cursor_ == i_) {
+        ++free_cursor_;
+        return false;
       }
       return true;
     }
@@ -370,6 +381,7 @@ class EntityManager : entityx::help::NonCopyable {
     ComponentMask mask_;
     uint32_t i_;
     size_t capacity_;
+    std::list<uint32_t>::iterator free_cursor_;
   };
 
   template <bool Debug>
