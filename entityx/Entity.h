@@ -34,6 +34,8 @@
 
 namespace entityx {
 
+typedef std::uint32_t uint32_t;
+typedef std::uint64_t uint32_t;
 
 class EntityManager;
 
