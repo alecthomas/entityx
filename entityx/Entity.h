@@ -11,7 +11,7 @@
 #pragma once
 
 
-#include <stdint.h>
+#include <cstdint>
 #include <tuple>
 #include <new>
 #include <cstdlib>

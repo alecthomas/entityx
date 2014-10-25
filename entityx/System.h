@@ -11,7 +11,7 @@
 #pragma once
 
 
-#include <stdint.h>
+#include <cstdint>
 #include <unordered_map>
 #include <utility>
 #include <cassert>
