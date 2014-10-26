@@ -11,7 +11,7 @@
 #pragma once
 
 
-#include <stdint.h>
+#include <cstdint>
 #include <tuple>
 #include <new>
 #include <cstdlib>
@@ -34,6 +34,8 @@
 
 namespace entityx {
 
+typedef std::uint32_t uint32_t;
+typedef std::uint64_t uint64_t;
 
 class EntityManager;
 

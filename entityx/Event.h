@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <cstddef>
 #include <vector>
 #include <list>
