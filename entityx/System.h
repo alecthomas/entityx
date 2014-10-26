@@ -34,7 +34,7 @@ class BaseSystem : entityx::help::NonCopyable {
  public:
   typedef size_t Family;
 
-  virtual ~BaseSystem() {}
+  virtual ~BaseSystem();
 
   /**
    * Called once all Systems have been added to the SystemManager.
@@ -48,7 +48,7 @@ class BaseSystem : entityx::help::NonCopyable {
    *
    * Called every game step.
    */
-  virtual void update(EntityManager &entities, EventManager &events, double dt) = 0;
+  virtual void update(EntityManager &entities, EventManager &events, DeltaTime dt) = 0;
 
   static Family family_counter_;
 
@@ -60,7 +60,7 @@ class BaseSystem : entityx::help::NonCopyable {
  * Use this class when implementing Systems.
  *
  * struct MovementSystem : public System<MovementSystem> {
- *   void update(EntityManager &entities, EventManager &events, double dt) {
+ *   void update(EntityManager &entities, EventManager &events, DeltaTime dt) {
  *     // Do stuff to/with entities...
  *   }
  * }
@@ -136,7 +136,7 @@ class SystemManager : entityx::help::NonCopyable {
    * Call the System::update() method for a registered system.
    */
   template <typename S>
-  void update(double dt) {
+  void update(DeltaTime dt) {
     assert(initialized_ && "SystemManager::configure() not called");
     std::shared_ptr<S> s = system<S>();
     s->update(entity_manager_, event_manager_, dt);

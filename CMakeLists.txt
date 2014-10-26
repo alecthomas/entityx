@@ -12,6 +12,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR})
 set(ENTITYX_BUILD_TESTING false CACHE BOOL "Enable building of tests.")
 set(ENTITYX_RUN_BENCHMARKS false CACHE BOOL "Run benchmarks (in conjunction with -DENTITYX_BUILD_TESTING=1).")
 set(ENTITYX_MAX_COMPONENTS 64 CACHE STRING "Set the maximum number of components.")
+set(ENTITYX_DT_TYPE double CACHE STRING "The type used for delta time in EntityX update methods.")
 set(ENTITYX_BUILD_SHARED true CACHE BOOL "Build shared libraries?")
 
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
@@ -34,6 +35,10 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS_RELEASE "/Ox -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Ox /Zi /FS /DEBUG")
 endif()
+
+# if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Wno-c++98-compat -Wno-shadow -Wno-padded -Wno-missing-noreturn -Wno-global-constructors")
+# endif()
 
 # C++11 feature checks
 include(CheckCXX11Features.cmake)
@@ -99,22 +104,6 @@ require(HAS_CXX11_LONG_LONG "C++11 lambdas")
 
 message("-- Checking misc features")
 require(HAVE_STDINT_H "stdint.h")
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-	set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
-	set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	# /Zi - Produces a program database (PDB) that contains type information and symbolic debugging information for use with the debugger.
-	# /FS - Allows multiple cl.exe processes to write to the same .pdb file
-	# /DEBUG - Enable debug during linking
-	# /Od - Disables optimization
-	set(CMAKE_CXX_FLAGS_DEBUG "/Zi /FS /DEBUG /Od /MDd")
-	# /Ox - Full optimization
-	set(CMAKE_CXX_FLAGS_RELEASE "/Ox -DNDEBUG")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Ox /Zi /FS /DEBUG")
-endif()
 
 # Things to install
 set(install_libs entityx)

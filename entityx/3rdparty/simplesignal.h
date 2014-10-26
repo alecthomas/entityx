@@ -200,8 +200,8 @@ class ProtoSignal<R(Args...), Collector> : private CollectorInvocation<
     return collector.result();
   }
   // Number of connected slots.
-  int size() {
-    int size = 0;
+  std::size_t size() {
+    std::size_t size = 0;
     SignalLink *link = callback_ring_;
     link->incref();
     do {

@@ -1,12 +1,11 @@
 #pragma once
 
-#cmakedefine ENTITYX_MAX_COMPONENTS @ENTITYX_MAX_COMPONENTS@
-
 #include <cstdint>
 #include <cstddef>
 
 namespace entityx {
 
-static const size_t MAX_COMPONENTS = ENTITYX_MAX_COMPONENTS;
+static const size_t MAX_COMPONENTS = @ENTITYX_MAX_COMPONENTS@;
+typedef @ENTITYX_DT_TYPE@ DeltaTime;
 
 }  // namespace entityx

@@ -29,7 +29,7 @@ class BaseEvent {
  public:
   typedef std::size_t Family;
 
-  virtual ~BaseEvent() {}
+  virtual ~BaseEvent();
 
   virtual Family my_family() const = 0;
 

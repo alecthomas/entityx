@@ -273,6 +273,7 @@ struct Component : public BaseComponent {
  */
 struct EntityCreatedEvent : public Event<EntityCreatedEvent> {
   explicit EntityCreatedEvent(Entity entity) : entity(entity) {}
+  virtual ~EntityCreatedEvent();
 
   Entity entity;
 };
@@ -283,6 +284,7 @@ struct EntityCreatedEvent : public Event<EntityCreatedEvent> {
  */
 struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
   explicit EntityDestroyedEvent(Entity entity) : entity(entity) {}
+  virtual ~EntityDestroyedEvent();
 
   Entity entity;
 };
@@ -400,7 +402,7 @@ class EntityManager : entityx::help::NonCopyable {
 
 
     Iterator begin() { return Iterator(manager_, mask_, 0); }
-    Iterator end() { return Iterator(manager_, mask_, manager_->capacity()); }
+    Iterator end() { return Iterator(manager_, mask_, uint32_t(manager_->capacity())); }
     const Iterator begin() const { return Iterator(manager_, mask_, 0); }
     const Iterator end() const { return Iterator(manager_, mask_, manager_->capacity()); }
 
@@ -525,7 +527,7 @@ class EntityManager : entityx::help::NonCopyable {
    */
   void destroy(Entity::Id entity) {
     assert_valid(entity);
-    int index = entity.index();
+    uint32_t index = entity.index();
     auto mask = entity_component_mask_[entity.index()];
     event_manager_.emit<EntityDestroyedEvent>(Entity(this, entity));
     for (size_t i = 0; i < component_pools_.size(); i++) {
@@ -533,7 +535,7 @@ class EntityManager : entityx::help::NonCopyable {
       if (pool && mask.test(i))
         pool->destroy(index);
     }
-    entity_component_mask_[index] = 0;
+    entity_component_mask_[index].reset();
     entity_version_[index]++;
     free_list_.push_back(index);
   }

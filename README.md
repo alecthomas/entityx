@@ -185,7 +185,7 @@ A basic movement system might be implemented with something like the following:
 
 ```c++
 struct MovementSystem : public System<MovementSystem> {
-  void update(entityx::EntityManager &es, entityx::EventManager &events, double dt) override {
+  void update(entityx::EntityManager &es, entityx::EventManager &events, DeltaTime dt) override {
     Position::Handle position;
     Direction::Handle direction;
     for (Entity entity : es.entities_with_components(position, direction)) {
@@ -222,7 +222,7 @@ Next we implement our collision system, which emits ``Collision`` objects via an
 ```c++
 class CollisionSystem : public System<CollisionSystem> {
  public:
-  void update(entityx::EntityManager &es, entityx::EventManager &events, double dt) override {
+  void update(entityx::EntityManager &es, entityx::EventManager &events, DeltaTime dt) override {
     Position::Handle left_position, right_position;
     for (Entity left_entity : es.entities_with_components(left_position)) {
       for (Entity right_entity : es.entities_with_components(right_position)) {
@@ -245,7 +245,7 @@ struct DebugSystem : public System<DebugSystem>, Receiver<DebugSystem> {
     event_manager.subscribe<Collision>(*this);
   }
 
-  void update(entityx::EntityManager &entities, entityx::EventManager &events, double dt) {}
+  void update(entityx::EntityManager &entities, entityx::EventManager &events, DeltaTime dt) {}
 
   void receive(const Collision &collision) {
     LOG(DEBUG) << "entities collided: " << collision.left << " and " << collision.right << endl;
@@ -301,7 +301,7 @@ public:
     }
   }
 
-  void update(double dt) {
+  void update(DeltaTime dt) {
     systems.update<DebugSystem>(dt);
     systems.update<MovementSystem>(dt);
     systems.update<CollisionSystem>(dt);
@@ -374,6 +374,7 @@ Once these dependencies are installed you should be able to build and install En
 - `-DENTITYX_MAX_COMPONENTS=64` - Override the maximum number of components that can be assigned to each entity.
 - `-DENTITYX_BUILD_SHARED=1` - Whether to build shared libraries (defaults to 1).
 - `-DENTITYX_BUILD_TESTING=1` - Whether to build tests (defaults to 0). Run with "make && make test".
+- `-DENTITYX_DT_TYPE=double` - The type used for delta time in EntityX update methods.
 
 Once you have selected your flags, build and install with:
 
