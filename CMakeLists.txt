@@ -1,6 +1,10 @@
 project(EntityX)
 cmake_minimum_required(VERSION 2.8)
 
+if(NOT DEFINED CMAKE_MACOSX_RPATH)
+  set(CMAKE_MACOSX_RPATH 0)
+endif()
+
 set(ENTITYX_MAJOR_VERSION 1)
 set(ENTITYX_MINOR_VERSION 0)
 set(ENTITYX_PATCH_VERSION 0alpha1)

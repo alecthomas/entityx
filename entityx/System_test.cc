@@ -21,13 +21,13 @@ using namespace entityx;
 using std::string;
 
 struct Position : Component<Position> {
-  Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
+  explicit Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   float x, y;
 };
 
 struct Direction : Component<Direction> {
-  Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
+  explicit Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   float x, y;
 };
