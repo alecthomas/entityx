@@ -86,7 +86,7 @@ struct CollisionEvent : public ex::Event<CollisionEvent> {
 
 // Updates a body's position and rotation.
 struct BodySystem : public ex::System<BodySystem> {
-  void update(ex::EntityManager &es, ex::EventManager &events, ex::DeltaTime dt) override {
+  void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     Body::Handle body;
     for (ex::Entity entity : es.entities_with_components(body)) {
       body->position += body->direction * static_cast<float>(dt);
@@ -99,7 +99,7 @@ struct BodySystem : public ex::System<BodySystem> {
 // Fades out the alpha value of any Renderable and Fadeable entity. Once the
 // object has completely faded out it is destroyed.
 struct FadeOutSystem : public ex::System<FadeOutSystem> {
-  void update(ex::EntityManager &es, ex::EventManager &events, ex::DeltaTime dt) override {
+  void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     Fadeable::Handle fade;
     Renderable::Handle renderable;
     for (ex::Entity entity : es.entities_with_components(fade, renderable)) {
@@ -121,7 +121,7 @@ class BounceSystem : public ex::System<BounceSystem> {
 public:
   explicit BounceSystem(sf::RenderTarget &target) : size(target.getSize()) {}
 
-  void update(ex::EntityManager &es, ex::EventManager &events, ex::DeltaTime dt) override {
+  void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     Body::Handle body;
     for (ex::Entity entity : es.entities_with_components(body)) {
       if (body->position.x + body->direction.x < 0 ||
@@ -159,7 +159,7 @@ class CollisionSystem : public ex::System<CollisionSystem> {
     size.y = size.y / PARTITIONS + 1;
   }
 
-  void update(ex::EntityManager &es, ex::EventManager &events, ex::DeltaTime dt) override {
+  void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     reset();
     collect(es);
     collide(events);
@@ -226,7 +226,7 @@ public:
     events.subscribe<CollisionEvent>(*this);
   }
 
-  void update(ex::EntityManager &es, ex::EventManager &events, ex::DeltaTime dt) override {
+  void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     for (ex::Entity entity : collided) {
       emit_particles(es, entity);
       entity.destroy();
@@ -285,7 +285,7 @@ public:
     text.setColor(sf::Color::White);
   }
 
-  void update(ex::EntityManager &es, ex::EventManager &events, ex::DeltaTime dt) override {
+  void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     Body::Handle body;
     Renderable::Handle renderable;
     for (ex::Entity entity : es.entities_with_components(body, renderable)) {
@@ -341,7 +341,7 @@ public:
     }
   }
 
-  void update(ex::DeltaTime dt) {
+  void update(ex::TimeDelta dt) {
     systems.update<BodySystem>(dt);
     systems.update<FadeOutSystem>(dt);
     systems.update<BounceSystem>(dt);

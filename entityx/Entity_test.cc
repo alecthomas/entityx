@@ -520,6 +520,19 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityInStdMap") {
   REQUIRE(entityMap[c] == 3);
 }
 
+TEST_CASE_METHOD(EntityManagerFixture, "TestEntityComponentsFromTuple") {
+  Entity e = em.create();
+  e.assign<Position>(1, 2);
+  e.assign<Direction>(3, 4);
+
+  std::tuple<Position::Handle, Direction::Handle> components = e.components<Position, Direction>();
+
+  REQUIRE(std::get<0>(components)->x == 1);
+  REQUIRE(std::get<0>(components)->y == 2);
+  REQUIRE(std::get<1>(components)->x == 3);
+  REQUIRE(std::get<1>(components)->y == 4);
+}
+
 TEST_CASE("TestComponentDestructorCalledWhenManagerDestroyed") {
   struct Freed {
     explicit Freed(bool &yes) : yes(yes) {}

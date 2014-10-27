@@ -144,6 +144,12 @@ public:
   template <typename C>
   const ComponentHandle<const C> component() const;
 
+  template <typename ... Components>
+  std::tuple<ComponentHandle<Components>...> components();
+
+  template <typename ... Components>
+  std::tuple<ComponentHandle<const Components>...> components() const;
+
   template <typename C>
   bool has_component() const;
 
@@ -658,6 +664,16 @@ class EntityManager : entityx::help::NonCopyable {
     return ComponentHandle<const C>(this, id);
   }
 
+  template <typename ... Components>
+  std::tuple<ComponentHandle<Components>...> components(Entity::Id id) {
+    return std::make_tuple(component<Components>(id)...);
+  }
+
+  template <typename ... Components>
+  std::tuple<ComponentHandle<const Components>...> components(Entity::Id id) const {
+    return std::make_tuple(component<const Components>(id)...);
+  }
+
   /**
    * Find Entities that have all of the specified Components.
    *
@@ -865,6 +881,19 @@ const ComponentHandle<const C> Entity::component() const {
   assert(valid());
   return manager_->component<const C>(id_);
 }
+
+template <typename ... Components>
+std::tuple<ComponentHandle<Components>...> Entity::components() {
+  assert(valid());
+  return manager_->components<Components...>(id_);
+}
+
+template <typename ... Components>
+std::tuple<ComponentHandle<const Components>...> Entity::components() const {
+  assert(valid());
+  return manager_->components<const Components...>(id_);
+}
+
 
 template <typename C>
 bool Entity::has_component() const {

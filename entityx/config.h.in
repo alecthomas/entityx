@@ -6,6 +6,6 @@
 namespace entityx {
 
 static const size_t MAX_COMPONENTS = @ENTITYX_MAX_COMPONENTS@;
-typedef @ENTITYX_DT_TYPE@ DeltaTime;
+typedef @ENTITYX_DT_TYPE@ TimeDelta;
 
 }  // namespace entityx
