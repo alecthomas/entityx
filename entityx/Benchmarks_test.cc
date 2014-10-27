@@ -9,6 +9,8 @@
 using namespace std;
 using namespace entityx;
 
+using std::uint64_t;
+
 
 struct AutoTimer {
   ~AutoTimer() {
