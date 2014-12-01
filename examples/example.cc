@@ -15,6 +15,7 @@
  *
  *    c++ -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics -lentityx readme.cc -o readme
  */
+#include <cmath>
 #include <unordered_set>
 #include <sstream>
 #include <cstdlib>
@@ -33,10 +34,10 @@ using std::endl;
 namespace ex = entityx;
 
 namespace std {
-  template <>
-  struct hash<ex::Entity> {
-    std::size_t operator()(const ex::Entity& k) const { return k.id().id(); }
-  };
+template <>
+struct hash<ex::Entity> {
+  std::size_t operator()(const ex::Entity& k) const { return k.id().id(); }
+};
 }
 
 
@@ -104,9 +105,9 @@ struct FadeOutSystem : public ex::System<FadeOutSystem> {
     Renderable::Handle renderable;
     for (ex::Entity entity : es.entities_with_components(fade, renderable)) {
       fade->alpha -= fade->d * dt;
-      if (fade->alpha <= 0)
+      if (fade->alpha <= 0) {
         entity.destroy();
-      else {
+      } else {
         sf::Color color = renderable->shape->getFillColor();
         color.a = fade->alpha;
         renderable->shape->setFillColor(color);
@@ -153,7 +154,7 @@ class CollisionSystem : public ex::System<CollisionSystem> {
     ex::Entity entity;
   };
 
- public:
+public:
   explicit CollisionSystem(sf::RenderTarget &target) : size(target.getSize()) {
     size.x = size.x / PARTITIONS + 1;
     size.y = size.y / PARTITIONS + 1;
