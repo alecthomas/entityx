@@ -7,7 +7,7 @@ endif()
 
 set(ENTITYX_MAJOR_VERSION 1)
 set(ENTITYX_MINOR_VERSION 0)
-set(ENTITYX_PATCH_VERSION 0alpha1)
+set(ENTITYX_PATCH_VERSION 1)
 set(ENTITYX_VERSION ${ENTITYX_MAJOR_VERSION}.${ENTITYX_MINOR_VERSION}.${ENTITYX_PATCH_VERSION})
 
 
@@ -121,7 +121,10 @@ if (ENTITYX_BUILD_SHARED)
     target_link_libraries(
         entityx_shared
         )
-    set_target_properties(entityx_shared PROPERTIES OUTPUT_NAME entityx)
+    set_target_properties(entityx_shared PROPERTIES
+        OUTPUT_NAME entityx
+        VERSION ${ENTITYX_VERSION}
+        SOVERSION ${ENTITYX_MAJOR_VERSION})
     list(APPEND install_libs entityx_shared)
 endif (ENTITYX_BUILD_SHARED)
 
