@@ -359,8 +359,8 @@ int main() {
 
   sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "EntityX Example", sf::Style::Fullscreen);
   sf::Font font;
-  if (!font.loadFromFile("arial.ttf")) {
-    cerr << "error: failed to load arial.ttf" << endl;
+  if (!font.loadFromFile("LiberationSans-Regular.ttf")) {
+    cerr << "error: failed to load LiberationSans-Regular.ttf" << endl;
     return 1;
   }
 
