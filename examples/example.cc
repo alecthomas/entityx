@@ -13,7 +13,7 @@
  *
  * Compile with:
  *
- *    c++ -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics -lentityx readme.cc -o readme
+ *    c++ -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics -lentityx example.cc -o example
  */
 #include <cmath>
 #include <unordered_set>
