@@ -44,6 +44,12 @@ endif()
 #     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Wno-c++98-compat -Wno-shadow -Wno-padded -Wno-missing-noreturn -Wno-global-constructors")
 # endif()
 
+# Library installation directory
+if(NOT DEFINED CMAKE_INSTALL_LIBDIR)
+    set(CMAKE_INSTALL_LIBDIR lib)
+endif(NOT DEFINED CMAKE_INSTALL_LIBDIR)
+set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+
 # C++11 feature checks
 include(CheckCXX11Features.cmake)
 
@@ -161,7 +167,7 @@ if (NOT WINDOWS OR CYGWIN)
 
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/entityx.pc
-        DESTINATION "lib/pkgconfig"
+        DESTINATION "${libdir}/pkgconfig"
         )
 endif()
 
@@ -173,6 +179,6 @@ install(
 
 install(
     TARGETS ${install_libs}
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION "${libdir}"
+    ARCHIVE DESTINATION "${libdir}"
     )
