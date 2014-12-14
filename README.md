@@ -227,7 +227,7 @@ class CollisionSystem : public System<CollisionSystem> {
     for (Entity left_entity : es.entities_with_components(left_position)) {
       for (Entity right_entity : es.entities_with_components(right_position)) {
         if (collide(left_position, right_position)) {
-          events->emit<Collision>(left_entity, right_entity);
+          events.emit<Collision>(left_entity, right_entity);
         }
       }
     }
