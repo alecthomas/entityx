@@ -142,6 +142,8 @@ class SystemManager : entityx::help::NonCopyable {
     s->update(entity_manager_, event_manager_, dt);
   }
 
+  void updateAll(TimeDelta dt);
+
   /**
    * Configure the system. Call after adding all Systems.
    *
