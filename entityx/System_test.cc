@@ -117,7 +117,7 @@ TEST_CASE_METHOD(EntitiesFixture, "TestApplyAllSystems") {
   systems.add<CounterSystem>();
   systems.configure();
 
-  systems.updateAll(0.0);
+  systems.update_all(0.0);
   Position::Handle position;
   Direction::Handle direction;
   Counter::Handle counter;

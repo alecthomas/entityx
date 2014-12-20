@@ -17,7 +17,7 @@ BaseSystem::Family BaseSystem::family_counter_;
 BaseSystem::~BaseSystem() {
 }
 
-void SystemManager::updateAll(TimeDelta dt) {
+void SystemManager::update_all(TimeDelta dt) {
   assert(initialized_ && "SystemManager::configure() not called");
   for (auto &pair : systems_) {
     pair.second->update(entity_manager_, event_manager_, dt);
