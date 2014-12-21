@@ -143,6 +143,19 @@ class SystemManager : entityx::help::NonCopyable {
   }
 
   /**
+   * Call System::update() on all registered systems.
+   *
+   * The order which the registered systems are updated is arbitrary but consistent,
+   * meaning the order which they will be updated cannot be specified, but that order
+   * will stay the same as long no systems are added or removed.
+   *
+   * If the order in which systems update is important, use SystemManager::update()
+   * to manually specify the update order. EntityX does not yet support a way of
+   * specifying priority for update_all().
+   */
+  void update_all(TimeDelta dt);
+
+  /**
    * Configure the system. Call after adding all Systems.
    *
    * This is typically used to set up event handlers.
