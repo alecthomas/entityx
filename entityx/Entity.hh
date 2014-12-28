@@ -243,7 +243,9 @@ struct BaseComponent {
 #endif
   }
 
+  friend class EntityManager;
   static Family family_counter_;
+  static BasePool*(*pool_factory_[MAX_COMPONENTS])();
 };
 
 
@@ -267,13 +269,30 @@ struct BaseComponent {
  */
 template <typename Derived>
 struct Component : public BaseComponent {
- public:
+public:
   typedef ComponentHandle<Derived> Handle;
 
   /// Used internally for registration.
   static Family family();
+
+private:
+  static const int family_;
+
+  static BasePool *construct_pool_() {
+    return new Pool<Derived>();
+  }
+
+  static int register_component_() {
+    pool_factory_[family_counter_] = construct_pool_;
+    return family_counter_++;
+  }
 };
 
+template <typename Derived>
+const int Component<Derived>::family_ = Component<Derived>::register_component_();
+
+// template <typename Derived>
+// const typename Component<Derived>::ComponentRegistry component_registry_;
 
 // Callback signature for EntityManager::on_entity_created(callback)
 using OnEntityCreated = void(Entity entity);
@@ -538,7 +557,7 @@ class EntityManager : entityx::help::NonCopyable {
     uint32_t index = entity.index();
     auto mask = entity_component_mask_[entity.index()];
     if (on_entity_destroyed_) on_entity_destroyed_(Entity(this, entity));
-    for (size_t i = 0; i < component_pools_.size(); i++) {
+    for (size_t i = 0; i < BaseComponent::family_counter_; i++) {
       BasePool *pool = component_pools_[i];
       if (pool && mask.test(i))
         pool->destroy(index);
@@ -620,8 +639,7 @@ class EntityManager : entityx::help::NonCopyable {
     assert_valid(id);
     size_t family = C::family();
     // We don't bother checking the component mask, as we return a nullptr anyway.
-    if (family >= component_pools_.size())
-      return false;
+    assert(family < BaseComponent::family_counter_);
     BasePool *pool = component_pools_[family];
     if (!pool || !entity_component_mask_[id.index()][family])
       return false;
@@ -638,8 +656,7 @@ class EntityManager : entityx::help::NonCopyable {
     assert_valid(id);
     size_t family = C::family();
     // We don't bother checking the component mask, as we return a nullptr anyway.
-    if (family >= component_pools_.size())
-      return ComponentHandle<C>();
+    assert(family < BaseComponent::family_counter_);
     BasePool *pool = component_pools_[family];
     if (!pool || !entity_component_mask_[id.index()][family])
       return ComponentHandle<C>();
@@ -656,8 +673,7 @@ class EntityManager : entityx::help::NonCopyable {
     assert_valid(id);
     size_t family = C::family();
     // We don't bother checking the component mask, as we return a nullptr anyway.
-    if (family >= component_pools_.size())
-      return ComponentHandle<const C>();
+    assert(family < BaseComponent::family_counter_);
     BasePool *pool = component_pools_[family];
     if (!pool || !entity_component_mask_[id.index()][family])
       return ComponentHandle<const C>();
@@ -765,6 +781,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   C *get_component_ptr(Entity::Id id) {
     assert(valid(id));
+    assert(C::family() < BaseComponent::family_counter_);
     BasePool *pool = component_pools_[C::family()];
     assert(pool);
     return reinterpret_cast<C*>(pool->get(id.index()));
@@ -773,6 +790,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   const C *get_component_ptr(Entity::Id id) const {
     assert_valid(id);
+    assert(C::family() < BaseComponent::family_counter_);
     BasePool *pool = component_pools_[C::family()];
     assert(pool);
     return reinterpret_cast<const C*>(pool->get(id.index()));
@@ -809,25 +827,17 @@ class EntityManager : entityx::help::NonCopyable {
     if (entity_component_mask_.size() <= index) {
       entity_component_mask_.resize(index + 1);
       entity_version_.resize(index + 1);
-      for (BasePool *pool : component_pools_)
-        if (pool) pool->expand(index + 1);
+      for (BaseComponent::Family i = 0; i < BaseComponent::family_counter_; i++)
+        component_pools_[i]->expand(index + 1);
     }
   }
 
   template <typename T>
   Pool<T> *accomodate_component() {
     BaseComponent::Family family = T::family();
-    if (component_pools_.size() <= family) {
-      component_pools_.resize(family + 1, nullptr);
-      on_component_added_.resize(family + 1);
-      on_component_removed_.resize(family + 1);
-    }
-    if (!component_pools_[family]) {
-      Pool<T> *pool = new Pool<T>();
-      pool->expand(index_counter_);
-      component_pools_[family] = pool;
-    }
-    return reinterpret_cast<Pool<T>*>(component_pools_[family]);
+    BasePool *pool = component_pools_[family];
+    pool->expand(index_counter_);
+    return reinterpret_cast<Pool<T>*>(pool);
   }
 
 
@@ -835,7 +845,7 @@ class EntityManager : entityx::help::NonCopyable {
 
   // Each element in component_pools_ corresponds to a Pool for a Component.
   // The index into the vector is the Component::family().
-  std::vector<BasePool*> component_pools_;
+  BasePool* component_pools_[MAX_COMPONENTS];
   // Bitmask of components associated with each entity. Index into the vector is the Entity::Id.
   std::vector<ComponentMask> entity_component_mask_;
   // Vector of entity version numbers. Incremented each time an entity is destroyed
@@ -853,9 +863,7 @@ class EntityManager : entityx::help::NonCopyable {
 
 template <typename C>
 BaseComponent::Family Component<C>::family() {
-  static Family family = family_counter_++;
-  assert(family < entityx::MAX_COMPONENTS);
-  return family;
+  return family_;
 }
 
 
