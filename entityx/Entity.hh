@@ -275,26 +275,17 @@ struct Component : public BaseComponent {
 };
 
 
-template <typename T>
-class CallbackRelease {
-public:
-  CallbackRelease(std::function<T> &holder) : holder(&holder) {}
-  ~CallbackRelease() {
-    if (holder) *holder = nullptr;
-  }
-
-private:
-  std::function<T> *holder;
-};
-
-
+// Callback signature for EntityManager::on_entity_created(callback)
 using OnEntityCreated = void(Entity entity);
 
+// Callback signature for EntityManager::on_entity_destroyed(callback)
 using OnEntityDestroyed = void(Entity entity);
 
+// Callback signature for EntityManager::on_component_added(callback)
 template <typename Component>
 using OnComponentAdded = void(Entity entity, ComponentHandle<Component> component);
 
+// Callback signature for EntityManager::on_component_removed(callback)
 template <typename Component>
 using OnComponentRemoved = void(Entity entity, ComponentHandle<Component> component);
 
@@ -465,14 +456,17 @@ class EntityManager : entityx::help::NonCopyable {
     Unpacker unpacker_;
   };
 
+  // Called whenever an entity is created.
   void on_entity_created(std::function<OnEntityCreated> callback) {
     on_entity_created_ = callback;
   }
 
+  // Called whenever an entity is destroyed.
   void on_entity_destroyed(std::function<OnEntityDestroyed> callback) {
     on_entity_destroyed_ = callback;
   }
 
+  // Called whenever a component of type Component is added to an entity.
   template <typename Component>
   void on_component_added(std::function<OnComponentAdded<Component>> callback) {
     accomodate_component<Component>();
@@ -481,6 +475,7 @@ class EntityManager : entityx::help::NonCopyable {
     };
   }
 
+  // Called whenever a component of type Component is removed from an entity.
   template <typename Component>
   void on_component_removed(std::function<OnComponentRemoved<Component>> callback) {
     accomodate_component<Component>();
