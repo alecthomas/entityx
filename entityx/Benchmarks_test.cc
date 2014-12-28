@@ -2,9 +2,9 @@
 
 #include <iostream>
 #include <vector>
-#include "entityx/3rdparty/catch.hpp"
-#include "entityx/help/Timer.h"
-#include "entityx/Entity.h"
+#include "entityx/help/catch.hpp"
+#include "entityx/help/Timer.hh"
+#include "entityx/entityx.hh"
 
 using namespace std;
 using namespace entityx;
@@ -21,14 +21,6 @@ private:
   entityx::help::Timer timer_;
 };
 
-struct Listener : public Receiver<Listener> {
-  void receive(const EntityCreatedEvent &event) { ++created; }
-  void receive(const EntityDestroyedEvent &event) { ++destroyed; }
-
-  int created = 0;
-  int destroyed = 0;
-};
-
 struct Position : public Component<Position> {
 };
 
@@ -38,9 +30,8 @@ struct Direction : public Component<Direction> {
 
 
 struct BenchmarkFixture {
-  BenchmarkFixture() : em(ev) {}
+  BenchmarkFixture() {}
 
-  EventManager ev;
   EntityManager em;
 };
 
@@ -73,13 +64,13 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntities") {
 }
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntitiesWithListener") {
-  Listener listen;
-  ev.subscribe<EntityCreatedEvent>(listen);
+  int created = 0;
+  em.on_entity_created([&](Entity entity) { created++; });
 
   int count = 10000000L;
 
   AutoTimer t;
-  cout << "creating " << count << " entities while notifying a single EntityCreatedEvent listener" << endl;
+  cout << "creating " << count << " entities while notifying on_entity_created()" << endl;
 
   vector<Entity> entities;
   for (int i = 0; i < count; i++) {
@@ -87,7 +78,7 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntitiesWithListener") {
   }
 
   REQUIRE(entities.size() == count);
-  REQUIRE(listen.created == count);
+  REQUIRE(created == count);
 }
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntitiesWithListener") {
@@ -97,18 +88,18 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntitiesWithListener") {
     entities.push_back(em.create());
   }
 
-  Listener listen;
-  ev.subscribe<EntityDestroyedEvent>(listen);
+  int destroyed = 0;
+  em.on_entity_destroyed([&](Entity) { destroyed++; });
 
   AutoTimer t;
-  cout << "destroying " << count << " entities while notifying a single EntityDestroyedEvent listener" << endl;
+  cout << "destroying " << count << " entities while notifying on_entity_destroyed()" << endl;
 
   for (auto &e : entities) {
     e.destroy();
   }
 
   REQUIRE(entities.size() == count);
-  REQUIRE(listen.destroyed == count);
+  REQUIRE(destroyed == count);
 }
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIteration") {

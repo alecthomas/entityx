@@ -9,7 +9,7 @@
  */
 
 #include <algorithm>
-#include "entityx/Entity.h"
+#include "entityx/Entity.hh"
 
 namespace entityx {
 
@@ -31,7 +31,7 @@ std::bitset<entityx::MAX_COMPONENTS> Entity::component_mask() const {
   return manager_->component_mask(id_);
 }
 
-EntityManager::EntityManager(EventManager &event_manager) : event_manager_(event_manager) {
+EntityManager::EntityManager() {
 }
 
 EntityManager::~EntityManager() {
@@ -39,6 +39,7 @@ EntityManager::~EntityManager() {
 }
 
 void EntityManager::reset() {
+  reset_callbacks();
   for (Entity entity : entities_for_debugging()) entity.destroy();
   for (BasePool *pool : component_pools_) {
     if (pool) delete pool;
@@ -49,9 +50,5 @@ void EntityManager::reset() {
   free_list_.clear();
   index_counter_ = 0;
 }
-
-EntityCreatedEvent::~EntityCreatedEvent() {}
-EntityDestroyedEvent::~EntityDestroyedEvent() {}
-
 
 }  // namespace entityx

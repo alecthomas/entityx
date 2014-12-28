@@ -118,7 +118,7 @@ require(HAVE_STDINT_H "stdint.h")
 # Things to install
 set(install_libs entityx)
 
-set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
+set(sources entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
 add_library(entityx STATIC ${sources})
 set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d)
 
@@ -139,10 +139,6 @@ if (ENTITYX_BUILD_TESTING)
     enable_testing()
     create_test(pool_test entityx/help/Pool_test.cc)
     create_test(entity_test entityx/Entity_test.cc)
-    create_test(event_test entityx/Event_test.cc)
-    create_test(system_test entityx/System_test.cc)
-    create_test(tags_component_test entityx/tags/TagsComponent_test.cc)
-    create_test(dependencies_test entityx/deps/Dependencies_test.cc)
     if (ENTITYX_RUN_BENCHMARKS)
         message("-- Running benchmarks")
         create_test(benchmarks_test entityx/Benchmarks_test.cc)
@@ -153,8 +149,8 @@ endif (ENTITYX_BUILD_TESTING)
 
 
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/entityx/config.h.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/entityx/config.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/entityx/config.hh.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/entityx/config.hh
 )
 
 
@@ -175,7 +171,7 @@ endif()
 install(
     DIRECTORY "entityx"
     DESTINATION "include"
-    FILES_MATCHING PATTERN "*.h"
+    FILES_MATCHING PATTERN "*.hh"
     )
 
 install(

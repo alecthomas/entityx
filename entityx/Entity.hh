@@ -27,10 +27,9 @@
 #include <utility>
 #include <vector>
 
-#include "entityx/help/Pool.h"
-#include "entityx/config.h"
-#include "entityx/Event.h"
-#include "entityx/help/NonCopyable.h"
+#include "entityx/help/Pool.hh"
+#include "entityx/config.hh"
+#include "entityx/help/NonCopyable.hh"
 
 namespace entityx {
 
@@ -276,52 +275,28 @@ struct Component : public BaseComponent {
 };
 
 
-/**
- * Emitted when an entity is added to the system.
- */
-struct EntityCreatedEvent : public Event<EntityCreatedEvent> {
-  explicit EntityCreatedEvent(Entity entity) : entity(entity) {}
-  virtual ~EntityCreatedEvent();
+template <typename T>
+class CallbackRelease {
+public:
+  CallbackRelease(std::function<T> &holder) : holder(&holder) {}
+  ~CallbackRelease() {
+    if (holder) *holder = nullptr;
+  }
 
-  Entity entity;
+private:
+  std::function<T> *holder;
 };
 
 
-/**
- * Called just prior to an entity being destroyed.
- */
-struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
-  explicit EntityDestroyedEvent(Entity entity) : entity(entity) {}
-  virtual ~EntityDestroyedEvent();
+using OnEntityCreated = void(Entity entity);
 
-  Entity entity;
-};
+using OnEntityDestroyed = void(Entity entity);
 
+template <typename Component>
+using OnComponentAdded = void(Entity entity, ComponentHandle<Component> component);
 
-/**
- * Emitted when any component is added to an entity.
- */
-template <typename C>
-struct ComponentAddedEvent : public Event<ComponentAddedEvent<C>> {
-  ComponentAddedEvent(Entity entity, ComponentHandle<C> component) :
-      entity(entity), component(component) {}
-
-  Entity entity;
-  ComponentHandle<C> component;
-};
-
-/**
- * Emitted when any component is removed from an entity.
- */
-template <typename C>
-struct ComponentRemovedEvent : public Event<ComponentRemovedEvent<C>> {
-  ComponentRemovedEvent(Entity entity, ComponentHandle<C> component) :
-      entity(entity), component(component) {}
-
-  Entity entity;
-  ComponentHandle<C> component;
-};
-
+template <typename Component>
+using OnComponentRemoved = void(Entity entity, ComponentHandle<Component> component);
 
 /**
  * Manages Entity::Id creation and component assignment.
@@ -330,7 +305,7 @@ class EntityManager : entityx::help::NonCopyable {
  public:
   typedef std::bitset<entityx::MAX_COMPONENTS> ComponentMask;
 
-  explicit EntityManager(EventManager &event_manager);
+  explicit EntityManager();
   virtual ~EntityManager();
 
   /// An iterator over a view of the entities in an EntityManager.
@@ -341,7 +316,7 @@ class EntityManager : entityx::help::NonCopyable {
     Delegate &operator ++() {
       ++i_;
       next();
-      return *static_cast<Delegate*>(this);
+      return *reinterpret_cast<Delegate*>(this);
     }
     bool operator == (const Delegate& rhs) const { return i_ == rhs.i_; }
     bool operator != (const Delegate& rhs) const { return i_ != rhs.i_; }
@@ -356,7 +331,7 @@ class EntityManager : entityx::help::NonCopyable {
         free_cursor_ = manager_->free_list_.begin();
       }
     }
-    ViewIterator(EntityManager *manager, const ComponentMask mask, uint32_t index)
+    ViewIterator(EntityManager *manager, const ComponentMask &mask, uint32_t index)
         : manager_(manager), mask_(mask), i_(index), capacity_(manager_->capacity()) {
       if (All) {
         manager_->free_list_.sort();
@@ -371,7 +346,7 @@ class EntityManager : entityx::help::NonCopyable {
 
       if (i_ < capacity_) {
         Entity entity = manager_->get(manager_->create_id(i_));
-        static_cast<Delegate*>(this)->next_entity(entity);
+        reinterpret_cast<Delegate*>(this)->next_entity(entity);
       }
     }
 
@@ -400,7 +375,7 @@ class EntityManager : entityx::help::NonCopyable {
     class Iterator : public ViewIterator<Iterator, All> {
     public:
       Iterator(EntityManager *manager,
-        const ComponentMask mask,
+        const ComponentMask &mask,
         uint32_t index) : ViewIterator<Iterator, All>(manager, mask, index) {
         ViewIterator<Iterator, All>::next();
       }
@@ -458,7 +433,7 @@ class EntityManager : entityx::help::NonCopyable {
     class Iterator : public ViewIterator<Iterator> {
     public:
       Iterator(EntityManager *manager,
-        const ComponentMask mask,
+        const ComponentMask &mask,
         uint32_t index,
         const Unpacker &unpacker) : ViewIterator<Iterator>(manager, mask, index), unpacker_(unpacker) {
         ViewIterator<Iterator>::next();
@@ -489,6 +464,36 @@ class EntityManager : entityx::help::NonCopyable {
     ComponentMask mask_;
     Unpacker unpacker_;
   };
+
+  void on_entity_created(std::function<OnEntityCreated> callback) {
+    on_entity_created_ = callback;
+  }
+
+  void on_entity_destroyed(std::function<OnEntityDestroyed> callback) {
+    on_entity_destroyed_ = callback;
+  }
+
+  template <typename Component>
+  void on_component_added(std::function<OnComponentAdded<Component>> callback) {
+    accomodate_component<Component>();
+    on_component_added_[Component::family()] = [callback](Entity entity, void *ptr) {
+      callback(entity, *reinterpret_cast<ComponentHandle<Component>*>(ptr));
+    };
+  }
+
+  template <typename Component>
+  void on_component_removed(std::function<OnComponentRemoved<Component>> callback) {
+    accomodate_component<Component>();
+    on_component_removed_[Component::family()] = [callback](Entity entity, void *ptr) {
+      callback(entity, *reinterpret_cast<ComponentHandle<Component>*>(ptr));
+    };
+  }
+
+  void reset_callbacks() {
+    for (size_t i = 0; i < on_component_removed_.size(); i++) on_component_removed_[i] = nullptr;
+    on_entity_created_ = nullptr;
+    on_entity_destroyed_ = nullptr;
+  }
 
   /**
    * Number of managed entities.
@@ -524,7 +529,7 @@ class EntityManager : entityx::help::NonCopyable {
        version = entity_version_[index];
     }
     Entity entity(this, Entity::Id(index, version));
-    event_manager_.emit<EntityCreatedEvent>(entity);
+    if (on_entity_created_) on_entity_created_(entity);
     return entity;
   }
 
@@ -537,7 +542,7 @@ class EntityManager : entityx::help::NonCopyable {
     assert_valid(entity);
     uint32_t index = entity.index();
     auto mask = entity_component_mask_[entity.index()];
-    event_manager_.emit<EntityDestroyedEvent>(Entity(this, entity));
+    if (on_entity_destroyed_) on_entity_destroyed_(Entity(this, entity));
     for (size_t i = 0; i < component_pools_.size(); i++) {
       BasePool *pool = component_pools_[i];
       if (pool && mask.test(i))
@@ -585,7 +590,7 @@ class EntityManager : entityx::help::NonCopyable {
 
     // Create and return handle.
     ComponentHandle<C> component(this, id);
-    event_manager_.emit<ComponentAddedEvent<C>>(Entity(this, id), component);
+    if (on_component_added_[family]) on_component_added_[family](Entity(this, id), reinterpret_cast<void*>(&component));
     return component;
   }
 
@@ -603,7 +608,7 @@ class EntityManager : entityx::help::NonCopyable {
     // Find the pool for this component family.
     BasePool *pool = component_pools_[family];
     ComponentHandle<C> component(this, id);
-    event_manager_.emit<ComponentRemovedEvent<C>>(Entity(this, id), component);
+    if (on_component_removed_[family]) on_component_removed_[family](Entity(this, id), reinterpret_cast<void*>(&component));
 
     // Remove component bit.
     entity_component_mask_[id.index()].reset(family);
@@ -767,7 +772,7 @@ class EntityManager : entityx::help::NonCopyable {
     assert(valid(id));
     BasePool *pool = component_pools_[C::family()];
     assert(pool);
-    return static_cast<C*>(pool->get(id.index()));
+    return reinterpret_cast<C*>(pool->get(id.index()));
   }
 
   template <typename C>
@@ -775,7 +780,7 @@ class EntityManager : entityx::help::NonCopyable {
     assert_valid(id);
     BasePool *pool = component_pools_[C::family()];
     assert(pool);
-    return static_cast<const C*>(pool->get(id.index()));
+    return reinterpret_cast<const C*>(pool->get(id.index()));
   }
 
   ComponentMask component_mask(Entity::Id id) {
@@ -819,19 +824,20 @@ class EntityManager : entityx::help::NonCopyable {
     BaseComponent::Family family = T::family();
     if (component_pools_.size() <= family) {
       component_pools_.resize(family + 1, nullptr);
+      on_component_added_.resize(family + 1);
+      on_component_removed_.resize(family + 1);
     }
     if (!component_pools_[family]) {
       Pool<T> *pool = new Pool<T>();
       pool->expand(index_counter_);
       component_pools_[family] = pool;
     }
-    return static_cast<Pool<T>*>(component_pools_[family]);
+    return reinterpret_cast<Pool<T>*>(component_pools_[family]);
   }
 
 
   uint32_t index_counter_ = 0;
 
-  EventManager &event_manager_;
   // Each element in component_pools_ corresponds to a Pool for a Component.
   // The index into the vector is the Component::family().
   std::vector<BasePool*> component_pools_;
@@ -841,6 +847,12 @@ class EntityManager : entityx::help::NonCopyable {
   std::vector<uint32_t> entity_version_;
   // List of available entity slots.
   std::list<uint32_t> free_list_;
+
+  // Callbacks
+  std::function<OnEntityCreated> on_entity_created_;
+  std::function<OnEntityDestroyed> on_entity_destroyed_;
+  std::vector<std::function<void(Entity, void*)>> on_component_added_;
+  std::vector<std::function<void(Entity, void*)>> on_component_removed_;
 };
 
 
