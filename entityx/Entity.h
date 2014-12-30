@@ -350,17 +350,17 @@ class EntityManager : entityx::help::NonCopyable {
 
    protected:
     ViewIterator(EntityManager *manager, uint32_t index)
-        : manager_(manager), i_(index), capacity_(manager_->capacity()) {
+        : manager_(manager), i_(index), capacity_(manager_->capacity()), free_cursor_(~0UL) {
       if (All) {
-        manager_->free_list_.sort();
-        free_cursor_ = manager_->free_list_.begin();
+        std::sort(manager_->free_list_.begin(), manager_->free_list_.end());
+        free_cursor_ = 0;
       }
     }
     ViewIterator(EntityManager *manager, const ComponentMask mask, uint32_t index)
-        : manager_(manager), mask_(mask), i_(index), capacity_(manager_->capacity()) {
+        : manager_(manager), mask_(mask), i_(index), capacity_(manager_->capacity()), free_cursor_(~0UL) {
       if (All) {
-        manager_->free_list_.sort();
-        free_cursor_ = manager_->free_list_.begin();
+        std::sort(manager_->free_list_.begin(), manager_->free_list_.end());
+        free_cursor_ = 0;
       }
     }
 
@@ -380,7 +380,8 @@ class EntityManager : entityx::help::NonCopyable {
     }
 
     inline bool valid_entity() {
-      if (free_cursor_ != manager_->free_list_.end() && *free_cursor_ == i_) {
+      const std::vector<uint32_t> &free_list = manager_->free_list_;
+      if (free_cursor_ < free_list.size() && free_list[free_cursor_] == i_) {
         ++free_cursor_;
         return false;
       }
@@ -391,7 +392,7 @@ class EntityManager : entityx::help::NonCopyable {
     ComponentMask mask_;
     uint32_t i_;
     size_t capacity_;
-    std::list<uint32_t>::iterator free_cursor_;
+    size_t free_cursor_;
   };
 
   template <bool All>
@@ -519,8 +520,8 @@ class EntityManager : entityx::help::NonCopyable {
       accomodate_entity(index);
       version = entity_version_[index] = 1;
     } else {
-      index = free_list_.front();
-      free_list_.pop_front();
+      index = free_list_.back();
+      free_list_.pop_back();
        version = entity_version_[index];
     }
     Entity entity(this, Entity::Id(index, version));
@@ -840,7 +841,7 @@ class EntityManager : entityx::help::NonCopyable {
   // Vector of entity version numbers. Incremented each time an entity is destroyed
   std::vector<uint32_t> entity_version_;
   // List of available entity slots.
-  std::list<uint32_t> free_list_;
+  std::vector<uint32_t> free_list_;
 };
 
 
