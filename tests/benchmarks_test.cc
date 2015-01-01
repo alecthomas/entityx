@@ -2,14 +2,34 @@
 
 #include <iostream>
 #include <vector>
+#include <chrono>
 #include "./3rdparty/catch.hh"
-#include "./3rdparty/timer.hh"
-#include "entityx.hh"
+#include "entityx/entityx.hh"
 
 using namespace std;
 using namespace entityx;
 
 using std::uint64_t;
+
+
+class Timer {
+public:
+  Timer() {
+    restart();
+  }
+  ~Timer() {}
+
+  void restart() {
+    _start = std::chrono::system_clock::now();
+  }
+
+  double elapsed() {
+    return std::chrono::duration<double>(std::chrono::system_clock::now() - _start).count();
+  }
+private:
+  std::chrono::time_point<std::chrono::system_clock> _start;
+};
+
 
 
 struct AutoTimer {
@@ -18,7 +38,7 @@ struct AutoTimer {
   }
 
 private:
-  entityx::help::Timer timer_;
+  Timer timer_;
 };
 
 struct Position {

@@ -785,7 +785,7 @@ public:
    */
   template <typename ... ComponentsToFilter>
   View entities_with_components() {
-    auto mask = component_mask<ComponentsToFilter ...>();
+    ComponentMask mask = component_mask<ComponentsToFilter ...>();
     return View(this, mask);
   }
 
@@ -803,7 +803,7 @@ public:
    */
   template <typename ... ComponentsToFilter>
   UnpackingView<ComponentsToFilter...> entities_with_components(Component<ComponentsToFilter> & ... components) {
-    auto mask = component_mask<ComponentsToFilter...>();
+    ComponentMask mask = component_mask<ComponentsToFilter...>();
     return UnpackingView<ComponentsToFilter...>(this, mask, components...);
   }
 
@@ -879,7 +879,7 @@ private:
       on_component_removed_[component_index<C>::value](entity, reinterpret_cast<void*>(&component));
   }
   template <class C, bool FeatureMask = Features> typename std::enable_if<!FeatureMask>::type
-  component_removed_(Entity entity) {}
+  component_removed_(Entity entity, Component<C> component) {}
 
   template <typename C>
   ComponentMask component_mask() {

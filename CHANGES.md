@@ -1,5 +1,9 @@
 # Change Log
 
+## 2015-01-02 - 2.0.0alpha1 - Header-only compile-time component layout
+
+Much faster (2x-5x).
+
 ## 2014-03-02 - 1.0.0alpha1 - Cache coherence + breaking changes
 
 EntityX has switched to a more cache-friendly memory layout for components. This is achieved by requiring the use of `assign<Component>(arg0, arg1, ...)` and removing `assign(component)`. This allows EntityX to explicitly control the layout of components. The current lyout algorithm reserves space for components in chunks (8192 by default).

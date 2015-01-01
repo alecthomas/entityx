@@ -1,16 +1,15 @@
 # EntityX - A fast, idiomatic C++11 Entity-Component System
 
 This version of EntityX is header-only and utilizes a bunch of template
-metaprogramming to provide compile-time component metadata. It also provides
+metaprogramming to provide compile-time component access. It also provides
 support for alternative storage engines for component data.
 
 For example, the number of components and their size is known at compile time.
 
-Example code:
-
+## Example code
 
 ```c++
-#include "entityx.hh"
+#include "entityx/entityx.hh"
 
 using namespace entityx;
 
@@ -32,12 +31,12 @@ struct Direction {
 
 // Convenience types for our entity system.
 typedef Components<Position, Health, Direction> GameComponents;
-typedef EntityX<GameComponents, ColumnStorage<GameComponents>> Entities;
-template <typename C> using Component = Entities::Component<C>;
-using Entity = Entities::Entity;
+typedef EntityX<GameComponents, ColumnStorage<GameComponents>> EntityManager;
+template <typename C> using Component = EntityManager::Component<C>;
+using Entity = EntityManager::Entity;
 
 int main() {
-  Entities entities;
+  EntityManager entities;
   Entity a = entities.create();
   a.assign<Position>(1, 2);
   Entity b = entities.create();

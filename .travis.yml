@@ -12,4 +12,4 @@ before_install:
   - if test $CC = gcc; then sudo update-alternatives --config gcc; fi
   - if test $CC = gcc; then sudo update-alternatives --config g++; fi
 
-script: ./scripts/travis.sh
+script: ./.travis.sh

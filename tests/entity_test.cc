@@ -18,7 +18,7 @@
 #include <set>
 #include <map>
 #include "./3rdparty/catch.hh"
-#include "entityx.hh"
+#include "entityx/entityx.hh"
 
 // using namespace std;
 using namespace entityx;
