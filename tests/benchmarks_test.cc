@@ -2,9 +2,9 @@
 
 #include <iostream>
 #include <vector>
-#include "entityx/3rdparty/catch.hpp"
-#include "entityx/help/Timer.h"
-#include "entityx/Entity.h"
+#include "./3rdparty/catch.hh"
+#include "./3rdparty/timer.hh"
+#include "entityx.hh"
 
 using namespace std;
 using namespace entityx;
@@ -21,94 +21,129 @@ private:
   entityx::help::Timer timer_;
 };
 
-struct Listener : public Receiver<Listener> {
-  void receive(const EntityCreatedEvent &event) { ++created; }
-  void receive(const EntityDestroyedEvent &event) { ++destroyed; }
-
-  int created = 0;
-  int destroyed = 0;
-};
-
-struct Position : public Component<Position> {
+struct Position {
 };
 
 
-struct Direction : public Component<Direction> {
+struct Direction {
 };
+
+
+typedef Components<Position, Direction> GameComponents;
+typedef EntityX<GameComponents, ContiguousStorage<GameComponents, 10000000L>> EntityManager;
+typedef EntityX<GameComponents, ContiguousStorage<GameComponents, 10000000L>, true> EntityManagerWithListener;
+template <typename C> using Component = EntityManager::Component<C>;
+using Entity = EntityManager::Entity;
 
 
 struct BenchmarkFixture {
-  BenchmarkFixture() : em(ev) {}
+  BenchmarkFixture() {}
 
-  EventManager ev;
   EntityManager em;
 };
 
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntities") {
-  AutoTimer t;
+  {
+    AutoTimer t;
 
-  uint64_t count = 10000000L;
-  cout << "creating " << count << " entities" << endl;
+    uint64_t count = 10000000L;
+    cout << "creating " << count << " entities" << endl;
 
-  for (uint64_t i = 0; i < count; i++) {
-    em.create();
+    for (uint64_t i = 0; i < count; i++)
+      em.create();
+  }
+}
+
+
+TEST_CASE_METHOD(BenchmarkFixture, "TestCreateManyEntities") {
+  {
+    AutoTimer t;
+
+    uint64_t count = 10000000L;
+    cout << "creating " << count << " entities with create_many()" << endl;
+
+    em.create_many(count);
   }
 }
 
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntities") {
   uint64_t count = 10000000L;
-  vector<Entity> entities;
-  for (uint64_t i = 0; i < count; i++) {
-    entities.push_back(em.create());
-  }
+  vector<Entity> entities(em.create_many(count));
 
-  AutoTimer t;
-  cout << "destroying " << count << " entities" << endl;
+  {
+    AutoTimer t;
+    cout << "destroying " << count << " entities" << endl;
 
-  for (auto e : entities) {
-    e.destroy();
+    for (auto e : entities) {
+      e.destroy();
+    }
   }
 }
 
-TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntitiesWithListener") {
-  Listener listen;
-  ev.subscribe<EntityCreatedEvent>(listen);
+struct ListenerBenchmarkFixture {
+  ListenerBenchmarkFixture() {}
+
+  EntityManagerWithListener em;
+};
+
+
+TEST_CASE_METHOD(ListenerBenchmarkFixture, "TestCreateEntitiesWithListener") {
+  int created = 0;
+  em.on_entity_created([&](EntityManagerWithListener::Entity) { created++; });
 
   int count = 10000000L;
 
   AutoTimer t;
-  cout << "creating " << count << " entities while notifying a single EntityCreatedEvent listener" << endl;
+  cout << "creating " << count << " entities while notifying on_entity_created()" << endl;
 
-  vector<Entity> entities;
+  vector<EntityManagerWithListener::Entity> entities;
   for (int i = 0; i < count; i++) {
     entities.push_back(em.create());
   }
 
   REQUIRE(entities.size() == count);
-  REQUIRE(listen.created == count);
+  REQUIRE(created == count);
 }
 
-TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntitiesWithListener") {
+TEST_CASE_METHOD(ListenerBenchmarkFixture, "TestCreateManyEntitiesWithListener") {
+  int created = 0;
+  em.on_entity_created([&](EntityManagerWithListener::Entity) { created++; });
+
+  int count = 10000000L;
+
+  AutoTimer t;
+  cout << "creating " << count << " entities with create_many() while notifying on_entity_created()" << endl;
+
+  vector<EntityManagerWithListener::Entity> entities = em.create_many(count);
+
+  REQUIRE(entities.size() == count);
+  REQUIRE(created == count);
+}
+
+TEST_CASE_METHOD(ListenerBenchmarkFixture, "TestDestroyEntitiesWithListener") {
   int count = 10000000;
-  vector<Entity> entities;
+  vector<EntityManagerWithListener::Entity> entities;
   for (int i = 0; i < count; i++) {
     entities.push_back(em.create());
   }
 
-  Listener listen;
-  ev.subscribe<EntityDestroyedEvent>(listen);
+  int destroyed = 0;
+  em.on_entity_destroyed([&](EntityManagerWithListener::Entity) { destroyed++; });
+  em.on_component_added<Position>([&](EntityManagerWithListener::Entity, EntityManagerWithListener::Component<Position> position) {
+
+  });
 
   AutoTimer t;
-  cout << "destroying " << count << " entities while notifying a single EntityDestroyedEvent listener" << endl;
+  cout << "destroying " << count << " entities while notifying on_entity_destroyed()" << endl;
 
   for (auto &e : entities) {
     e.destroy();
   }
 
   REQUIRE(entities.size() == count);
-  REQUIRE(listen.destroyed == count);
+  REQUIRE(destroyed == count);
 }
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIteration") {
@@ -121,7 +156,7 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIteration") {
   AutoTimer t;
   cout << "iterating over " << count << " entities, unpacking one component" << endl;
 
-  ComponentHandle<Position> position;
+  Component<Position> position;
   for (auto e : em.entities_with_components(position)) {
     (void)e;
   }
@@ -138,8 +173,8 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIterationUnpackTwo") {
   AutoTimer t;
   cout << "iterating over " << count << " entities, unpacking two components" << endl;
 
-  ComponentHandle<Position> position;
-  ComponentHandle<Direction> direction;
+  Component<Position> position;
+  Component<Direction> direction;
   for (auto e : em.entities_with_components(position, direction)) {
     (void)e;
   }

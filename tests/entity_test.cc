@@ -17,8 +17,8 @@
 #include <vector>
 #include <set>
 #include <map>
-#include "entityx/3rdparty/catch.hpp"
-#include "entityx/entityx.h"
+#include "./3rdparty/catch.hh"
+#include "entityx.hh"
 
 // using namespace std;
 using namespace entityx;
@@ -30,6 +30,7 @@ using std::map;
 using std::pair;
 using std::string;
 
+
 template <typename T>
 int size(const T &t) {
   int n = 0;
@@ -40,7 +41,7 @@ int size(const T &t) {
   return n;
 }
 
-struct Position : Component<Position> {
+struct Position {
   Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   bool operator==(const Position &other) const {
@@ -55,7 +56,7 @@ ostream &operator<<(ostream &out, const Position &position) {
   return out;
 }
 
-struct Direction : Component<Direction> {
+struct Direction {
   Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   bool operator==(const Direction &other) const {
@@ -70,7 +71,7 @@ ostream &operator<<(ostream &out, const Direction &direction) {
   return out;
 }
 
-struct Tag : Component<Tag> {
+struct Tag {
   explicit Tag(string tag) : tag(tag) {}
 
   bool operator==(const Tag &other) const { return tag == other.tag; }
@@ -84,10 +85,40 @@ ostream &operator<<(ostream &out, const Tag &tag) {
 }
 
 
-struct EntityManagerFixture {
-  EntityManagerFixture() : em(ev) {}
+struct CopyVerifier {
+  CopyVerifier() : copied(false) {}
+  CopyVerifier(const CopyVerifier &other) {
+    copied = other.copied + 1;
+  }
 
-  EventManager ev;
+  int copied;
+};
+
+
+struct Freed {
+  explicit Freed(bool &yes) : yes(yes) {}
+  ~Freed() { yes = true; }
+
+  bool &yes;
+};
+
+
+struct Test {
+  Test(bool &yes) : freed(yes) {}
+
+  Freed freed;
+};
+
+
+typedef Components<Position, Direction, Tag, CopyVerifier, Test> GameComponents;
+typedef EntityX<GameComponents, ContiguousStorage<GameComponents, 10000000L>, true> EntityManager;
+template <typename C> using Component = EntityManager::Component<C>;
+using Entity = EntityManager::Entity;
+
+
+struct EntityManagerFixture {
+  EntityManagerFixture() {}
+
   EntityManager em;
 };
 
@@ -198,11 +229,11 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithIntersectionOfCompone
 }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithComponentAndUnpacking") {
-  vector<Entity::Id> entities;
+  vector<EntityManager::Id> entities;
   Entity e = em.create();
   Entity f = em.create();
   Entity g = em.create();
-  std::vector<std::pair<Position::Handle, Direction::Handle>> position_directions;
+  std::vector<std::pair<Component<Position>, Component<Direction>>> position_directions;
   position_directions.push_back(std::make_pair(
       e.assign<Position>(1.0f, 2.0f), e.assign<Direction>(3.0f, 4.0f)));
   position_directions.push_back(std::make_pair(
@@ -211,10 +242,10 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithComponentAndUnpacking
   g.assign<Position>(5.0f, 6.0f);
   int i = 0;
 
-  Position::Handle position;
+  Component<Position> position;
   REQUIRE(3 ==  size(em.entities_with_components(position)));
 
-  Direction::Handle direction;
+  Component<Direction> direction;
   for (auto unused_entity : em.entities_with_components(position, direction)) {
     (void)unused_entity;
     REQUIRE(position);
@@ -225,7 +256,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithComponentAndUnpacking
     ++i;
   }
   REQUIRE(2 ==  i);
-  Tag::Handle tag;
+  Component<Tag> tag;
   i = 0;
   for (auto unused_entity :
        em.entities_with_components(position, direction, tag)) {
@@ -261,15 +292,15 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestUnpack") {
   auto d = e.assign<Direction>(3.0, 4.0);
   auto t = e.assign<Tag>("tag");
 
-  Position::Handle up;
-  Direction::Handle ud;
-  Tag::Handle ut;
-  e.unpack(up);
+  Component<Position> up;
+  Component<Direction> ud;
+  Component<Tag> ut;
+  em.unpack(e.id(), up);
   REQUIRE(p ==  up);
-  e.unpack(up, ud);
+  em.unpack(e.id(), up, ud);
   REQUIRE(p ==  up);
   REQUIRE(d ==  ud);
-  e.unpack(up, ud, ut);
+  em.unpack(e.id(), up, ud, ut);
   REQUIRE(p ==  up);
   REQUIRE(d ==  ud);
   REQUIRE(t ==  ut);
@@ -289,119 +320,87 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestUnpack") {
 //   REQUIRE(std::shared_ptr<Direction>() ==  ud);
 // }
 
-TEST_CASE_METHOD(EntityManagerFixture, "TestComponentIdsDiffer") {
-  REQUIRE(Position::family() !=  Direction::family());
-}
-
 TEST_CASE_METHOD(EntityManagerFixture, "TestEntityCreatedEvent") {
-  struct EntityCreatedEventReceiver
-      : public Receiver<EntityCreatedEventReceiver> {
-    void receive(const EntityCreatedEvent &event) {
-      created.push_back(event.entity);
-    }
+  vector<Entity> created;
 
-    vector<Entity> created;
-  };
+  em.on_entity_created([&](Entity entity) {
+    created.push_back(entity);
+  });
 
-  EntityCreatedEventReceiver receiver;
-  ev.subscribe<EntityCreatedEvent>(receiver);
-
-  REQUIRE(0UL ==  receiver.created.size());
+  REQUIRE(0UL ==  created.size());
   for (int i = 0; i < 10; ++i) {
     em.create();
   }
-  REQUIRE(10UL ==  receiver.created.size());
+  REQUIRE(10UL ==  created.size());
 }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestEntityDestroyedEvent") {
-  struct EntityDestroyedEventReceiver
-      : public Receiver<EntityDestroyedEventReceiver> {
-    void receive(const EntityDestroyedEvent &event) {
-      destroyed.push_back(event.entity);
-    }
+  vector<Entity> destroyed;
 
-    vector<Entity> destroyed;
-  };
+  em.on_entity_destroyed([&](Entity entity) {
+    destroyed.push_back(entity);
+  });
 
-  EntityDestroyedEventReceiver receiver;
-  ev.subscribe<EntityDestroyedEvent>(receiver);
-
-  REQUIRE(0UL ==  receiver.destroyed.size());
+  REQUIRE(0UL ==  destroyed.size());
   vector<Entity> entities;
   for (int i = 0; i < 10; ++i) {
     entities.push_back(em.create());
   }
-  REQUIRE(0UL ==  receiver.destroyed.size());
+  REQUIRE(0UL ==  destroyed.size());
   for (auto e : entities) {
     e.destroy();
   }
-  REQUIRE(10UL == receiver.destroyed.size());
-  REQUIRE(entities ==  receiver.destroyed);
+  REQUIRE(10UL == destroyed.size());
+  REQUIRE(entities ==  destroyed);
 }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAddedEvent") {
-  struct ComponentAddedEventReceiver
-      : public Receiver<ComponentAddedEventReceiver> {
+  int position_events = 0;
+  int direction_events = 0;
 
-    ComponentAddedEventReceiver()
-      : position_events(0), direction_events(0) {}
-
-    void receive(const ComponentAddedEvent<Position> &event) {
-      auto p = event.component;
-      float n = static_cast<float>(position_events);
-      REQUIRE(p->x ==  n);
-      REQUIRE(p->y ==  n);
-      position_events++;
-    }
-
-    void receive(const ComponentAddedEvent<Direction> &event) {
-      auto p = event.component;
-      float n = static_cast<float>(direction_events);
-      REQUIRE(p->x ==  -n);
-      REQUIRE(p->y ==  -n);
-      direction_events++;
-    }
-
-    int position_events;
-    int direction_events;
+  auto on_position_added = [&position_events](Entity entity, Component<Position> p) {
+    float n = static_cast<float>(position_events);
+    REQUIRE(p->x ==  n);
+    REQUIRE(p->y ==  n);
+    position_events++;
   };
 
-  ComponentAddedEventReceiver receiver;
-  ev.subscribe<ComponentAddedEvent<Position>>(receiver);
-  ev.subscribe<ComponentAddedEvent<Direction>>(receiver);
+  auto on_direction_added = [&direction_events](Entity entity, Component<Direction> p) {
+    float n = static_cast<float>(direction_events);
+    REQUIRE(p->x ==  -n);
+    REQUIRE(p->y ==  -n);
+    direction_events++;
+  };
 
-  REQUIRE(ComponentAddedEvent<Position>::family() !=
-            ComponentAddedEvent<Direction>::family());
+  em.on_component_added<Position>(on_position_added);
+  em.on_component_added<Direction>(on_direction_added);
 
-  REQUIRE(0 ==  receiver.position_events);
-  REQUIRE(0 ==  receiver.direction_events);
+  REQUIRE(0 ==  position_events);
+  REQUIRE(0 ==  direction_events);
   for (int i = 0; i < 10; ++i) {
     Entity e = em.create();
     e.assign<Position>(static_cast<float>(i), static_cast<float>(i));
     e.assign<Direction>(static_cast<float>(-i), static_cast<float>(-i));
   }
-  REQUIRE(10 ==  receiver.position_events);
-  REQUIRE(10 ==  receiver.direction_events);
+  REQUIRE(10 ==  position_events);
+  REQUIRE(10 ==  direction_events);
 }
 
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentRemovedEvent") {
-  struct ComponentRemovedReceiver : public Receiver<ComponentRemovedReceiver> {
-    void receive(const ComponentRemovedEvent<Direction> &event) {
-      removed = event.component;
-    }
+  Component<Direction> removed;
 
-    Direction::Handle removed;
+  auto on_direction_removed = [&](Entity entity, Component<Direction> event) {
+    removed = event;
   };
 
-  ComponentRemovedReceiver receiver;
-  ev.subscribe<ComponentRemovedEvent<Direction>>(receiver);
+  em.on_component_removed<Direction>(on_direction_removed);
 
-  REQUIRE(!(receiver.removed));
+  REQUIRE(!(removed));
   Entity e = em.create();
-  Direction::Handle p = e.assign<Direction>(1.0, 2.0);
+  Component<Direction> p = e.assign<Direction>(1.0, 2.0);
   e.remove<Direction>();
-  REQUIRE(receiver.removed ==  p);
+  REQUIRE(removed ==  p);
   REQUIRE(!(e.component<Direction>()));
 }
 
@@ -453,7 +452,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityDestroyHole") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenEntityDestroyed") {
   Entity a = em.create();
-  Position::Handle position = a.assign<Position>(1, 2);
+  Component<Position> position = a.assign<Position>(1, 2);
   REQUIRE(position);
   REQUIRE(position->x == 1);
   REQUIRE(position->y == 2);
@@ -461,19 +460,10 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenEntity
   REQUIRE(!position);
 }
 
-struct CopyVerifier : Component<CopyVerifier> {
-  CopyVerifier() : copied(false) {}
-  CopyVerifier(const CopyVerifier &other) {
-    copied = other.copied + 1;
-  }
-
-  int copied;
-};
-
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAssignmentFromCopy") {
   Entity a = em.create();
   CopyVerifier original;
-  CopyVerifier::Handle copy = a.assign_from_copy(original);
+  Component<CopyVerifier> copy = a.assign_from_copy(original);
   REQUIRE(copy);
   REQUIRE(copy->copied == 1);
   a.destroy();
@@ -482,7 +472,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAssignmentFromCopy") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenComponentDestroyed") {
   Entity a = em.create();
-  Position::Handle position = a.assign<Position>(1, 2);
+  Component<Position> position = a.assign<Position>(1, 2);
   REQUIRE(position);
   REQUIRE(position->x == 1);
   REQUIRE(position->y == 2);
@@ -525,7 +515,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityComponentsFromTuple") {
   e.assign<Position>(1, 2);
   e.assign<Direction>(3, 4);
 
-  std::tuple<Position::Handle, Direction::Handle> components = e.components<Position, Direction>();
+  std::tuple<Component<Position>, Component<Direction>> components = e.components<Position, Direction>();
 
   REQUIRE(std::get<0>(components)->x == 1);
   REQUIRE(std::get<0>(components)->y == 2);
@@ -534,23 +524,10 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityComponentsFromTuple") {
 }
 
 TEST_CASE("TestComponentDestructorCalledWhenManagerDestroyed") {
-  struct Freed {
-    explicit Freed(bool &yes) : yes(yes) {}
-    ~Freed() { yes = true; }
-
-    bool &yes;
-  };
-
-  struct Test : Component<Test> {
-    Test(bool &yes) : freed(yes) {}
-
-    Freed freed;
-  };
-
   bool freed = false;
   {
-    EntityX e;
-    auto test = e.entities.create();
+    EntityManager e;
+    auto test = e.create();
     test.assign<Test>(freed);
   }
   REQUIRE(freed == true);
@@ -564,15 +541,9 @@ TEST_CASE("TestComponentDestructorCalledWhenEntityDestroyed") {
     bool &yes;
   };
 
-  struct Test : Component<Test> {
-    Test(bool &yes) : freed(yes) {}
-
-    Freed freed;
-  };
-
   bool freed = false;
-  EntityX e;
-  auto test = e.entities.create();
+  EntityManager e;
+  auto test = e.create();
   test.assign<Test>(freed);
   REQUIRE(freed == false);
   test.destroy();
