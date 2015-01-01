@@ -309,17 +309,17 @@ public:
 
     Component() : manager_(nullptr) {}
 
-    bool valid() const {return manager_ && manager_->has_component<C>(id_); }
+    bool valid() const {return manager_ && manager_->template has_component<C>(id_); }
     operator bool () const { return valid(); }
 
     C *operator -> () { return get(); }
     const C *operator -> () const { return get(); }
 
-    C *get() { return manager_->component_ptr_<C>(id_); }
-    const C *get() const { return manager_->component_ptr_<C>(id_); }
+    C *get() { return manager_->template component_ptr_<C>(id_); }
+    const C *get() const { return manager_->template component_ptr_<C>(id_); }
 
     /** Remove the component from its entity and destroy it. */
-    void remove() { manager_->remove<C>(id_); }
+    void remove() { manager_->template remove<C>(id_); }
 
     bool operator == (const Component<C> &other) const { return manager_ == other.manager_ && id_ == other.id_; }
     bool operator != (const Component<C> &other) const { return !(*this == other); }
