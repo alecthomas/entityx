@@ -61,13 +61,13 @@ int main() {
 
 This version of EntityX is (generally) 2-5x faster than the previous version, depending on the operations performed:
 
-Benchmark | Old version | New version | Improvement
-----------|-------------|--------------------------
-Creating 10M entities | 0.456865s | 0.256681s | **1.8x**
-Creating 10M entities (create_many()) | 0.456865s | 0.134333s | **3.4x**
-Destroying 10M entities | 0.308511s | 0.074304s | **4.2x**
-Creating 10M entities with observer | 0.693537s | 0.465937s | **1.5x**
-Creating 10M entities with create_many() with observer | 0.693537s | 0.144255s | **4.8x**
-Destroying 10M entities with observer | 0.344164s | 0.093211s | **3.7x**
-Iterating over 10M entities, unpacking one component | 0.059354s | 0.043844s | **1.4x**
-Iterating over 10M entities, unpacking two components | 0.093078s | 0.07617s | **1.2x**
+| Benchmark | Old version | New version | Improvement |
+|-----------|-------------|-------------|-------------|
+| Creating 10M entities | 0.456865s | 0.256681s | **1.8x** |
+| Creating 10M entities (create_many()) | 0.456865s | 0.134333s | **3.4x** |
+| Destroying 10M entities | 0.308511s | 0.074304s | **4.2x** |
+| Creating 10M entities with observer | 0.693537s | 0.465937s | **1.5x** |
+| Creating 10M entities with create_many() with observer | 0.693537s | 0.144255s | **4.8x** |
+| Destroying 10M entities with observer | 0.344164s | 0.093211s | **3.7x** |
+| Iterating over 10M entities, unpacking one component | 0.059354s | 0.043844s | **1.4x** |
+| Iterating over 10M entities, unpacking two components | 0.093078s | 0.07617s | **1.2x** |
