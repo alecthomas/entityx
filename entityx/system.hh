@@ -1,4 +1,5 @@
 #pragma once
+
 #include <unordered_map>
 #include <cassert>
 #include <memory>
@@ -8,17 +9,20 @@
 
 namespace entityx {
 
-template <class EntityManager>
+template<class EntityManager>
 class System {
 public:
-  virtual ~System() {}
+  virtual ~System() { }
+
   virtual void Update(EntityManager& entity_manager, double dt) = 0;
 };
 
-template <class EntityManager>
+template<typename EntityManager>
 class SystemManager {
 public:
-  SystemManager(EntityManager& entity_manager) : entity_manager_(entity_manager) {}
+  SystemManager(EntityManager& entity_manager) : entity_manager_(entity_manager) { }
+
+  ~SystemManager() { Reset(); }
 
   /**
   * Add a System to the SystemManager.
@@ -27,12 +31,13 @@ public:
   *
   * eg.
   * std::shared_ptr<MovementSystem> movement = entityx::make_shared<MovementSystem>();
-  * system.add(movement);
+  * systems.Add(movement);
   */
-  template <template <typename> class S>
+  template<template<typename> class S>
   void Add(std::shared_ptr<S<EntityManager>> system) {
-    //systems_.insert(std::make_pair(std::type_index(typeid(S<EntityManager>)), system));
-    systems_[std::type_index(typeid(S<EntityManager>))] = system;
+    systems_.insert(std::make_pair(std::type_index(typeid(S<EntityManager>)), system));
+    //systems_[std::type_index(typeid(S<EntityManager>))] = system;
+
   }
 
   /**
@@ -41,13 +46,26 @@ public:
   * Must be called before Systems can be used.
   *
   * eg.
-  * auto movement = system.add<MovementSystem>();
+  * auto movement = systems.Add<MovementSystem>();
   */
-  template <template <typename> class S, typename ... Args>
-  std::shared_ptr<S<EntityManager>> Add(Args && ... args) {
+  template<template<typename> class S, typename ... Args>
+  std::shared_ptr<S<EntityManager>> Add(Args&& ... args) {
     std::shared_ptr<S<EntityManager>> s(new S<EntityManager>(std::forward<Args>(args) ...));
     Add(s);
     return s;
+  }
+
+  /**
+  * Remove a System from the SystemManager.
+  *
+  * eg.
+  * systems.Remove<MovementSystem>();
+  */
+  template<template<typename> class S>
+  void Remove() {
+    auto it = systems_.find(std::type_index(typeid(S<EntityManager>)));
+    assert(it != systems_.end());
+    if (it != systems_.end()) systems_.erase(it);
   }
 
   /**
@@ -57,27 +75,35 @@ public:
   *
   * @return System instance or empty shared_std::shared_ptr<S>.
   */
-  template <template <typename> class S>
-  std::shared_ptr<S<EntityManager>> system() {
-    //return systems_[std::type_index(typeid(S<EntityManager>))];
+  template<template<typename> class S>
+  std::shared_ptr<S<EntityManager>> System() {
     auto it = systems_.find(std::type_index(typeid(S<EntityManager>)));
     assert(it != systems_.end());
-    return it == systems_.end() ? std::shared_ptr<S<EntityManager>>()
-				: std::shared_ptr<S<EntityManager>>(std::static_pointer_cast<S<EntityManager>>(it->second));
+    return it == systems_.end()
+        ? std::shared_ptr<S<EntityManager>>()
+        : std::shared_ptr<S<EntityManager>>(std::static_pointer_cast<S<EntityManager>>(it->second));
   }
 
   /**
   * Call the System::update() method for a registered system.
   */
-  template <template <typename> class S>
+  template<template<typename> class S>
   void Update(double dt) {
-    //assert(initialized_ && "SystemManager::configure() not called");
-    std::shared_ptr<S<EntityManager>> s = system<S<EntityManager>>();
-    s->update(entity_manager_, dt);
+    std::shared_ptr<S<EntityManager>> s = System<S>();
+    s->Update(entity_manager_, dt);
+  }
+
+  /**
+  * Call to remove all Systems from SystemManager.
+  *
+  * Automatically called in SystemManager destructor.
+  */
+  void Reset() {
+    systems_.clear();
   }
 
 private:
   EntityManager& entity_manager_;
-  std::unordered_map<std::type_index, std::shared_ptr<System<EntityManager>>> systems_;
+  std::unordered_map<std::type_index, std::shared_ptr<entityx::System<EntityManager>>> systems_;
 };
-} // namespace entityx
+}
