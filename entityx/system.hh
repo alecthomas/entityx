@@ -94,6 +94,23 @@ public:
   }
 
   /**
+  * Call System::update() on all registered systems.
+  *
+  * The order which the registered systems are updated is arbitrary but consistent,
+  * meaning the order which they will be updated cannot be specified, but that order
+  * will stay the same as long no systems are added or removed.
+  *
+  * If the order in which systems update is important, use SystemManager::update()
+  * to manually specify the update order. EntityX does not yet support a way of
+  * specifying priority for update_all().
+  */
+  void UpdateAll(double dt) {
+    for (auto& pair : systems_) {
+      pair.second->Update(entity_manager_, dt);
+    }
+  }
+
+  /**
   * Call to remove all Systems from SystemManager.
   *
   * Automatically called in SystemManager destructor.
