@@ -229,7 +229,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithIntersectionOfCompone
 }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithComponentAndUnpacking") {
-  vector<EntityManager::Id> entities;
+  vector<entityx::Id> entities;
   Entity e = em.create();
   Entity f = em.create();
   Entity g = em.create();

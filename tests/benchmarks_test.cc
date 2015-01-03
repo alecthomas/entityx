@@ -42,16 +42,18 @@ private:
 };
 
 struct Position {
+  float x, y;
 };
 
 
 struct Direction {
+  float x, y;
 };
 
 
 typedef Components<Position, Direction> GameComponents;
-typedef EntityX<GameComponents, ContiguousStorage<GameComponents, 10000000L>> EntityManager;
-typedef EntityX<GameComponents, ContiguousStorage<GameComponents, 10000000L>, true> EntityManagerWithListener;
+typedef EntityX<GameComponents, ColumnStorage<GameComponents, 10000000L>> EntityManager;
+typedef EntityX<GameComponents, ColumnStorage<GameComponents, 10000000L>, true> EntityManagerWithListener;
 template <typename C> using Component = EntityManager::Component<C>;
 using Entity = EntityManager::Entity;
 

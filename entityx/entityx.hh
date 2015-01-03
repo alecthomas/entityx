@@ -245,6 +245,28 @@ enum FeatureFlags {
 
 
 
+struct Id {
+  Id() : id_(0) {}
+  explicit Id(std::uint64_t id) : id_(id) {}
+  Id(std::uint32_t index, std::uint32_t version) : id_(std::uint64_t(index) | std::uint64_t(version) << 32UL) {}
+
+  std::uint64_t id() const { return id_; }
+
+  bool operator == (const Id &other) const { return id_ == other.id_; }
+  bool operator != (const Id &other) const { return id_ != other.id_; }
+  bool operator < (const Id &other) const { return id_ < other.id_; }
+
+  std::uint32_t index() const { return id_ & 0xffffffffUL; }
+  std::uint32_t version() const { return id_ >> 32; }
+
+private:
+  std::uint64_t id_;
+};
+
+
+
+
+
 /**
  * The main entity management class.
  *
@@ -271,26 +293,6 @@ private:
 
 public:
   typedef std::bitset<Components::component_count> ComponentMask;
-
-
-  struct Id {
-    Id() : id_(0) {}
-    explicit Id(std::uint64_t id) : id_(id) {}
-    Id(std::uint32_t index, std::uint32_t version) : id_(std::uint64_t(index) | std::uint64_t(version) << 32UL) {}
-
-    std::uint64_t id() const { return id_; }
-
-    bool operator == (const Id &other) const { return id_ == other.id_; }
-    bool operator != (const Id &other) const { return id_ != other.id_; }
-    bool operator < (const Id &other) const { return id_ < other.id_; }
-
-    std::uint32_t index() const { return id_ & 0xffffffffUL; }
-    std::uint32_t version() const { return id_ >> 32; }
-
-  private:
-    std::uint64_t id_;
-  };
-
 
 
   /**
@@ -963,7 +965,8 @@ inline void EntityX<Components, Storage, Features>::accomodate_entity_(std::uint
 
 
 template <class Components, class Storage, std::size_t Features>
-inline typename EntityX<Components, Storage, Features>::Entity EntityX<Components, Storage, Features>::create() {
+inline typename EntityX<Components, Storage, Features>::Entity
+EntityX<Components, Storage, Features>::create() {
   std::uint32_t index, version;
   if (free_list_.empty()) {
     index = index_counter_++;
@@ -972,7 +975,7 @@ inline typename EntityX<Components, Storage, Features>::Entity EntityX<Component
   } else {
     index = free_list_.back();
     free_list_.pop_back();
-     version = entity_version_[index];
+    version = entity_version_[index];
   }
   Entity entity(this, Id(index, version));
   entity_created_(entity);
@@ -1022,9 +1025,9 @@ template <class Components, class Storage, std::size_t Features>
 inline void EntityX<Components, Storage, Features>::destroy(Id entity) {
   assert_valid(entity);
   entity_destroyed_(Entity(this, entity));
-  std::uint32_t index = entity.index();
-  ComponentMask mask = entity_component_mask_[entity.index()];
-  Components::template destroy<Storage>(storage_, mask, entity.index());
+  const std::uint32_t index = entity.index();
+  ComponentMask mask = entity_component_mask_[index];
+  Components::template destroy<Storage>(storage_, mask, index);
   entity_component_mask_[index].reset();
   entity_version_[index]++;
   free_list_.push_back(index);
@@ -1053,7 +1056,7 @@ bool EntityX<Components, Storage, Features>::valid(Id id) {
 
 
 template <class Components, class Storage, std::size_t Features>
-const typename EntityX<Components, Storage, Features>::Id EntityX<Components, Storage, Features>::Entity::INVALID = Id();
+const Id EntityX<Components, Storage, Features>::Entity::INVALID = Id();
 
 
 
