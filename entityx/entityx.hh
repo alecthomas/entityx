@@ -84,7 +84,8 @@ struct get_component_size_sum<T, Ts...> :
  * block of memory for holding all components for all entities.
  */
 template <class Components, std::size_t INITIAL_CAPACITY = 1024>
-struct ContiguousStorage {
+class ContiguousStorage {
+public:
   ContiguousStorage() {
     components_.reserve(INITIAL_CAPACITY);
   }
@@ -100,8 +101,18 @@ struct ContiguousStorage {
   }
 
   template <typename C>
-  void *get(std::uint32_t entity) {
-    return components_[entity].block + Components::template component_offset<C>::value;
+  C *get(std::uint32_t entity) {
+    return static_cast<C*>(static_cast<void*>(components_[entity].block + Components::template component_offset<C>::value));
+  }
+
+  template <typename C, typename ... Args>
+  C *create(std::uint32_t entity, Args && ... args) {
+    return new(get<C>(entity)) C(std::forward<Args>(args) ...);
+  }
+
+  template <typename C>
+  void destroy(std::uint32_t entity) {
+    get<C>(entity)->~C();
   }
 
   void reset() {
@@ -115,6 +126,8 @@ private:
 
 
 
+
+
 /**
  * An EntityX storage class where each component is stored in its own
  * contiguous block of memory.
@@ -122,7 +135,8 @@ private:
  * Memory is managed by malloc/free/realloc.
  */
 template <class Components, std::size_t INITIAL_CAPACITY = 1024>
-struct ColumnStorage {
+class ColumnStorage {
+public:
   ColumnStorage() : sizes_(Components::component_sizes()), size_(0), capacity_(0) {
     for (std::size_t i = 0; i < sizes_.size(); i++)
       columns_[i] = nullptr;
@@ -144,9 +158,21 @@ struct ColumnStorage {
   }
 
   template <typename C>
-  void *get(std::uint32_t entity) {
-    const std::size_t index = Components::template component_index<C>::value;
-    return &columns_[index][0] + entity * sizes_[index];
+  C *get(std::uint32_t entity) {
+    return static_cast<C*>(static_cast<void*>(
+      columns_[Components::template component_index<C>::value] +
+      entity * Components::template component_size<C>::value)
+    );
+  }
+
+  template <typename C, typename ... Args>
+  C *create(std::uint32_t entity, Args && ... args) {
+    return new(get<C>(entity)) C(std::forward<Args>(args) ...);
+  }
+
+  template <typename C>
+  void destroy(std::uint32_t entity) {
+    get<C>(entity)->~C();
   }
 
   void reset() {
@@ -162,8 +188,7 @@ private:
       while (capacity_ < capacity)
         capacity_ *= 2;
     for (std::size_t i = 0; i < sizes_.size(); i++) {
-      const std::size_t size = sizes_[i];
-      columns_[i] = static_cast<std::uint8_t*>(std::realloc(columns_[i], capacity_ * size));
+      columns_[i] = static_cast<std::uint8_t*>(std::realloc(columns_[i], capacity_ * sizes_[i]));
     }
   }
 
@@ -171,6 +196,7 @@ private:
   std::size_t size_, capacity_;
   std::uint8_t *columns_[Components::component_count];
 };
+
 
 
 
@@ -209,8 +235,7 @@ struct Components {
   template <class Storage, class C>
   static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::size_t index) {
     if (mask.test(component_index<C>::value)) {
-      C *ptr = static_cast<C*>(storage.template get<C>(index));
-      ptr->~C();
+      storage.template destroy<C>(index);
     }
   }
 
@@ -678,8 +703,7 @@ public:
     assert(!entity_component_mask_[id.index()].test(component_index<C>::value));
 
     // Placement new into the component pool.
-    void *p = storage_.template get<C>(id.index());
-    new(p) C(std::forward<Args>(args) ...);
+    storage_.template create<C, Args ...>(id.index(), std::forward<Args>(args) ...);
 
     // Set the bit for this component.
     entity_component_mask_[id.index()].set(component_index<C>::value);
@@ -922,7 +946,7 @@ private:
   template <typename C>
   C *component_ptr_(Id id) {
     assert_valid_component<C>(id);
-    return static_cast<C*>(storage_.template get<C>(id.index()));
+    return storage_.template get<C>(id.index());
   }
 
   template <typename C>

@@ -184,6 +184,22 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIteration") {
   }
 }
 
+TEST_CASE_METHOD(BenchmarkFixture, "TestEntityCreationIterationDeletionRepeatedly") {
+  AutoTimer t;
+  cout << "looping 10000 times creating and deleting a random number of entities" << endl;
+
+  for (int i = 0; i < 10000; i++) {
+    for (int j = 0; j < 10000; j++) {
+      Entity e = em.create();
+      e.assign<Position>();
+    }
+    Component<Position> position;
+    for (auto e : em.entities_with_components(position)) {
+      if (rand() % 2 == 0) e.destroy();
+    }
+  }
+}
+
 TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIterationUnpackTwo") {
   int count = 10000000;
   for (int i = 0; i < count; i++) {
