@@ -3,7 +3,8 @@
 *.so
 *.o
 build/*
-entityx/config.h
+# When including source, we want to include the normal config file.
+# entityx/config.h
 Makefile
 html/
 Vagrantfile
