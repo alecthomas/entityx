@@ -216,13 +216,20 @@ public:
     size.y = size.y / PARTITIONS + 1;
   }
 
+  // Check for collisions every 1/30th of a second.
   void update(EntityManager &es, double dt) override {
+    last_update += dt;
+    if (last_update < 1.0 / 30.0) {
+      return;
+    }
+    last_update = 0;
     reset();
     collect(es);
     collide();
   };
 
 private:
+  double last_update = 0;
   std::vector<std::vector<Candidate>> grid;
   sf::Vector2u size;
   ExplosionSystem &explosions;

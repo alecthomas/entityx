@@ -239,6 +239,11 @@ struct Components {
     }
   }
 
+  template <class Storage, template <typename> class Component, typename ... Components>
+  static std::tuple<Component<Cs> & ...> unpack(Storage &storage, std::size_t index, Component<Components> & ... components) {
+    return std::forward_as_tuple(storage.template get<Components>(index)...);
+  }
+
 private:
   template <class C>
   static void init_sizes(std::vector<std::size_t> &sizes, std::size_t index = 0) {
@@ -299,7 +304,7 @@ private:
  *                    type instance of Components<C...>.
  * @tparam Storage A type that implements the storage interface.
  */
-template <class Components, class Storage = ContiguousStorage<Components>, std::size_t Features = 0>
+template <class Components, class Storage = ColumnStorage<Components>, std::size_t Features = 0>
 class EntityX {
 private:
   template <typename T>
@@ -560,7 +565,7 @@ public:
       }
 
       void next_entity(Entity &entity) {}
-    };
+  };
 
 
     Iterator begin() { return Iterator(manager_, mask_, 0); }
@@ -585,28 +590,28 @@ public:
   template <typename ... ComponentsToUnpack>
   class UnpackingView {
    public:
-    struct Unpacker {
-      Unpacker(Component<ComponentsToUnpack> & ... handles) :
-          handles(std::tuple<Component<ComponentsToUnpack> & ...>(handles...)) {}
+  struct Unpacker {
+    Unpacker(Component<ComponentsToUnpack> & ... handles) :
+        handles(std::tuple<Component<ComponentsToUnpack> & ...>(handles...)) {}
 
-      void unpack(Entity &entity) const {
-        unpack_<0, ComponentsToUnpack...>(entity);
-      }
+    void unpack(Entity &entity) const {
+      unpack_<0, ComponentsToUnpack...>(entity);
+    }
 
-    private:
-      template <int N, typename C>
-      void unpack_(Entity &entity) const {
-        std::get<N>(handles) = entity.template component<C>();
-      }
+  private:
+    template <int N, typename C>
+    void unpack_(Entity &entity) const {
+      std::get<N>(handles) = entity.template component<C>();
+    }
 
-      template <int N, typename C0, typename C1, typename ... Cn>
-      void unpack_(Entity &entity) const {
-        std::get<N>(handles) = entity.template component<C0>();
-        unpack_<N + 1, C1, Cn...>(entity);
-      }
+    template <int N, typename C0, typename C1, typename ... Cn>
+    void unpack_(Entity &entity) const {
+      std::get<N>(handles) = entity.template component<C0>();
+      unpack_<N + 1, C1, Cn...>(entity);
+    }
 
-      std::tuple<Component<ComponentsToUnpack> & ...> handles;
-    };
+    std::tuple<Component<ComponentsToUnpack> & ...> handles;
+  };
 
 
     class Iterator : public ViewIterator<Iterator> {
@@ -770,28 +775,28 @@ public:
   }
 
   // Called whenever an entity is created.
-  template <bool OBSERVABLE = Features & OBSERVABLE>
-  typename std::enable_if<OBSERVABLE>::type on_entity_created(std::function<void(Entity)> callback) {
+  template <bool IS_OBSERVABLE = Features & OBSERVABLE>
+  typename std::enable_if<IS_OBSERVABLE>::type on_entity_created(std::function<void(Entity)> callback) {
     on_entity_created_ = callback;
   }
 
   // Called whenever an entity is destroyed.
-  template <bool OBSERVABLE = Features & OBSERVABLE>
-  typename std::enable_if<OBSERVABLE>::type on_entity_destroyed(std::function<void(Entity)> callback) {
+  template <bool IS_OBSERVABLE = Features & OBSERVABLE>
+  typename std::enable_if<IS_OBSERVABLE>::type on_entity_destroyed(std::function<void(Entity)> callback) {
     on_entity_destroyed_ = callback;
   }
 
   // Called whenever a component of type Component is added to an entity.
-  template <typename C, bool OBSERVABLE = Features & OBSERVABLE>
-  typename std::enable_if<OBSERVABLE && is_component<C>::value>::type on_component_added(std::function<void(Entity, Component<C>)> callback) {
+  template <typename C, bool IS_OBSERVABLE = Features & OBSERVABLE>
+  typename std::enable_if<IS_OBSERVABLE && is_component<C>::value>::type on_component_added(std::function<void(Entity, Component<C>)> callback) {
     on_component_added_[component_index<C>::value] = [callback](Entity entity, void *ptr) {
       callback(entity, *reinterpret_cast<Component<C>*>(ptr));
     };
   }
 
   // Called whenever a component of type Component is removed from an entity.
-  template <typename C, bool OBSERVABLE = Features & OBSERVABLE>
-  typename std::enable_if<OBSERVABLE && is_component<C>::value>::type on_component_removed(std::function<void(Entity, Component<C>)> callback) {
+  template <typename C, bool IS_OBSERVABLE = Features & OBSERVABLE>
+  typename std::enable_if<IS_OBSERVABLE && is_component<C>::value>::type on_component_removed(std::function<void(Entity, Component<C>)> callback) {
     on_component_removed_[component_index<C>::value] = [callback](Entity entity, void *ptr) {
       callback(entity, *reinterpret_cast<Component<C>*>(ptr));
     };

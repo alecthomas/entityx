@@ -280,10 +280,11 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestIterateAllEntitiesSkipsDestroyed") {
 
   b.destroy();
 
-  auto it = em.entities_for_debugging().begin();
+  auto entities = em.entities_for_debugging();
+  auto it = entities.begin();
   REQUIRE(a.id() == (*it).id());
   ++it;
-  REQUIRE(c.id() == (*it).id());
+  REQUIRE(c.id().index() == (*it).id().index());
 }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestUnpack") {
