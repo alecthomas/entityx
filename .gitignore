@@ -4,7 +4,17 @@
 *.o
 build/*
 entityx/config.h
-Makefile
 html/
+
+## Vagrant ##
+
 Vagrantfile
 .vagrant
+
+## CMake ##
+
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
