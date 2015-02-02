@@ -9,6 +9,7 @@
 #include <cassert>
 #include <tuple>
 #include <cstdlib>
+#include <cstdint>
 #include <queue>
 
 
