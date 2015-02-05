@@ -80,3 +80,17 @@ TEST_CASE("TestSenderExpired") {
   }
   REQUIRE(0 == explosion_system.connected_signals());
 }
+
+TEST_CASE("TestUnsubscription") {
+  ExplosionSystem explosion_system;
+  {
+    EventManager em;
+    em.subscribe<Explosion>(explosion_system);
+    REQUIRE(explosion_system.damage_received == 0);
+    em.emit<Explosion>(1);
+    REQUIRE(explosion_system.damage_received == 1);
+    em.unsubscribe<Explosion>(explosion_system);
+    em.emit<Explosion>(1);
+    REQUIRE(explosion_system.damage_received == 1);
+  }
+}
