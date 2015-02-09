@@ -109,7 +109,7 @@ entity.destroy();
 
 The general idea with the EntityX interpretation of ECS is to have as little logic in components as possible. All logic should be contained in Systems.
 
-To that end Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) consisting of self-contained sets of related data. Implementations are [curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) (CRTP) subclasses of `entityx::Component<T>`.
+To that end Components are typically [POD types](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) consisting of self-contained sets of related data. Components can be any user defined struct/class.
 
 #### Creating components
 
