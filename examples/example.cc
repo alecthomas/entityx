@@ -13,7 +13,7 @@
  *
  * Compile with:
  *
- *    c++ -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics -lentityx example.cc -o example
+ *    c++ -I.. -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics -lentityx example.cc -o example
  */
 #include <cmath>
 #include <unordered_set>
@@ -46,7 +46,7 @@ float r(int a, float b = 0) {
 }
 
 
-struct Body : ex::Component<Body> {
+struct Body {
   Body(const sf::Vector2f &position, const sf::Vector2f &direction, float rotationd = 0.0)
     : position(position), direction(direction), rotationd(rotationd) {}
 
@@ -56,21 +56,21 @@ struct Body : ex::Component<Body> {
 };
 
 
-struct Renderable : ex::Component<Renderable> {
+struct Renderable {
   explicit Renderable(std::unique_ptr<sf::Shape> shape) : shape(std::move(shape)) {}
 
   std::unique_ptr<sf::Shape> shape;
 };
 
 
-struct Fadeable : ex::Component<Fadeable> {
+struct Fadeable {
   explicit Fadeable(sf::Uint8 alpha, float duration) : alpha(alpha), d(alpha / duration) {}
 
   float alpha, d;
 };
 
 
-struct Collideable : ex::Component<Collideable> {
+struct Collideable {
   explicit Collideable(float radius) : radius(radius) {}
 
   float radius;
@@ -78,7 +78,7 @@ struct Collideable : ex::Component<Collideable> {
 
 
 // Emitted when two entities collide.
-struct CollisionEvent : public ex::Event<CollisionEvent> {
+struct CollisionEvent {
   CollisionEvent(ex::Entity left, ex::Entity right) : left(left), right(right) {}
 
   ex::Entity left, right;
@@ -88,7 +88,7 @@ struct CollisionEvent : public ex::Event<CollisionEvent> {
 // Updates a body's position and rotation.
 struct BodySystem : public ex::System<BodySystem> {
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    Body::Handle body;
+    ex::ComponentHandle<Body> body;
     for (ex::Entity entity : es.entities_with_components(body)) {
       body->position += body->direction * static_cast<float>(dt);
       body->rotation += body->rotationd * dt;
@@ -101,8 +101,8 @@ struct BodySystem : public ex::System<BodySystem> {
 // object has completely faded out it is destroyed.
 struct FadeOutSystem : public ex::System<FadeOutSystem> {
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    Fadeable::Handle fade;
-    Renderable::Handle renderable;
+    ex::ComponentHandle<Fadeable> fade;
+    ex::ComponentHandle<Renderable> renderable;
     for (ex::Entity entity : es.entities_with_components(fade, renderable)) {
       fade->alpha -= fade->d * dt;
       if (fade->alpha <= 0) {
@@ -123,7 +123,7 @@ public:
   explicit BounceSystem(sf::RenderTarget &target) : size(target.getSize()) {}
 
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    Body::Handle body;
+    ex::ComponentHandle<Body> body;
     for (ex::Entity entity : es.entities_with_components(body)) {
       if (body->position.x + body->direction.x < 0 ||
           body->position.x + body->direction.x >= size.x)
@@ -176,8 +176,8 @@ private:
   }
 
   void collect(ex::EntityManager &entities) {
-    Body::Handle body;
-    Collideable::Handle collideable;
+    ex::ComponentHandle<Body> body;
+    ex::ComponentHandle<Collideable> collideable;
     for (ex::Entity entity : entities.entities_with_components(body, collideable)) {
       unsigned int
           left = static_cast<int>(body->position.x - collideable->radius) / PARTITIONS,
@@ -236,9 +236,9 @@ public:
   }
 
   void emit_particles(ex::EntityManager &es, ex::Entity entity) {
-    Body::Handle body = entity.component<Body>();
-    Renderable::Handle renderable = entity.component<Renderable>();
-    Collideable::Handle collideable = entity.component<Collideable>();
+    ex::ComponentHandle<Body> body = entity.component<Body>();
+    ex::ComponentHandle<Renderable> renderable = entity.component<Renderable>();
+    ex::ComponentHandle<Collideable> collideable = entity.component<Collideable>();
     sf::Color colour = renderable->shape->getFillColor();
     colour.a = 200;
 
@@ -287,8 +287,8 @@ public:
   }
 
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    Body::Handle body;
-    Renderable::Handle renderable;
+    ex::ComponentHandle<Body> body;
+    ex::ComponentHandle<Renderable> renderable;
     for (ex::Entity entity : es.entities_with_components(body, renderable)) {
       renderable->shape->setPosition(body->position);
       renderable->shape->setRotation(body->rotation);
@@ -327,7 +327,7 @@ public:
       ex::Entity entity = entities.create();
 
       // Mark as collideable (explosion particles will not be collideable).
-      Collideable::Handle collideable = entity.assign<Collideable>(r(10, 5));
+      ex::ComponentHandle<Collideable> collideable = entity.assign<Collideable>(r(10, 5));
 
       // "Physical" attributes.
       entity.assign<Body>(

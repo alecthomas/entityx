@@ -116,13 +116,13 @@ To that end Components are typically [POD types](http://en.wikipedia.org/wiki/Pl
 As an example, position and direction information might be represented as:
 
 ```c++
-struct Position : entityx::Component<Position> {
+struct Position {
   Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   float x, y;
 };
 
-struct Direction : entityx::Component<Direction> {
+struct Direction {
   Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   float x, y;
@@ -208,7 +208,7 @@ As an example, we might want to implement a very basic collision system using ou
 First, we define the event type, which for our example is simply the two entities that collided:
 
 ```c++
-struct Collision : public Event<Collision> {
+struct Collision {
   Collision(entityx::Entity left, entityx::Entity right) : left(left), right(right) {}
 
   entityx::Entity left, right;
