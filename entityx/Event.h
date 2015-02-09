@@ -32,14 +32,12 @@ class BaseEvent {
 
   virtual ~BaseEvent();
 
-  virtual Family my_family() const = 0;
-
  protected:
   static Family family_counter_;
 };
 
 
-typedef Simple::Signal<void (const BaseEvent*)> EventSignal;
+typedef Simple::Signal<void (const void*)> EventSignal;
 typedef std::shared_ptr<EventSignal> EventSignalPtr;
 typedef std::weak_ptr<EventSignal> EventSignalWeakPtr;
 
@@ -60,8 +58,6 @@ class Event : public BaseEvent {
     static Family family = family_counter_++;
     return family;
   }
-
-  virtual Family my_family() const override { return Derived::family(); }
 };
 
 
@@ -128,13 +124,13 @@ class EventManager : entityx::help::NonCopyable {
   template <typename E, typename Receiver>
   void subscribe(Receiver &receiver) {
     void (Receiver::*receive)(const E &) = &Receiver::receive;
-    auto sig = signal_for(E::family());
+    auto sig = signal_for(Event<E>::family());
     auto wrapper = EventCallbackWrapper<E>(std::bind(receive, &receiver, std::placeholders::_1));
     auto connection = sig->connect(wrapper);
     BaseReceiver &base = receiver;
-    base.connections_.insert(std::make_pair(E::family(), std::make_pair(EventSignalWeakPtr(sig), connection)));
+    base.connections_.insert(std::make_pair(Event<E>::family(), std::make_pair(EventSignalWeakPtr(sig), connection)));
   }
-  
+
   /**
    * Unsubscribe an object in order to not receive events of type E anymore.
    *
@@ -145,26 +141,29 @@ class EventManager : entityx::help::NonCopyable {
   void unsubscribe(Receiver &receiver) {
     BaseReceiver &base = receiver;
     //Assert that it has been subscribed before
-    assert(base.connections_.find(E::family()) != base.connections_.end());
-    auto pair = base.connections_[E::family()];
+    assert(base.connections_.find(Event<E>::family()) != base.connections_.end());
+    auto pair = base.connections_[Event<E>::family()];
     auto connection = pair.second;
     auto &ptr = pair.first;
     if (!ptr.expired()) {
       ptr.lock()->disconnect(connection);
     }
-    base.connections_.erase(E::family());
+    base.connections_.erase(Event<E>::family());
   }
 
-  void emit(const BaseEvent &event);
+  template <typename E>
+  void emit(const E &event) {
+    auto sig = signal_for(Event<E>::family());
+    sig->emit(&event);
+  }
 
   /**
    * Emit an already constructed event.
    */
   template <typename E>
   void emit(std::unique_ptr<E> event) {
-    auto sig = signal_for(E::family());
-    BaseEvent *base = event.get();
-    sig->emit(base);
+    auto sig = signal_for(Event<E>::family());
+    sig->emit(event.get());
   }
 
   /**
@@ -182,9 +181,8 @@ class EventManager : entityx::help::NonCopyable {
   void emit(Args && ... args) {
     // Using 'E event(std::forward...)' causes VS to fail with an internal error. Hack around it.
     E event = E(std::forward<Args>(args) ...);
-    auto sig = signal_for(std::size_t(E::family()));
-    BaseEvent *base = &event;
-    sig->emit(base);
+    auto sig = signal_for(std::size_t(Event<E>::family()));
+    sig->emit(&event);
   }
 
   std::size_t connected_receivers() const {
@@ -208,7 +206,7 @@ class EventManager : entityx::help::NonCopyable {
   template <typename E>
   struct EventCallbackWrapper {
     EventCallbackWrapper(std::function<void(const E &)> callback) : callback(callback) {}
-    void operator()(const BaseEvent* event) { callback(*(static_cast<const E*>(event))); }
+    void operator()(const void *event) { callback(*(static_cast<const E*>(event))); }
     std::function<void(const E &)> callback;
   };
 

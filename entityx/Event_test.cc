@@ -21,7 +21,7 @@ using entityx::Event;
 using entityx::Receiver;
 
 
-struct Explosion : public Event<Explosion> {
+struct Explosion {
   explicit Explosion(int damage) : damage(damage) {}
   int damage;
 };

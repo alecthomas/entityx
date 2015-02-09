@@ -23,9 +23,4 @@ EventManager::EventManager() {
 EventManager::~EventManager() {
 }
 
-void EventManager::emit(const BaseEvent &event) {
-  auto sig = signal_for(event.my_family());
-  sig->emit(&event);
-}
-
 }  // namespace entityx
