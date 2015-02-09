@@ -577,7 +577,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C, typename ... Args>
   ComponentHandle<C> assign(Entity::Id id, Args && ... args) {
     assert_valid(id);
-    const BaseComponent::Family family = C::family();
+    const BaseComponent::Family family = Component<C>::family();
     assert(!entity_component_mask_[id.index()].test(family));
 
     // Placement new into the component pool.
@@ -601,7 +601,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   void remove(Entity::Id id) {
     assert_valid(id);
-    const BaseComponent::Family family = C::family();
+    const BaseComponent::Family family = Component<C>::family();
     const uint32_t index = id.index();
 
     // Find the pool for this component family.
@@ -622,7 +622,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   bool has_component(Entity::Id id) const {
     assert_valid(id);
-    size_t family = C::family();
+    size_t family = Component<C>::family();
     // We don't bother checking the component mask, as we return a nullptr anyway.
     if (family >= component_pools_.size())
       return false;
@@ -640,7 +640,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   ComponentHandle<C> component(Entity::Id id) {
     assert_valid(id);
-    size_t family = C::family();
+    size_t family = Component<C>::family();
     // We don't bother checking the component mask, as we return a nullptr anyway.
     if (family >= component_pools_.size())
       return ComponentHandle<C>();
@@ -658,7 +658,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   const ComponentHandle<const C> component(Entity::Id id) const {
     assert_valid(id);
-    size_t family = C::family();
+    size_t family = Component<C>::family();
     // We don't bother checking the component mask, as we return a nullptr anyway.
     if (family >= component_pools_.size())
       return ComponentHandle<const C>();
@@ -769,7 +769,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   C *get_component_ptr(Entity::Id id) {
     assert(valid(id));
-    BasePool *pool = component_pools_[C::family()];
+    BasePool *pool = component_pools_[Component<C>::family()];
     assert(pool);
     return static_cast<C*>(pool->get(id.index()));
   }
@@ -777,7 +777,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   const C *get_component_ptr(Entity::Id id) const {
     assert_valid(id);
-    BasePool *pool = component_pools_[C::family()];
+    BasePool *pool = component_pools_[Component<C>::family()];
     assert(pool);
     return static_cast<const C*>(pool->get(id.index()));
   }
@@ -790,7 +790,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C>
   ComponentMask component_mask() {
     ComponentMask mask;
-    mask.set(C::family());
+    mask.set(Component<C>::family());
     return mask;
   }
 
@@ -818,18 +818,18 @@ class EntityManager : entityx::help::NonCopyable {
     }
   }
 
-  template <typename T>
-  Pool<T> *accomodate_component() {
-    BaseComponent::Family family = T::family();
+  template <typename C>
+  Pool<C> *accomodate_component() {
+    BaseComponent::Family family = Component<C>::family();
     if (component_pools_.size() <= family) {
       component_pools_.resize(family + 1, nullptr);
     }
     if (!component_pools_[family]) {
-      Pool<T> *pool = new Pool<T>();
+      Pool<C> *pool = new Pool<C>();
       pool->expand(index_counter_);
       component_pools_[family] = pool;
     }
-    return static_cast<Pool<T>*>(component_pools_[family]);
+    return static_cast<Pool<C>*>(component_pools_[family]);
   }
 
 
