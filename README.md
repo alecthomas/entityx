@@ -39,6 +39,8 @@ See the [ChangeLog](https://github.com/alecthomas/entityx/blob/master/CHANGES.md
 
 - [Will Usher](https://github.com/Twinklebear) has also written an [Asteroids clone](https://github.com/Twinklebear/asteroids).
 - [Roc Solid Productions](https://github.com/RocSolidProductions) have written a [space shooter](https://github.com/RocSolidProductions/Space-Shooter)!
+- Giovani Milanez's first [game](https://github.com/giovani-milanez/SpaceTD).
+- [A game](https://github.com/ggc87/BattleCity2014) using Ogre3D and EntityX.
 
 **DEPRECATED - 0.1.x ONLY**
 
