@@ -80,15 +80,10 @@ public:
    */
   static const Id INVALID;
 
-  Entity() {}
+  Entity() = default;
   Entity(EntityManager *manager, Entity::Id id) : manager_(manager), id_(id) {}
-  Entity(const Entity &other) : manager_(other.manager_), id_(other.id_) {}
-
-  Entity &operator = (const Entity &other) {
-    manager_ = other.manager_;
-    id_ = other.id_;
-    return *this;
-  }
+  Entity(const Entity &other) = default;
+  Entity &operator = (const Entity &other) = default;
 
   /**
    * Check if Entity handle is invalid.
