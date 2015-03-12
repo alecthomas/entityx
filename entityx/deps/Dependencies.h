@@ -27,6 +27,8 @@ namespace deps {
 template <typename C, typename ... Deps>
 class Dependency : public System, public Receiver {
 public:
+  virtual ~Dependency(void) = default;
+
   void receive(const ComponentAddedEvent<C> &event) {
     assign<Deps...>(event.entity);
   }
