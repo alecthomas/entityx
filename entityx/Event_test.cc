@@ -17,7 +17,6 @@
 
 
 using entityx::EventManager;
-using entityx::Event;
 using entityx::Receiver;
 
 
@@ -26,7 +25,7 @@ struct Explosion {
   int damage;
 };
 
-struct ExplosionSystem : public Receiver<ExplosionSystem> {
+struct ExplosionSystem : public Receiver {
   void receive(const Explosion &explosion) {
     damage_received += explosion.damage;
   }

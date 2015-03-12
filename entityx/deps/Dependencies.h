@@ -25,7 +25,7 @@ namespace deps {
  *     system_manager->add<Dependency<Physics, Position, Direction>>();
  */
 template <typename C, typename ... Deps>
-class Dependency : public System<Dependency<C, Deps...>>, public Receiver<Dependency<C, Deps...>> {
+class Dependency : public System, public Receiver {
 public:
   void receive(const ComponentAddedEvent<C> &event) {
     assign<Deps...>(event.entity);

@@ -21,7 +21,7 @@ private:
   entityx::help::Timer timer_;
 };
 
-struct Listener : public Receiver<Listener> {
+struct Listener : public Receiver {
   void receive(const EntityCreatedEvent &event) { ++created; }
   void receive(const EntityDestroyedEvent &event) { ++destroyed; }
 
@@ -48,19 +48,19 @@ struct BenchmarkFixture {
 TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntities") {
   AutoTimer t;
 
-  uint64_t count = 10000000L;
+  std::uint64_t count = 10000000L;
   cout << "creating " << count << " entities" << endl;
 
-  for (uint64_t i = 0; i < count; i++) {
+  for (std::uint64_t i = 0; i < count; i++) {
     em.create();
   }
 }
 
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntities") {
-  uint64_t count = 10000000L;
+  std::uint64_t count = 10000000L;
   vector<Entity> entities;
-  for (uint64_t i = 0; i < count; i++) {
+  for (std::uint64_t i = 0; i < count; i++) {
     entities.push_back(em.create());
   }
 

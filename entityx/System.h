@@ -19,6 +19,7 @@
 #include "entityx/Entity.h"
 #include "entityx/Event.h"
 #include "entityx/help/NonCopyable.h"
+#include "entityx/help/UIDGenerator.h"
 
 
 namespace entityx {
@@ -30,11 +31,11 @@ class SystemManager;
 /**
  * Base System class. Generally should not be directly used, instead see System<Derived>.
  */
-class BaseSystem : entityx::help::NonCopyable {
- public:
-  typedef size_t Family;
+class System : entityx::help::NonCopyable {
+	friend class SystemManager;
 
-  virtual ~BaseSystem();
+ public:
+  virtual ~System() = default;
 
   /**
    * Called once all Systems have been added to the SystemManager.
@@ -49,36 +50,7 @@ class BaseSystem : entityx::help::NonCopyable {
    * Called every game step.
    */
   virtual void update(EntityManager &entities, EventManager &events, TimeDelta dt) = 0;
-
-  static Family family_counter_;
-
- protected:
 };
-
-
-/**
- * Use this class when implementing Systems.
- *
- * struct MovementSystem : public System<MovementSystem> {
- *   void update(EntityManager &entities, EventManager &events, TimeDelta dt) {
- *     // Do stuff to/with entities...
- *   }
- * }
- */
-template <typename Derived>
-class System : public BaseSystem {
- public:
-  virtual ~System() {}
-
-private:
-  friend class SystemManager;
-
-  static Family family() {
-    static Family family = family_counter_++;
-    return family;
-  }
-};
-
 
 class SystemManager : entityx::help::NonCopyable {
  public:
@@ -98,7 +70,7 @@ class SystemManager : entityx::help::NonCopyable {
    */
   template <typename S>
   void add(std::shared_ptr<S> system) {
-    systems_.insert(std::make_pair(S::family(), system));
+    systems_.insert(std::make_pair(UIDGenerator::GetUID<S>(), system));
   }
 
   /**
@@ -125,7 +97,7 @@ class SystemManager : entityx::help::NonCopyable {
    */
   template <typename S>
   std::shared_ptr<S> system() {
-    auto it = systems_.find(S::family());
+    auto it = systems_.find(UIDGenerator::GetUID<S>());
     assert(it != systems_.end());
     return it == systems_.end()
         ? std::shared_ptr<S>()
@@ -166,7 +138,7 @@ class SystemManager : entityx::help::NonCopyable {
   bool initialized_ = false;
   EntityManager &entity_manager_;
   EventManager &event_manager_;
-  std::unordered_map<BaseSystem::Family, std::shared_ptr<BaseSystem>> systems_;
+  std::unordered_map<UIDGenerator::Family, std::shared_ptr<System>> systems_;
 };
 
 }  // namespace entityx

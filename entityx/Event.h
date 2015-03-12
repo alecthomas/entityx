@@ -20,50 +20,20 @@
 #include "entityx/config.h"
 #include "entityx/3rdparty/simplesignal.h"
 #include "entityx/help/NonCopyable.h"
-
+#include "entityx/help/UIDGenerator.h"
 
 namespace entityx {
-
-
-/// Used internally by the EventManager.
-class BaseEvent {
- public:
-  typedef std::size_t Family;
-
-  virtual ~BaseEvent();
-
- protected:
-  static Family family_counter_;
-};
-
 
 typedef Simple::Signal<void (const void*)> EventSignal;
 typedef std::shared_ptr<EventSignal> EventSignalPtr;
 typedef std::weak_ptr<EventSignal> EventSignalWeakPtr;
 
+template <typename E, typename Receiver>
+using CallbackSignature = void(Receiver::*)(const E &);
 
-/**
- * Event types should subclass from this.
- *
- * struct Explosion : public Event<Explosion> {
- *   Explosion(int damage) : damage(damage) {}
- *   int damage;
- * };
- */
-template <typename Derived>
-class Event : public BaseEvent {
+class Receiver {
  public:
-  /// Used internally for registration.
-  static Family family() {
-    static Family family = family_counter_++;
-    return family;
-  }
-};
-
-
-class BaseReceiver {
- public:
-  virtual ~BaseReceiver() {
+  virtual ~Receiver() {
     for (auto connection : connections_) {
       auto &ptr = connection.second.first;
       if (!ptr.expired()) {
@@ -85,14 +55,7 @@ class BaseReceiver {
 
  private:
   friend class EventManager;
-  std::unordered_map<BaseEvent::Family, std::pair<EventSignalWeakPtr, std::size_t>> connections_;
-};
-
-
-template <typename Derived>
-class Receiver : public BaseReceiver {
- public:
-  virtual ~Receiver() {}
+  std::unordered_map<UIDGenerator::Family, std::pair<EventSignalWeakPtr, std::size_t>> connections_;
 };
 
 
@@ -102,18 +65,26 @@ class Receiver : public BaseReceiver {
  * Subscriptions are automatically removed when receivers are destroyed..
  */
 class EventManager : entityx::help::NonCopyable {
+ private:
+	// Method used to get the default callback function for an event (receive method).
+	// Directly put &Receiver::receive as the default parameter of the subscribe function doesn't work with VS12.
+   template <typename E, typename Receiver>
+   static CallbackSignature<E, Receiver> getDefaultCallbackFunction() {
+	 return &Receiver::receive;
+   }
+
  public:
-  EventManager();
-  virtual ~EventManager();
+  EventManager() = default;
+  virtual ~EventManager() = default;
 
   /**
    * Subscribe an object to receive events of type E.
    *
-   * Receivers must be subclasses of Receiver and must implement a receive() method accepting the given event type.
+   * Receivers must be subclasses of Receiver and must implement a method accepting the given event type.
    *
    * eg.
    *
-   *     struct ExplosionReceiver : public Receiver<ExplosionReceiver> {
+   *     struct ExplosionReceiver : public Receiver {
    *       void receive(const Explosion &explosion) {
    *       }
    *     };
@@ -121,14 +92,14 @@ class EventManager : entityx::help::NonCopyable {
    *     ExplosionReceiver receiver;
    *     em.subscribe<Explosion>(receiver);
    */
+
   template <typename E, typename Receiver>
-  void subscribe(Receiver &receiver) {
-    void (Receiver::*receive)(const E &) = &Receiver::receive;
-    auto sig = signal_for(Event<E>::family());
+  void subscribe(Receiver &receiver, CallbackSignature<E, Receiver> receive = getDefaultCallbackFunction<E, Receiver>()) {
+    auto sig = signal_for(UIDGenerator::GetUID<E>());
     auto wrapper = EventCallbackWrapper<E>(std::bind(receive, &receiver, std::placeholders::_1));
     auto connection = sig->connect(wrapper);
-    BaseReceiver &base = receiver;
-    base.connections_.insert(std::make_pair(Event<E>::family(), std::make_pair(EventSignalWeakPtr(sig), connection)));
+    entityx::Receiver &base = receiver;
+    base.connections_.insert(std::make_pair(UIDGenerator::GetUID<E>(), std::make_pair(EventSignalWeakPtr(sig), connection)));
   }
 
   /**
@@ -139,21 +110,21 @@ class EventManager : entityx::help::NonCopyable {
    */
   template <typename E, typename Receiver>
   void unsubscribe(Receiver &receiver) {
-    BaseReceiver &base = receiver;
+    entityx::Receiver &base = receiver;
     //Assert that it has been subscribed before
-    assert(base.connections_.find(Event<E>::family()) != base.connections_.end());
-    auto pair = base.connections_[Event<E>::family()];
+	assert(base.connections_.find(UIDGenerator::GetUID<E>()) != base.connections_.end());
+	auto pair = base.connections_[UIDGenerator::GetUID<E>()];
     auto connection = pair.second;
     auto &ptr = pair.first;
     if (!ptr.expired()) {
       ptr.lock()->disconnect(connection);
     }
-    base.connections_.erase(Event<E>::family());
+	base.connections_.erase(UIDGenerator::GetUID<E>());
   }
 
   template <typename E>
   void emit(const E &event) {
-    auto sig = signal_for(Event<E>::family());
+    auto sig = signal_for(UIDGenerator::GetUID<E>());
     sig->emit(&event);
   }
 
@@ -162,7 +133,7 @@ class EventManager : entityx::help::NonCopyable {
    */
   template <typename E>
   void emit(std::unique_ptr<E> event) {
-    auto sig = signal_for(Event<E>::family());
+    auto sig = signal_for(UIDGenerator::GetUID<E>());
     sig->emit(event.get());
   }
 
@@ -181,7 +152,7 @@ class EventManager : entityx::help::NonCopyable {
   void emit(Args && ... args) {
     // Using 'E event(std::forward...)' causes VS to fail with an internal error. Hack around it.
     E event = E(std::forward<Args>(args) ...);
-    auto sig = signal_for(std::size_t(Event<E>::family()));
+	auto sig = signal_for(std::size_t(UIDGenerator::GetUID<E>()));
     sig->emit(&event);
   }
 
