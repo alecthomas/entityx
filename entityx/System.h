@@ -35,7 +35,7 @@ class System : entityx::help::NonCopyable {
 	friend class SystemManager;
 
  public:
-  virtual ~System() = default;
+  virtual ~System();
 
   /**
    * Called once all Systems have been added to the SystemManager.

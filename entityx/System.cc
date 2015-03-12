@@ -11,6 +11,10 @@
 #include "entityx/System.h"
 
 namespace entityx {
+	
+System::~System() {
+	
+}
 
 void SystemManager::update_all(TimeDelta dt) {
   assert(initialized_ && "SystemManager::configure() not called");
