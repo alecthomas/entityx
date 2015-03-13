@@ -118,7 +118,7 @@ require(HAVE_STDINT_H "stdint.h")
 # Things to install
 set(install_libs entityx)
 
-set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
+set(sources entityx/System.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
 add_library(entityx STATIC ${sources})
 set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d)
 

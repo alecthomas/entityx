@@ -277,7 +277,7 @@ struct Component : public BaseComponent {
 /**
  * Emitted when an entity is added to the system.
  */
-struct EntityCreatedEvent : public Event<EntityCreatedEvent> {
+struct EntityCreatedEvent {
   explicit EntityCreatedEvent(Entity entity) : entity(entity) {}
   virtual ~EntityCreatedEvent();
 
@@ -288,7 +288,7 @@ struct EntityCreatedEvent : public Event<EntityCreatedEvent> {
 /**
  * Called just prior to an entity being destroyed.
  */
-struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
+struct EntityDestroyedEvent {
   explicit EntityDestroyedEvent(Entity entity) : entity(entity) {}
   virtual ~EntityDestroyedEvent();
 
@@ -300,7 +300,7 @@ struct EntityDestroyedEvent : public Event<EntityDestroyedEvent> {
  * Emitted when any component is added to an entity.
  */
 template <typename C>
-struct ComponentAddedEvent : public Event<ComponentAddedEvent<C>> {
+struct ComponentAddedEvent {
   ComponentAddedEvent(Entity entity, ComponentHandle<C> component) :
       entity(entity), component(component) {}
 
@@ -312,7 +312,7 @@ struct ComponentAddedEvent : public Event<ComponentAddedEvent<C>> {
  * Emitted when any component is removed from an entity.
  */
 template <typename C>
-struct ComponentRemovedEvent : public Event<ComponentRemovedEvent<C>> {
+struct ComponentRemovedEvent {
   ComponentRemovedEvent(Entity entity, ComponentHandle<C> component) :
       entity(entity), component(component) {}
 

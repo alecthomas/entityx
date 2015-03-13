@@ -12,9 +12,8 @@
 
 namespace entityx {
 
-BaseSystem::Family BaseSystem::family_counter_;
+System::~System() {
 
-BaseSystem::~BaseSystem() {
 }
 
 void SystemManager::update_all(TimeDelta dt) {

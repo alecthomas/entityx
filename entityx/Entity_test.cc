@@ -290,12 +290,53 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestUnpack") {
 // }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentIdsDiffer") {
-  REQUIRE(Component<Position>::family() !=  Component<Direction>::family());
+  REQUIRE(UIDGenerator::get_uid<Position>() !=  UIDGenerator::get_uid<Direction>());
+}
+
+TEST_CASE_METHOD(EntityManagerFixture, "TestIntEvent")
+{
+  struct IntEventReceiver
+      : public Receiver {
+    void receive(const int &event) {
+      created.push_back(event);
+    }
+
+    vector<int> created;
+  };
+
+  IntEventReceiver receiver;
+  ev.subscribe<int>(receiver);
+
+  REQUIRE(0UL == receiver.created.size());
+  for (int i = 0; i < 10; ++i) {
+    ev.emit(i);
+  }
+  REQUIRE(10UL == receiver.created.size());
+}
+
+TEST_CASE_METHOD(EntityManagerFixture, "TestCustomCallback") {
+  struct IntEventCustomCallbackReceiver
+      : public Receiver {
+    void receive_int_event(const int &event) {
+      created.push_back(event);
+    }
+
+    vector<int> created;
+  };
+
+  IntEventCustomCallbackReceiver receiver;
+  ev.subscribe<int>(receiver, std::bind(&IntEventCustomCallbackReceiver::receive_int_event, &receiver, std::placeholders::_1));
+
+  REQUIRE(0UL == receiver.created.size());
+  for (int i = 0; i < 10; ++i) {
+    ev.emit(i);
+  }
+  REQUIRE(10UL == receiver.created.size());
 }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestEntityCreatedEvent") {
   struct EntityCreatedEventReceiver
-      : public Receiver<EntityCreatedEventReceiver> {
+      : public Receiver {
     void receive(const EntityCreatedEvent &event) {
       created.push_back(event.entity);
     }
@@ -315,7 +356,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityCreatedEvent") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestEntityDestroyedEvent") {
   struct EntityDestroyedEventReceiver
-      : public Receiver<EntityDestroyedEventReceiver> {
+      : public Receiver {
     void receive(const EntityDestroyedEvent &event) {
       destroyed.push_back(event.entity);
     }
@@ -341,7 +382,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityDestroyedEvent") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAddedEvent") {
   struct ComponentAddedEventReceiver
-      : public Receiver<ComponentAddedEventReceiver> {
+      : public Receiver {
 
     ComponentAddedEventReceiver()
       : position_events(0), direction_events(0) {}
@@ -370,8 +411,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAddedEvent") {
   ev.subscribe<ComponentAddedEvent<Position>>(receiver);
   ev.subscribe<ComponentAddedEvent<Direction>>(receiver);
 
-  REQUIRE(ComponentAddedEvent<Position>::family() !=
-            ComponentAddedEvent<Direction>::family());
+  REQUIRE(UIDGenerator::get_uid<Position>() != UIDGenerator::get_uid<Direction>());
 
   REQUIRE(0 ==  receiver.position_events);
   REQUIRE(0 ==  receiver.direction_events);
@@ -386,7 +426,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAddedEvent") {
 
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentRemovedEvent") {
-  struct ComponentRemovedReceiver : public Receiver<ComponentRemovedReceiver> {
+  struct ComponentRemovedReceiver : public Receiver {
     void receive(const ComponentRemovedEvent<Direction> &event) {
       removed = event.component;
     }

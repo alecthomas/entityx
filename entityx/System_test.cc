@@ -38,7 +38,7 @@ struct Counter : Component<Counter> {
   int counter;
 };
 
-class MovementSystem : public System<MovementSystem> {
+class MovementSystem : public System {
  public:
   explicit MovementSystem(string label = "") : label(label) {}
 
@@ -57,7 +57,7 @@ class MovementSystem : public System<MovementSystem> {
   string label;
 };
 
-class CounterSystem : public System<CounterSystem> {
+class CounterSystem : public System {
 public:
   void update(EntityManager &es, EventManager &events, TimeDelta) override {
     EntityManager::View entities =
