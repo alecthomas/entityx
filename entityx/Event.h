@@ -17,6 +17,8 @@
 #include <unordered_map>
 #include <memory>
 #include <utility>
+#include <functional>
+#include <type_traits>
 #include "entityx/config.h"
 #include "entityx/3rdparty/simplesignal.h"
 #include "entityx/help/NonCopyable.h"
@@ -28,8 +30,8 @@ typedef Simple::Signal<void (const void*)> EventSignal;
 typedef std::shared_ptr<EventSignal> EventSignalPtr;
 typedef std::weak_ptr<EventSignal> EventSignalWeakPtr;
 
-template <typename E, typename Receiver>
-using CallbackSignature = void(Receiver::*)(const E &);
+template <typename E>
+using CallbackSignature = std::function<void(const E &)>;
 
 class Receiver {
  public:
@@ -65,14 +67,6 @@ class Receiver {
  * Subscriptions are automatically removed when receivers are destroyed..
  */
 class EventManager : entityx::help::NonCopyable {
- private:
-	// Method used to get the default callback function for an event (receive method).
-	// Directly put &Receiver::receive as the default parameter of the subscribe function doesn't work with VS12.
-   template <typename E, typename Receiver>
-   static CallbackSignature<E, Receiver> getDefaultCallbackFunction() {
-	 return &Receiver::receive;
-   }
-
  public:
   EventManager() = default;
   virtual ~EventManager() = default;
@@ -94,12 +88,22 @@ class EventManager : entityx::help::NonCopyable {
    */
 
   template <typename E, typename Receiver>
-  void subscribe(Receiver &receiver, CallbackSignature<E, Receiver> receive = getDefaultCallbackFunction<E, Receiver>()) {
-    auto sig = signal_for(UIDGenerator::GetUID<E>());
-    auto wrapper = EventCallbackWrapper<E>(std::bind(receive, &receiver, std::placeholders::_1));
-    auto connection = sig->connect(wrapper);
-    entityx::Receiver &base = receiver;
-    base.connections_.insert(std::make_pair(UIDGenerator::GetUID<E>(), std::make_pair(EventSignalWeakPtr(sig), connection)));
+  void subscribe(Receiver &receiver) {
+    void (Receiver::*receive)(const E &) = &Receiver::receive;
+    subscribe<E>(receiver, std::bind(receive, &receiver, std::placeholders::_1));
+  }
+
+  template <typename E, typename Receiver>
+  void subscribe(Receiver &receiver, CallbackSignature<E> callback) {
+    static_assert(std::is_base_of<entityx::Receiver, Receiver>::value, "Receiver should inherit from entityx::Receiver");
+    assert(callback && "Invalid callback");
+    if (callback) {
+      auto sig = signal_for(UIDGenerator::get_uid<E>());
+      auto wrapper = EventCallbackWrapper<E>(callback);
+      auto connection = sig->connect(wrapper);
+      entityx::Receiver &base = receiver;
+      base.connections_.insert(std::make_pair(UIDGenerator::get_uid<E>(), std::make_pair(EventSignalWeakPtr(sig), connection)));
+    }
   }
 
   /**
@@ -110,21 +114,22 @@ class EventManager : entityx::help::NonCopyable {
    */
   template <typename E, typename Receiver>
   void unsubscribe(Receiver &receiver) {
+    static_assert(std::is_base_of<entityx::Receiver, Receiver>::value, "Receiver should inherit from entityx::Receiver");
     entityx::Receiver &base = receiver;
     //Assert that it has been subscribed before
-	assert(base.connections_.find(UIDGenerator::GetUID<E>()) != base.connections_.end());
-	auto pair = base.connections_[UIDGenerator::GetUID<E>()];
+    assert(base.connections_.find(UIDGenerator::get_uid<E>()) != base.connections_.end());
+    auto pair = base.connections_[UIDGenerator::get_uid<E>()];
     auto connection = pair.second;
     auto &ptr = pair.first;
     if (!ptr.expired()) {
       ptr.lock()->disconnect(connection);
     }
-	base.connections_.erase(UIDGenerator::GetUID<E>());
+    base.connections_.erase(UIDGenerator::get_uid<E>());
   }
 
   template <typename E>
   void emit(const E &event) {
-    auto sig = signal_for(UIDGenerator::GetUID<E>());
+    auto sig = signal_for(UIDGenerator::get_uid<E>());
     sig->emit(&event);
   }
 
@@ -133,7 +138,7 @@ class EventManager : entityx::help::NonCopyable {
    */
   template <typename E>
   void emit(std::unique_ptr<E> event) {
-    auto sig = signal_for(UIDGenerator::GetUID<E>());
+    auto sig = signal_for(UIDGenerator::get_uid<E>());
     sig->emit(event.get());
   }
 
@@ -152,7 +157,7 @@ class EventManager : entityx::help::NonCopyable {
   void emit(Args && ... args) {
     // Using 'E event(std::forward...)' causes VS to fail with an internal error. Hack around it.
     E event = E(std::forward<Args>(args) ...);
-	auto sig = signal_for(std::size_t(UIDGenerator::GetUID<E>()));
+    auto sig = signal_for(std::size_t(UIDGenerator::get_uid<E>()));
     sig->emit(&event);
   }
 
@@ -176,9 +181,9 @@ class EventManager : entityx::help::NonCopyable {
   // Functor used as an event signal callback that casts to E.
   template <typename E>
   struct EventCallbackWrapper {
-    EventCallbackWrapper(std::function<void(const E &)> callback) : callback(callback) {}
+    EventCallbackWrapper(CallbackSignature<E> callback) : callback(callback) {}
     void operator()(const void *event) { callback(*(static_cast<const E*>(event))); }
-    std::function<void(const E &)> callback;
+    CallbackSignature<E> callback;
   };
 
   std::vector<EventSignalPtr> handlers_;

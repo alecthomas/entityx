@@ -11,9 +11,9 @@
 #include "entityx/System.h"
 
 namespace entityx {
-	
+
 System::~System() {
-	
+
 }
 
 void SystemManager::update_all(TimeDelta dt) {

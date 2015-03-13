@@ -32,7 +32,7 @@ class SystemManager;
  * Base System class. Generally should not be directly used, instead see System<Derived>.
  */
 class System : entityx::help::NonCopyable {
-	friend class SystemManager;
+  friend class SystemManager;
 
  public:
   virtual ~System();
@@ -70,7 +70,7 @@ class SystemManager : entityx::help::NonCopyable {
    */
   template <typename S>
   void add(std::shared_ptr<S> system) {
-    systems_.insert(std::make_pair(UIDGenerator::GetUID<S>(), system));
+    systems_.insert(std::make_pair(UIDGenerator::get_uid<S>(), system));
   }
 
   /**
@@ -97,7 +97,7 @@ class SystemManager : entityx::help::NonCopyable {
    */
   template <typename S>
   std::shared_ptr<S> system() {
-    auto it = systems_.find(UIDGenerator::GetUID<S>());
+    auto it = systems_.find(UIDGenerator::get_uid<S>());
     assert(it != systems_.end());
     return it == systems_.end()
         ? std::shared_ptr<S>()
