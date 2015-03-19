@@ -26,9 +26,19 @@ struct Explosion {
   int damage;
 };
 
+
+struct Collision {
+  explicit Collision(int damage) : damage(damage) {}
+  int damage;
+};
+
 struct ExplosionSystem : public Receiver<ExplosionSystem> {
   void receive(const Explosion &explosion) {
     damage_received += explosion.damage;
+  }
+
+  void receive(const Collision &collision) {
+    damage_received += collision.damage;
   }
 
   int damage_received = 0;
@@ -38,9 +48,12 @@ TEST_CASE("TestEmitReceive") {
   EventManager em;
   ExplosionSystem explosion_system;
   em.subscribe<Explosion>(explosion_system);
+  em.subscribe<Collision>(explosion_system);
   REQUIRE(0 == explosion_system.damage_received);
   em.emit<Explosion>(10);
   REQUIRE(10 == explosion_system.damage_received);
+  em.emit<Collision>(10);
+  REQUIRE(20 == explosion_system.damage_received);
 }
 
 TEST_CASE("TestUntypedEmitReceive") {
