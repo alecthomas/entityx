@@ -578,3 +578,17 @@ TEST_CASE("TestComponentDestructorCalledWhenEntityDestroyed") {
   test.destroy();
   REQUIRE(freed == true);
 }
+
+TEST_CASE_METHOD(EntityManagerFixture, "TestComponentsRemovedFromReusedEntities") {
+  Entity a = em.create();
+  Entity::Id aid = a.id();
+  a.assign<Position>(1, 2);
+  a.destroy();
+
+  Entity b = em.create();
+  Entity::Id bid = b.id();
+
+  REQUIRE(aid.index() == bid.index());
+  REQUIRE(!b.has_component<Position>());
+  b.assign<Position>(3, 4);
+}
