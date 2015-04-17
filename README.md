@@ -2,7 +2,7 @@
 
 This version of EntityX is header-only and utilizes a bunch of template
 metaprogramming to provide compile-time component access. It also provides
-support for alternative storage engines for component data.
+support for alternative storage engines for component data (see [below](#storage-interface)).
 
 For example, the number of components and their size is known at compile time.
 
@@ -70,3 +70,28 @@ This version of EntityX is (generally) 2-5x faster than the previous version, de
 | Destroying 10M entities with observer | 0.344164s | 0.093211s | **3.7x** |
 | Iterating over 10M entities, unpacking one component | 0.059354s | 0.043844s | **1.4x** |
 | Iterating over 10M entities, unpacking two components | 0.093078s | 0.07617s | **1.2x** |
+
+
+# Storage interface
+
+To write custom storage backends for EntityX you will need to create a
+template class that satisfies the following interface:
+
+```c++
+struct Storage {
+  // A hint that the backend should be capable of storing this number of entities.
+  void resize(std::size_t entities);
+
+  // Retrieve component C from entity or return nullptr.
+  template <typename C> C *get(std::uint32_t entity);
+
+  // Create component C on entity with the given constructor arguments.
+  template <typename C, typename ... Args> C *create(std::uint32_t entity, Args && ... args);
+
+  // Call the destructor for the component C of entity.
+  template <typename C> void destroy(std::uint32_t entity);
+
+  // Free all underlying storage.
+  void reset()
+};
+```
