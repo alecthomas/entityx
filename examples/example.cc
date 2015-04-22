@@ -21,10 +21,12 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <utility>
 #include <iostream>
-#include <SFML/Window.hpp>
-#include <SFML/Graphics.hpp>
+#include "SFML/Window.hpp"
+#include "SFML/Graphics.hpp"
 #include "entityx/entityx.hh"
+#include "entityx/packed.hh"
 
 using std::cerr;
 using std::cout;
@@ -359,24 +361,55 @@ public:
       system->update(entities, dt);
   }
 
-private:
   EntityManager entities;
+private:
   std::vector<System*> systems;
 };
 
+
+
+using Collideables = ex::PackedColumn<Collideable>;
 
 
 int main() {
   std::srand(std::time(nullptr));
 
   sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "EntityX Example", sf::Style::Fullscreen);
+  window.setVerticalSyncEnabled(false);
+
   sf::Font font;
   if (!font.loadFromFile("LiberationSans-Regular.ttf")) {
     cerr << "error: failed to load LiberationSans-Regular.ttf" << endl;
     return 1;
   }
 
+  Collideables collideable;
+  collideable.create(3, 4.0);
+  collideable.create(2, 3.0);
+  collideable.create(1, 2.0);
+  assert(collideable.get(1)->radius == 2.0);
+  assert(collideable.get(2)->radius == 3.0);
+  assert(collideable.get(3)->radius == 4.0);
+  collideable.destroy(2);
+  assert(collideable.get(1)->radius == 2.0);
+  assert(collideable.get(3)->radius == 4.0);
+
+  for (Collideables::Pair p : collideable) {
+    printf("%d, %f\n", *p.first, p.second->radius);
+  }
+
+  collideable.optimize();
+
+  for (Collideables::Pair p : collideable) {
+    printf("%d, %f\n", *p.first, p.second->radius);
+  }
+
   Application app(window, font);
+
+  // for (std::uint32_t index : collideable.iterate()) {
+  //   ex::Id id = app.entities.create_id(index);
+  //   printf("%d\n", id.index());
+  // }
 
   sf::Clock clock;
   while (window.isOpen()) {
