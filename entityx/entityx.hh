@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <vector>
@@ -74,7 +75,7 @@ struct get_component_size_sum<T, Ts...> :
     std::integral_constant<std::size_t, sizeof(T) + get_component_size_sum<Ts...>::value> {};
 
 
-}
+}  // namespace details
 
 
 
@@ -162,8 +163,7 @@ public:
   C *get(std::uint32_t entity) {
     return static_cast<C*>(static_cast<void*>(
       columns_[Components::template component_index<C>::value] +
-      entity * Components::template component_size<C>::value)
-    );
+      entity * Components::template component_size<C>::value));
   }
 
   template <typename C, typename ... Args>
@@ -179,6 +179,7 @@ public:
   void reset() {
     size_ = 0;
   }
+
 private:
   void reserve(std::size_t capacity) {
     if (capacity < capacity_)
@@ -566,7 +567,7 @@ public:
       }
 
       void next_entity(Entity &entity) {}
-  };
+    };
 
 
     Iterator begin() { return Iterator(manager_, mask_, 0); }
@@ -577,7 +578,7 @@ public:
   private:
     friend class EntityX;
 
-    BaseView(EntityX *manager) : manager_(manager) { mask_.set(); }
+    explicit BaseView(EntityX *manager) : manager_(manager) { mask_.set(); }
     BaseView(EntityX *manager, ComponentMask mask) :
         manager_(manager), mask_(mask) {}
 
@@ -592,7 +593,7 @@ public:
   class UnpackingView {
    public:
   struct Unpacker {
-    Unpacker(Component<ComponentsToUnpack> & ... handles) :
+    explicit Unpacker(Component<ComponentsToUnpack> & ... handles) :
         handles(std::tuple<Component<ComponentsToUnpack> & ...>(handles...)) {}
 
     void unpack(Entity &entity) const {
@@ -652,7 +653,7 @@ public:
 
 
   EntityX() : owned_storage_(new Storage()), storage_(*owned_storage_.get()) {}
-  EntityX(Storage &storage) : storage_(storage) {}
+  explicit EntityX(Storage &storage) : storage_(storage) {}
   ~EntityX() {
     for (std::size_t i = 0; i < entity_component_mask_.size(); i++)
       if (entity_component_mask_[i].any()) destroy(Id(i, entity_version_[i]));
@@ -973,7 +974,7 @@ private:
   std::vector<std::uint32_t> free_list_;
 
   std::function<void(Entity)> on_entity_created_, on_entity_destroyed_;
-  std::function<void(Entity,void*)>
+  std::function<void(Entity, void*)>
     on_component_added_[component_count],
     on_component_removed_[component_count];
 };
