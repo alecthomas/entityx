@@ -15,6 +15,7 @@
  *    c++ -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics example.cc -o example
  */
 #include <cmath>
+#include <algorithm>
 #include <unordered_set>
 #include <sstream>
 #include <cstdlib>
@@ -69,7 +70,9 @@ struct Collideable {
   float radius;
 };
 
-typedef ex::EntityX<ex::Components<Body, Renderable, Fadeable, Collideable>> EntityManager;
+typedef ex::Components<Body, Renderable, Fadeable, Collideable> Components;
+// ex::PackedColumnStorage<Body, Renderable, Fadeable, Collideable>
+typedef ex::EntityX<Components, ex::PackedColumnStorage<Body, Renderable, Fadeable, Collideable>> EntityManager;
 template <typename C> using Component = EntityManager::Component<C>;
 using Entity = EntityManager::Entity;
 
@@ -168,9 +171,11 @@ public:
       float rotationd = r(720, 180);
       if (std::rand() % 2 == 0) rotationd = -rotationd;
 
+      float offset = r(collideable->radius);
+      float angle = r(360) * M_PI / 180.0;
       particle.assign<Body>(
-        body->position + sf::Vector2f(r(collideable->radius * 2, -collideable->radius), r(collideable->radius * 2, -collideable->radius)),
-        body->direction + sf::Vector2f(r(50, -25), r(100, -50)),
+        body->position + sf::Vector2f(offset * cos(angle), offset * sin(angle)),
+        body->direction + sf::Vector2f(offset * 2 * cos(angle), offset * 2 * sin(angle)),
         rotationd);
 
       float radius = r(3, 1);
@@ -307,7 +312,7 @@ public:
     last_update += dt;
     if (last_update >= 0.5) {
       std::ostringstream out;
-      out << es.size() << " entities (" << static_cast<int>(1.0 / dt) << " fps)";
+      out << es.size() << " / " << es.capacity() << " entities (" << static_cast<int>(1.0 / dt) << " fps)";
       text.setString(out.str());
       last_update = 0.0;
     }
@@ -321,20 +326,15 @@ private:
 };
 
 
-class Application {
+class SpawnSystem : public System {
 public:
-  explicit Application(sf::RenderTarget &target, sf::Font &font) {
-    systems.push_back(new BodySystem());
-    systems.push_back(new FadeOutSystem());
-    systems.push_back(new BounceSystem(target));
-    ExplosionSystem *explosions = new ExplosionSystem();
-    systems.push_back(explosions);
-    systems.push_back(new CollisionSystem(target, *explosions));
-    systems.push_back(new RenderSystem(target, font));
+  explicit SpawnSystem(sf::RenderTarget &target, int count) : size(target.getSize()), count(count) {}
 
-    sf::Vector2u size = target.getSize();
-    for (int i = 0; i < 500; i++) {
-      Entity entity = entities.create();
+  void update(EntityManager &es, double dt) override {
+    int c = 0;
+    for (Entity entity : es.entities_with_components<Collideable>()) c++;
+    for (int i = 0; i < count - c; i++) {
+      Entity entity = es.create();
 
       // Mark as collideable (explosion particles will not be collideable).
       Component<Collideable> collideable = entity.assign<Collideable>(r(10, 5));
@@ -352,6 +352,27 @@ public:
     }
   }
 
+private:
+  sf::Vector2u size;
+  int count;
+};
+
+
+class Application {
+public:
+  static const int OBJECTS = 500;
+
+  explicit Application(sf::RenderTarget &target, sf::Font &font) {
+    systems.push_back(new SpawnSystem(target, OBJECTS));
+    systems.push_back(new BodySystem());
+    systems.push_back(new FadeOutSystem());
+    systems.push_back(new BounceSystem(target));
+    ExplosionSystem *explosions = new ExplosionSystem();
+    systems.push_back(explosions);
+    systems.push_back(new CollisionSystem(target, *explosions));
+    systems.push_back(new RenderSystem(target, font));
+  }
+
   ~Application() {
     for (System *system : systems) delete system;
   }
@@ -359,11 +380,18 @@ public:
   void update(double dt) {
     for (System *system : systems)
       system->update(entities, dt);
+    last_optimize += dt;
+    if (last_optimize >= 0.5) {
+      entities.optimize();
+      last_optimize = .0;
+    }
   }
 
   EntityManager entities;
+
 private:
   std::vector<System*> systems;
+  double last_optimize = .0;
 };
 
 
@@ -374,8 +402,11 @@ using Collideables = ex::PackedColumn<Collideable>;
 int main() {
   std::srand(std::time(nullptr));
 
-  sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "EntityX Example", sf::Style::Fullscreen);
+  sf::VideoMode mode = sf::VideoMode::getDesktopMode();
+  sf::RenderWindow window(mode, "EntityX Example", sf::Style::Fullscreen);
   window.setVerticalSyncEnabled(false);
+
+  cout << "Window size: " << mode.width << "x" << mode.height << endl;
 
   sf::Font font;
   if (!font.loadFromFile("LiberationSans-Regular.ttf")) {
@@ -383,16 +414,15 @@ int main() {
     return 1;
   }
 
+  ex::PackedColumnStorage<Collideable, Body> columns;
   Collideables collideable;
-  collideable.create(3, 4.0);
-  collideable.create(2, 3.0);
-  collideable.create(1, 2.0);
-  assert(collideable.get(1)->radius == 2.0);
-  assert(collideable.get(2)->radius == 3.0);
-  assert(collideable.get(3)->radius == 4.0);
-  collideable.destroy(2);
-  assert(collideable.get(1)->radius == 2.0);
-  assert(collideable.get(3)->radius == 4.0);
+  for (int i = 0; i < 30; i++)
+    collideable.create(i, i + 1);
+
+  collideable.optimize();
+
+  for (int i = 0; i < 30 / 2; i++)
+    collideable.destroy(i * 2);
 
   for (Collideables::Pair p : collideable) {
     printf("%d, %f\n", *p.first, p.second->radius);
@@ -403,6 +433,8 @@ int main() {
   for (Collideables::Pair p : collideable) {
     printf("%d, %f\n", *p.first, p.second->radius);
   }
+
+  // return 0;
 
   Application app(window, font);
 
@@ -418,7 +450,8 @@ int main() {
       switch (event.type) {
         case sf::Event::Closed:
         case sf::Event::KeyPressed:
-          window.close();
+          if (event.key.code == sf::Keyboard::Escape)
+            window.close();
           break;
 
         default:

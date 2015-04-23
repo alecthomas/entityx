@@ -74,21 +74,30 @@ public:
 
   void optimize() {
     // Sorting two collections in parallel is difficult in c++ :(
-    const std::vector<int> perm = sort_permutation(ids_, [](std::uint32_t a, std::uint32_t b) { return a < b; });
+    const std::vector<int> perm = sort_permutation(ids_,
+        [](std::uint32_t a, std::uint32_t b) { return a < b; });
+    // printf("perm: "); for (int i : perm) printf("%d ", i); printf("\n");
+    // printf("ids before: "); for (int i : ids_) printf("%d ", i); printf("\n");
     ids_ = apply_permutation(ids_, perm);
+    // printf("ids after: "); for (int i : ids_) printf("%d ", i); printf("\n");
     components_ = apply_permutation(components_, perm);
+    // printf("index before: "); for (int i : index_) printf("%d ", i); printf("\n");
+    for (std::size_t i = 0; i < ids_.size(); i++)
+      index_[ids_[i]] = i + 1;
+    // printf("index after: "); for (int i : index_) printf("%d ", i); printf("\n");
   }
 
   template <typename ... Args>
-  void create(const std::uint32_t entity, Args && ... args) {
+  C *create(const std::uint32_t entity, Args && ... args) {
     alloc(entity);
-    new (get(entity)) C(std::forward<Args>(args) ...);
+    return new (get(entity)) C(std::forward<Args>(args) ...);
   }
 
   void destroy(const std::uint32_t entity) {
-    // Component indices.
+    // Slots
     const int dest = index(entity);
     const int source = static_cast<int>(components_.size()) - 1;
+
     // Call destructor.
     reinterpret_cast<C*>(components_[dest].data)->~C();
 
@@ -98,6 +107,8 @@ public:
       ids_[dest] = ids_[source];
       std::memcpy(components_[dest].data, components_[source].data, sizeof(C));
     }
+
+    index_[entity] = 0;
 
     // Truncate vectors.
     components_.resize(source);
@@ -117,6 +128,8 @@ private:
   }
 
   void alloc(const std::uint32_t entity) {
+    // if (!(entity >= index_.size() || index_[entity] == 0))
+    //   printf("entity=%d, index_[entity]=%d, index_.size()=%d\n", entity, index_[entity], index_.size());
     assert(entity >= index_.size() || index_[entity] == 0);
     if (entity >= index_.size())
       index_.resize(entity + 1);

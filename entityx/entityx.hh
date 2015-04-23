@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <queue>
+#include "entityx/packed.hh"
 
 
 namespace entityx {
@@ -95,6 +96,8 @@ public:
   ContiguousStorage(ContiguousStorage &&other) = delete;
   ContiguousStorage &operator = (const ContiguousStorage &) const = delete;
 
+  void optimize() {}
+
   void resize(std::size_t entities) {
     std::size_t size = components_.size();
     if (entities < size)
@@ -152,6 +155,8 @@ public:
   ColumnStorage(ColumnStorage &&other) = delete;
   ColumnStorage &operator = (const ColumnStorage &) const = delete;
 
+  void optimize() {}
+
   void resize(std::size_t entities) {
     if (entities < size_)
       return;
@@ -197,6 +202,75 @@ private:
   std::vector<std::size_t> sizes_;
   std::size_t size_, capacity_;
   std::uint8_t *columns_[Components::component_count];
+};
+
+
+
+
+template <class ... Cs>
+class PackedColumnStorage {
+public:
+  PackedColumnStorage() {
+    init<0, Cs...>();
+  }
+
+  template <typename C>
+  PackedColumn<C> &iterate() {
+    return *column<C>();
+  }
+
+  void resize(std::size_t size) {}
+  void reset() {}
+
+  void optimize() {
+    gc<Cs...>();
+  }
+
+  template <typename C>
+  C *get(std::uint32_t entity) {
+    return column<C>()->get(entity);
+  }
+
+  template <typename C, typename ... Args>
+  C *create(std::uint32_t entity, Args && ... args) {
+    return column<C>()->create(entity, std::forward<Args>(args)...);
+  }
+
+  template <typename C>
+  void destroy(std::uint32_t entity) {
+    column<C>()->destroy(entity);
+  }
+
+private:
+  template <typename C>
+  PackedColumn<C> *column() {
+    return static_cast<PackedColumn<C>*>(columns_[details::get_component_index<C, Cs...>::value]);
+  }
+
+  template <int N, typename C>
+  void init() {
+    columns_[N] = static_cast<void*>(new PackedColumn<C>());
+  }
+
+  template <int N, typename C0, typename C1, typename ... Cn>
+  void init() {
+    init<N, C0>();
+    init<N+1, C1, Cn...>();
+  }
+
+  template <typename C>
+  void gc() {
+    column<C>()->optimize();
+  }
+
+  template <typename C0, typename C1, typename ... Cn>
+  void gc() {
+    gc<C0>();
+    gc<C1, Cn...>();
+  }
+
+
+  void *columns_[sizeof...(Cs)];
 };
 
 
@@ -884,6 +958,8 @@ public:
 
   // Reset all entity and component data.
   void reset();
+
+  void optimize() { storage_.optimize(); }
 
 private:
   // These proxy functions are nooped at compile time .
