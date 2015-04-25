@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 2.8)
 set(ENTITYX_MAJOR_VERSION 1)
 set(ENTITYX_MINOR_VERSION 1)
 set(ENTITYX_PATCH_VERSION 2)
 set(ENTITYX_VERSION ${ENTITYX_MAJOR_VERSION}.${ENTITYX_MINOR_VERSION}.${ENTITYX_PATCH_VERSION})
 
-project(EntityX VERSION ${ENTITYX_VERSION})
+project(EntityX)
 
 message("EntityX version ${ENTITYX_VERSION}")
 
