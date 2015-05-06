@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <queue>
+#include <functional>
 
 
 namespace entityx {
