@@ -243,7 +243,7 @@ class CollisionSystem : public System<CollisionSystem> {
 Objects interested in receiving collision information can subscribe to ``Collision`` events by first subclassing the CRTP class ``Receiver<T>``:
 
 ```c++
-struct DebugSystem : public System<DebugSystem>, Receiver<DebugSystem> {
+struct DebugSystem : public System<DebugSystem>, public Receiver<DebugSystem> {
   void configure(entityx::EventManager &event_manager) {
     event_manager.subscribe<Collision>(*this);
   }
