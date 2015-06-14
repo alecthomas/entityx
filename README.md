@@ -88,9 +88,9 @@ Creating an entity is as simple as:
 ```c++
 #include <entityx/entityx.h>
 
-EntityX entityx;
+entityx::EntityX ex;
 
-entityx::Entity entity = entityx.entities.create();
+entityx::Entity entity = ex.entities.create();
 ```
 
 And destroying an entity is done with:
