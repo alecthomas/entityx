@@ -140,7 +140,7 @@ class EventManager : entityx::help::NonCopyable {
   template <typename E, typename Receiver>
   void unsubscribe(Receiver &receiver) {
     BaseReceiver &base = receiver;
-    //Assert that it has been subscribed before
+    // Assert that it has been subscribed before
     assert(base.connections_.find(Event<E>::family()) != base.connections_.end());
     auto pair = base.connections_[Event<E>::family()];
     auto connection = pair.second;
@@ -205,7 +205,7 @@ class EventManager : entityx::help::NonCopyable {
   // Functor used as an event signal callback that casts to E.
   template <typename E>
   struct EventCallbackWrapper {
-    EventCallbackWrapper(std::function<void(const E &)> callback) : callback(callback) {}
+    explicit EventCallbackWrapper(std::function<void(const E &)> callback) : callback(callback) {}
     void operator()(const void *event) { callback(*(static_cast<const E*>(event))); }
     std::function<void(const E &)> callback;
   };

@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 #include <type_traits>
+ #include <functional>
 
 #include "entityx/help/Pool.h"
 #include "entityx/config.h"
@@ -43,6 +44,8 @@ class EntityManager;
 
 template <typename C, typename EM = EntityManager>
 class ComponentHandle;
+
+
 
 /** A convenience handle around an Entity::Id.
  *
@@ -985,3 +988,13 @@ inline void ComponentHandle<C, EM>::remove() {
 
 
 }  // namespace entityx
+
+
+namespace std {
+template <> struct hash<entityx::Entity> {
+  std::size_t operator () (const entityx::Entity &entity) const {
+    return static_cast<std::size_t>(entity.id().index() ^ entity.id().version());
+  }
+};
+}
+
