@@ -33,13 +33,6 @@ using std::endl;
 
 namespace ex = entityx;
 
-namespace std {
-template <>
-struct hash<ex::Entity> {
-  std::size_t operator()(const ex::Entity& k) const { return k.id().id(); }
-};
-}
-
 
 float r(int a, float b = 0) {
   return static_cast<float>(std::rand() % (a * 1000) + b * 1000) / 1000.0;
@@ -94,7 +87,7 @@ public:
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     int c = 0;
     ex::ComponentHandle<Collideable> collideable;
-    for (ex::Entity entity : es.entities_with_components(collideable)) c++;
+    for (ex::Entity entity : es.entities_with_components<Collideable>()) c++;
 
     for (int i = 0; i < count - c; i++) {
       ex::Entity entity = es.create();
