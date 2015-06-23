@@ -26,7 +26,7 @@ void SystemManager::update_all(TimeDelta dt) {
 
 void SystemManager::configure() {
   for (auto &pair : systems_) {
-    pair.second->configure(event_manager_);
+    pair.second->configure(entity_manager_, event_manager_);
   }
   initialized_ = true;
 }

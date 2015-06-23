@@ -41,6 +41,13 @@ class BaseSystem : entityx::help::NonCopyable {
    *
    * Typically used to set up event handlers.
    */
+  virtual void configure(EntityManager &entities, EventManager &events) {
+    configure(events);
+  }
+
+  /**
+   * Legacy configure(). Called by default implementation of configure(EntityManager&, EventManager&).
+   */
   virtual void configure(EventManager &events) {}
 
   /**

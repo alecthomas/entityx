@@ -31,11 +31,11 @@ public:
     assign<Deps...>(event.entity);
   }
 
-  virtual void configure(EventManager &events) override {
+  void configure(EventManager &events) override {
     events.subscribe<ComponentAddedEvent<C>>(*this);
   }
 
-  virtual void update(EntityManager &entities, EventManager &events, TimeDelta dt) override {}
+  void update(EntityManager &entities, EventManager &events, TimeDelta dt) override {}
 
 private:
   template <typename D>
