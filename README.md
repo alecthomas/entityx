@@ -327,8 +327,8 @@ while (true) {
 
 EntityX has the following build and runtime requirements:
 
-- A C++ compiler that supports a basic set of C++11 features (ie. Clang >= 3.1, GCC >= 4.7, and Visual C++.
-- For Visual C++ support you will need at least [Visual Studio 2013](http://www.microsoft.com/en-ca/download/details.aspx?id=40787) with [Update 1](http://www.microsoft.com/en-us/download/details.aspx?id=41650) and [Update 2 CTP](http://www.microsoft.com/en-us/download/details.aspx?id=41699) installed.
+- A C++ compiler that supports a basic set of C++11 features (ie. Clang >= 3.1, GCC >= 4.7, and Visual Studio 2015).
+- For Visual C++ support you will need at least [Visual Studio 2015](https://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs.aspx).
 - [CMake](http://cmake.org/)
 
 ### C++11 compiler and library support
