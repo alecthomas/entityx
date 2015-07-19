@@ -147,9 +147,8 @@ To query all entities with a set of components assigned you can use two
 methods. Both methods will return only those entities that have *all* of the
 specified components associated with them.
 
-`entityx::EntityManager::each(f) provides functional-style iteration over
-`entity components. The callback for `each()` can optionally accept an Entity as
-`its first argument.
+`entityx::EntityManager::each(f)` provides functional-style iteration over
+entity components:
 
 ```c++
 entities.each<Position, Direction>([](Entity entity, Position &position, Direction &direction) {
@@ -205,7 +204,7 @@ A basic movement system might be implemented with something like the following:
 ```c++
 struct MovementSystem : public System<MovementSystem> {
   void update(entityx::EntityManager &es, entityx::EventManager &events, TimeDelta dt) override {
-    es.each<Position, Direction>([dt](Position &position, Direction &direction) {
+    es.each<Position, Direction>([dt](Entity entity, Position &position, Direction &direction) {
       position.x += direction.x * dt;
       position.y += direction.y * dt;
     });

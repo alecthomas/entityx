@@ -87,7 +87,7 @@ public:
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     int c = 0;
     ex::ComponentHandle<Collideable> collideable;
-    es.each<Collideable>([&](Collideable&) { ++c; });
+    es.each<Collideable>([&](ex::Entity entity, Collideable&) { ++c; });
 
     for (int i = 0; i < count - c; i++) {
       ex::Entity entity = es.create();
@@ -117,7 +117,7 @@ private:
 // Updates a body's position and rotation.
 struct BodySystem : public ex::System<BodySystem> {
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    es.each<Body>([dt](Body &body) {
+    es.each<Body>([dt](ex::Entity entity, Body &body) {
       body.position += body.direction * static_cast<float>(dt);
       body.rotation += body.rotationd * dt;
     });
@@ -131,7 +131,7 @@ public:
   explicit BounceSystem(sf::RenderTarget &target) : size(target.getSize()) {}
 
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    es.each<Body>([this](Body &body) {
+    es.each<Body>([this](ex::Entity entity, Body &body) {
       if (body.position.x + body.direction.x < 0 ||
           body.position.x + body.direction.x >= size.x)
         body.direction.x = -body.direction.x;
@@ -246,7 +246,7 @@ public:
 
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     sf::VertexArray vertices(sf::Quads);
-    es.each<Particle, Body>([&vertices](Particle &particle, Body &body) {
+    es.each<Particle, Body>([&vertices](ex::Entity entity, Particle &particle, Body &body) {
       const float r = particle.radius;
       vertices.append(sf::Vertex(body.position + sf::Vector2f(-r, -r), particle.colour));
       vertices.append(sf::Vertex(body.position + sf::Vector2f(r, -r), particle.colour));
@@ -324,7 +324,7 @@ public:
   }
 
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    es.each<Body, Renderable>([this](Body &body, Renderable &renderable) {
+    es.each<Body, Renderable>([this](ex::Entity entity, Body &body, Renderable &renderable) {
       renderable.shape->setPosition(body.position);
       renderable.shape->setRotation(body.rotation);
       target.draw(*renderable.shape.get());

@@ -433,11 +433,6 @@ class EntityManager : entityx::help::NonCopyable {
   public:
     template <typename T> struct identity { typedef T type; };
 
-    void each(typename identity<std::function<void(Components&...)>>::type f) {
-      for (auto it : *this)
-        f(*(it.template component<Components>().get())...);
-    }
-
     void each(typename identity<std::function<void(Entity entity, Components&...)>>::type f) {
       for (auto it : *this)
         f(it, *(it.template component<Components>().get())...);
@@ -719,11 +714,6 @@ class EntityManager : entityx::help::NonCopyable {
   }
 
   template <typename T> struct identity { typedef T type; };
-
-  template <typename ... Components>
-  void each(typename identity<std::function<void(Components&...)>>::type f) {
-    return entities_with_components<Components...>().each(f);
-  }
 
   template <typename ... Components>
   void each(typename identity<std::function<void(Entity entity, Components&...)>>::type f) {
