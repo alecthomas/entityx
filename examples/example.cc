@@ -87,7 +87,7 @@ public:
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     int c = 0;
     ex::ComponentHandle<Collideable> collideable;
-    for (ex::Entity entity : es.entities_with_components<Collideable>()) c++;
+    es.each<Collideable>([&](Collideable&) { ++c; });
 
     for (int i = 0; i < count - c; i++) {
       ex::Entity entity = es.create();
@@ -117,11 +117,10 @@ private:
 // Updates a body's position and rotation.
 struct BodySystem : public ex::System<BodySystem> {
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    ex::ComponentHandle<Body> body;
-    for (ex::Entity entity : es.entities_with_components(body)) {
-      body->position += body->direction * static_cast<float>(dt);
-      body->rotation += body->rotationd * dt;
-    }
+    es.each<Body>([dt](Body &body) {
+      body.position += body.direction * static_cast<float>(dt);
+      body.rotation += body.rotationd * dt;
+    });
   };
 };
 
@@ -132,15 +131,14 @@ public:
   explicit BounceSystem(sf::RenderTarget &target) : size(target.getSize()) {}
 
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    ex::ComponentHandle<Body> body;
-    for (ex::Entity entity : es.entities_with_components(body)) {
-      if (body->position.x + body->direction.x < 0 ||
-          body->position.x + body->direction.x >= size.x)
-        body->direction.x = -body->direction.x;
-      if (body->position.y + body->direction.y < 0 ||
-          body->position.y + body->direction.y >= size.y)
-        body->direction.y = -body->direction.y;
-    }
+    es.each<Body>([this](Body &body) {
+      if (body.position.x + body.direction.x < 0 ||
+          body.position.x + body.direction.x >= size.x)
+        body.direction.x = -body.direction.x;
+      if (body.position.y + body.direction.y < 0 ||
+          body.position.y + body.direction.y >= size.y)
+        body.direction.y = -body.direction.y;
+    });
   }
 
 private:
@@ -185,15 +183,13 @@ private:
   }
 
   void collect(ex::EntityManager &entities) {
-    ex::ComponentHandle<Body> body;
-    ex::ComponentHandle<Collideable> collideable;
-    for (ex::Entity entity : entities.entities_with_components(body, collideable)) {
+    entities.each<Body, Collideable>([this](ex::Entity entity, Body &body, Collideable &collideable) {
       unsigned int
-          left = static_cast<int>(body->position.x - collideable->radius) / PARTITIONS,
-          top = static_cast<int>(body->position.y - collideable->radius) / PARTITIONS,
-          right = static_cast<int>(body->position.x + collideable->radius) / PARTITIONS,
-          bottom = static_cast<int>(body->position.y + collideable->radius) / PARTITIONS;
-        Candidate candidate {body->position, collideable->radius, entity};
+          left = static_cast<int>(body.position.x - collideable.radius) / PARTITIONS,
+          top = static_cast<int>(body.position.y - collideable.radius) / PARTITIONS,
+          right = static_cast<int>(body.position.x + collideable.radius) / PARTITIONS,
+          bottom = static_cast<int>(body.position.y + collideable.radius) / PARTITIONS;
+        Candidate candidate {body.position, collideable.radius, entity};
         unsigned int slots[4] = {
           left + top * size.x,
           right + top * size.x,
@@ -204,7 +200,7 @@ private:
         if (slots[0] != slots[1]) grid[slots[1]].push_back(candidate);
         if (slots[1] != slots[2]) grid[slots[2]].push_back(candidate);
         if (slots[2] != slots[3]) grid[slots[3]].push_back(candidate);
-    }
+    });
   }
 
   void collide(ex::EventManager &events) {
@@ -232,15 +228,14 @@ private:
 class ParticleSystem : public ex::System<ParticleSystem> {
 public:
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    ex::ComponentHandle<Particle> particle;
-    for (ex::Entity entity : es.entities_with_components(particle)) {
-      particle->alpha -= particle->d * dt;
-      if (particle->alpha <= 0) {
+    es.each<Particle>([dt](ex::Entity entity, Particle &particle) {
+      particle.alpha -= particle.d * dt;
+      if (particle.alpha <= 0) {
         entity.destroy();
       } else {
-        particle->colour.a = particle->alpha;
+        particle.colour.a = particle.alpha;
       }
-    }
+    });
   }
 };
 
@@ -251,15 +246,13 @@ public:
 
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     sf::VertexArray vertices(sf::Quads);
-    ex::ComponentHandle<Particle> particle;
-    ex::ComponentHandle<Body> body;
-    for (ex::Entity entity : es.entities_with_components(body, particle)) {
-      float r = particle->radius;
-      vertices.append(sf::Vertex(body->position + sf::Vector2f(-r, -r), particle->colour));
-      vertices.append(sf::Vertex(body->position + sf::Vector2f(r, -r), particle->colour));
-      vertices.append(sf::Vertex(body->position + sf::Vector2f(r, r), particle->colour));
-      vertices.append(sf::Vertex(body->position + sf::Vector2f(-r, r), particle->colour));
-    }
+    es.each<Particle, Body>([&vertices](Particle &particle, Body &body) {
+      const float r = particle.radius;
+      vertices.append(sf::Vertex(body.position + sf::Vector2f(-r, -r), particle.colour));
+      vertices.append(sf::Vertex(body.position + sf::Vector2f(r, -r), particle.colour));
+      vertices.append(sf::Vertex(body.position + sf::Vector2f(r, r), particle.colour));
+      vertices.append(sf::Vertex(body.position + sf::Vector2f(-r, r), particle.colour));
+    });
     target.draw(vertices);
   }
 private:
@@ -331,13 +324,11 @@ public:
   }
 
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
-    ex::ComponentHandle<Body> body;
-    ex::ComponentHandle<Renderable> renderable;
-    for (ex::Entity entity : es.entities_with_components(body, renderable)) {
-      renderable->shape->setPosition(body->position);
-      renderable->shape->setRotation(body->rotation);
-      target.draw(*renderable->shape.get());
-    }
+    es.each<Body, Renderable>([this](Body &body, Renderable &renderable) {
+      renderable.shape->setPosition(body.position);
+      renderable.shape->setRotation(body.rotation);
+      target.draw(*renderable.shape.get());
+    });
     last_update += dt;
     frame_count++;
     if (last_update >= 0.5) {

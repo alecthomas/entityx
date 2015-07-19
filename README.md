@@ -143,7 +143,23 @@ entity.assign<Position>(1.0f, 2.0f);
 
 #### Querying entities and their components
 
-To query all entities with a set of components assigned, use ``entityx::EntityManager::entities_with_components()``. This method will return only those entities that have *all* of the specified components associated with them, assigning each component pointer to the corresponding component instance:
+To query all entities with a set of components assigned you can use two
+methods. Both methods will return only those entities that have *all* of the
+specified components associated with them.
+
+`entityx::EntityManager::each(f) provides functional-style iteration over
+`entity components. The callback for `each()` can optionally accept an Entity as
+`its first argument.
+
+```c++
+entities.each<Position, Direction>([](Entity entity, Position &position, Direction &direction) {
+  // Do things with entity, position and direction.
+};)
+```
+
+
+For iterator-style traversal of components, use
+``entityx::EntityManager::entities_with_components()``:
 
 ```c++
 ComponentHandle<Position> position;
@@ -189,12 +205,10 @@ A basic movement system might be implemented with something like the following:
 ```c++
 struct MovementSystem : public System<MovementSystem> {
   void update(entityx::EntityManager &es, entityx::EventManager &events, TimeDelta dt) override {
-    ComponentHandle<Position> position;
-    ComponentHandle<Direction> direction;
-    for (Entity entity : es.entities_with_components(position, direction)) {
-      position->x += direction->x * dt;
-      position->y += direction->y * dt;
-    }
+    es.each<Position, Direction>([dt](Position &position, Direction &direction) {
+      position.x += direction.x * dt;
+      position.y += direction.y * dt;
+    });
   };
 };
 ```

@@ -412,7 +412,6 @@ class EntityManager : entityx::help::NonCopyable {
       void next_entity(Entity &entity) {}
     };
 
-
     Iterator begin() { return Iterator(manager_, mask_, 0); }
     Iterator end() { return Iterator(manager_, mask_, uint32_t(manager_->capacity())); }
     const Iterator begin() const { return Iterator(manager_, mask_, 0); }
@@ -429,7 +428,29 @@ class EntityManager : entityx::help::NonCopyable {
     ComponentMask mask_;
   };
 
-  typedef BaseView<false> View;
+  template <bool All, typename ... Components>
+  class TypedView: public BaseView<All> {
+  public:
+    template <typename T> struct identity { typedef T type; };
+
+    void each(typename identity<std::function<void(Components&...)>>::type f) {
+      for (auto it : *this)
+        f(*(it.template component<Components>().get())...);
+    }
+
+    void each(typename identity<std::function<void(Entity entity, Components&...)>>::type f) {
+      for (auto it : *this)
+        f(it, *(it.template component<Components>().get())...);
+    }
+
+  private:
+    friend class EntityManager;
+
+    explicit TypedView(EntityManager *manager) : BaseView<All>(manager) {}
+    TypedView(EntityManager *manager, ComponentMask mask) : BaseView<All>(manager, mask) {}
+  };
+
+  template <typename ... Components> using View = TypedView<false, Components...>;
   typedef BaseView<true> DebugView;
 
   template <typename ... Components>
@@ -442,6 +463,7 @@ class EntityManager : entityx::help::NonCopyable {
       void unpack(entityx::Entity &entity) const {
         unpack_<0, Components...>(entity);
       }
+
 
     private:
       template <int N, typename C>
@@ -691,9 +713,21 @@ class EntityManager : entityx::help::NonCopyable {
    * @endcode
    */
   template <typename ... Components>
-  View entities_with_components() {
+  View<Components...> entities_with_components() {
     auto mask = component_mask<Components ...>();
-    return View(this, mask);
+    return View<Components...>(this, mask);
+  }
+
+  template <typename T> struct identity { typedef T type; };
+
+  template <typename ... Components>
+  void each(typename identity<std::function<void(Components&...)>>::type f) {
+    return entities_with_components<Components...>().each(f);
+  }
+
+  template <typename ... Components>
+  void each(typename identity<std::function<void(Entity entity, Components&...)>>::type f) {
+    return entities_with_components<Components...>().each(f);
   }
 
   /**
