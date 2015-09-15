@@ -35,12 +35,15 @@ struct Collision {
 struct ExplosionSystem : public Receiver<ExplosionSystem> {
   void receive(const Explosion &explosion) {
     damage_received += explosion.damage;
+    received_count++;
   }
 
   void receive(const Collision &collision) {
     damage_received += collision.damage;
+    received_count++;
   }
 
+  int received_count = 0;
   int damage_received = 0;
 };
 
@@ -51,9 +54,11 @@ TEST_CASE("TestEmitReceive") {
   em.subscribe<Collision>(explosion_system);
   REQUIRE(0 == explosion_system.damage_received);
   em.emit<Explosion>(10);
+  REQUIRE(1 == explosion_system.received_count);
   REQUIRE(10 == explosion_system.damage_received);
   em.emit<Collision>(10);
   REQUIRE(20 == explosion_system.damage_received);
+  REQUIRE(2 == explosion_system.received_count);
 }
 
 TEST_CASE("TestUntypedEmitReceive") {
@@ -63,6 +68,7 @@ TEST_CASE("TestUntypedEmitReceive") {
   REQUIRE(0 == explosion_system.damage_received);
   Explosion explosion(10);
   em.emit(explosion);
+  REQUIRE(1 == explosion_system.received_count);
   REQUIRE(10 == explosion_system.damage_received);
 }
 
