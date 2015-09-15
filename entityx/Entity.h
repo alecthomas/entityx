@@ -599,7 +599,7 @@ class EntityManager : entityx::help::NonCopyable {
 
     // Placement new into the component pool.
     Pool<C> *pool = accomodate_component<C>();
-    new(pool->get(id.index())) C(std::forward<Args>(args) ...);
+    ::new(pool->get(id.index())) C(std::forward<Args>(args) ...);
 
     // Set the bit for this component.
     entity_component_mask_[id.index()].set(family);
