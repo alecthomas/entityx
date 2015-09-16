@@ -495,9 +495,9 @@ class EntityManager : entityx::help::NonCopyable {
 
 
     Iterator begin() { return Iterator(manager_, mask_, 0, unpacker_); }
-    Iterator end() { return Iterator(manager_, mask_, manager_->capacity(), unpacker_); }
+    Iterator end() { return Iterator(manager_, mask_, static_cast<uint32_t>(manager_->capacity()), unpacker_); }
     const Iterator begin() const { return Iterator(manager_, mask_, 0, unpacker_); }
-    const Iterator end() const { return Iterator(manager_, mask_, manager_->capacity(), unpacker_); }
+    const Iterator end() const { return Iterator(manager_, mask_, static_cast<uint32_t>(manager_->capacity()), unpacker_); }
 
 
    private:
