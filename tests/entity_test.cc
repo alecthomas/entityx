@@ -42,7 +42,7 @@ int size(const T &t) {
 }
 
 struct Position {
-  Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
+  explicit Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   bool operator==(const Position &other) const {
     return x == other.x && y == other.y;
@@ -57,7 +57,7 @@ ostream &operator<<(ostream &out, const Position &position) {
 }
 
 struct Direction {
-  Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
+  explicit Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   bool operator==(const Direction &other) const {
     return x == other.x && y == other.y;
@@ -104,7 +104,7 @@ struct Freed {
 
 
 struct Test {
-  Test(bool &yes) : freed(yes) {}
+  explicit Test(bool &yes) : freed(yes) {}
 
   Freed freed;
 };

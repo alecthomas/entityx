@@ -53,7 +53,7 @@ struct Direction {
 
 typedef Components<Position, Direction> GameComponents;
 typedef EntityX<GameComponents, ColumnStorage<GameComponents, 10000000L>> EntityManager;
-typedef EntityX<GameComponents, ColumnStorage<GameComponents, 10000000L>, true> EntityManagerWithListener;
+typedef EntityX<GameComponents, ColumnStorage<GameComponents, 10000000L>, OBSERVABLE> EntityManagerWithListener;
 template <typename C> using Component = EntityManager::Component<C>;
 using Entity = EntityManager::Entity;
 
