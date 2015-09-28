@@ -12,7 +12,7 @@
  *
  * Compile with:
  *
- *    c++ -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics example.cc -o example
+ *    c++ -O3 -I.. -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics example.cc -o example
  */
 #include <cmath>
 #include <unordered_set>
@@ -22,8 +22,8 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <SFML/Window.hpp>
-#include <SFML/Graphics.hpp>
+#include "SFML/Window.hpp"
+#include "SFML/Graphics.hpp"
 #include "entityx/entityx.hh"
 
 using std::cerr;
@@ -34,6 +34,11 @@ namespace ex = entityx;
 
 float r(int a, float b = 0) {
   return static_cast<float>(std::rand() % (a * 1000) + b * 1000) / 1000.0;
+}
+
+template <typename V>
+std::size_t count(const V &v) {
+  return std::distance(v.begin(), v.end());
 }
 
 
@@ -85,6 +90,40 @@ struct System {
 
   virtual void update(EntityManager &es, double dt) = 0;
 };
+
+
+class SpawnSystem : public System {
+public:
+  explicit SpawnSystem(sf::RenderTarget &target, int count) : size(target.getSize()), count(count) {}
+
+  void update(EntityManager &es, double dt) override {
+    int c = ::count(es.entities_with_components<Collideable>());
+
+    for (int i = 0; i < count - c; i++) {
+      Entity entity = es.create();
+
+      // Mark as collideable (explosion particles will not be collideable).
+      Component<Collideable> collideable = entity.assign<Collideable>(r(10, 5));
+
+      // "Physical" attributes.
+      entity.assign<Body>(
+        sf::Vector2f(r(size.x), r(size.y)),
+        sf::Vector2f(r(100, -50), r(100, -50)));
+
+      // Shape to apply to entity.
+      std::unique_ptr<sf::Shape> shape(new sf::CircleShape(collideable->radius));
+      shape->setFillColor(sf::Color(r(128, 127), r(128, 127), r(128, 127)));
+      shape->setOrigin(collideable->radius, collideable->radius);
+      entity.assign<Renderable>(std::move(shape));
+    }
+  }
+
+private:
+  sf::Vector2u size;
+  int count;
+};
+
+
 
 
 // Updates a body's position and rotation.
@@ -322,6 +361,7 @@ private:
 class Application {
 public:
   explicit Application(sf::RenderTarget &target, sf::Font &font) {
+    systems.push_back(new SpawnSystem(target, 200));
     systems.push_back(new BodySystem());
     systems.push_back(new FadeOutSystem());
     systems.push_back(new BounceSystem(target));
@@ -329,25 +369,6 @@ public:
     systems.push_back(explosions);
     systems.push_back(new CollisionSystem(target, *explosions));
     systems.push_back(new RenderSystem(target, font));
-
-    sf::Vector2u size = target.getSize();
-    for (int i = 0; i < 500; i++) {
-      Entity entity = entities.create();
-
-      // Mark as collideable (explosion particles will not be collideable).
-      Component<Collideable> collideable = entity.assign<Collideable>(r(10, 5));
-
-      // "Physical" attributes.
-      entity.assign<Body>(
-        sf::Vector2f(r(size.x), r(size.y)),
-        sf::Vector2f(r(100, -50), r(100, -50)));
-
-      // Shape to apply to entity.
-      std::unique_ptr<sf::Shape> shape(new sf::CircleShape(collideable->radius));
-      shape->setFillColor(sf::Color(r(128, 127), r(128, 127), r(128, 127)));
-      shape->setOrigin(collideable->radius, collideable->radius);
-      entity.assign<Renderable>(std::move(shape));
-    }
   }
 
   ~Application() {
@@ -369,7 +390,7 @@ private:
 int main() {
   std::srand(std::time(nullptr));
 
-  sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "EntityX Example", sf::Style::Fullscreen);
+  sf::RenderWindow window(sf::VideoMode(1280, 1024), "EntityX Example");  //, sf::Style::Fullscreen);
   sf::Font font;
   if (!font.loadFromFile("LiberationSans-Regular.ttf")) {
     cerr << "error: failed to load LiberationSans-Regular.ttf" << endl;
