@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 set(ENTITYX_MAJOR_VERSION 1)
 set(ENTITYX_MINOR_VERSION 1)
 set(ENTITYX_PATCH_VERSION 2)
@@ -24,14 +24,17 @@ set(ENTITYX_BUILD_SHARED true CACHE BOOL "Build shared libraries?")
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 include(CheckCXXSourceCompiles)
 
+# Set to new behaviour, we don't mean to expand quoted variables here.
+cmake_policy(SET CMP0054 NEW)
+
 # Default compiler args
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "(GNU|.*Clang)")
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "(GNU|.*Clang)")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=sign-compare -std=c++11")
 	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 	set(CMAKE_CXX_FLAGS_MINSIZEREL "-g -Os -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 	# /Zi - Produces a program database (PDB) that contains type information and symbolic debugging information for use with the debugger.
 	# /FS - Allows multiple cl.exe processes to write to the same .pdb file
 	# /DEBUG - Enable debug during linking
@@ -42,7 +45,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Ox /Zi /FS /DEBUG")
 endif()
 
-# if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+# if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 #     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Wno-c++98-compat -Wno-shadow -Wno-padded -Wno-missing-noreturn -Wno-global-constructors")
 # endif()
 
