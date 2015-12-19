@@ -15,6 +15,9 @@ endif()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMake")
+
 set(ENTITYX_BUILD_TESTING true CACHE BOOL "Enable building of tests.")
 set(ENTITYX_RUN_BENCHMARKS false CACHE BOOL "Run benchmarks (in conjunction with -DENTITYX_BUILD_TESTING=1).")
 set(ENTITYX_MAX_COMPONENTS 64 CACHE STRING "Set the maximum number of components.")
@@ -99,6 +102,7 @@ macro(create_test TARGET_NAME SOURCE)
         entityx
         ${ARGN}
         )
+    set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "entityx/tests")
     add_test(${TARGET_NAME} ${TARGET_NAME})
 endmacro()
 
@@ -125,7 +129,7 @@ set(install_libs entityx)
 
 set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
 add_library(entityx STATIC ${sources})
-set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d)
+set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d FOLDER entityx)
 
 if (ENTITYX_BUILD_SHARED)
     message("-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static librarires)")
@@ -136,7 +140,8 @@ if (ENTITYX_BUILD_SHARED)
     set_target_properties(entityx_shared PROPERTIES
         OUTPUT_NAME entityx
         VERSION ${ENTITYX_VERSION}
-        SOVERSION ${ENTITYX_MAJOR_VERSION})
+        SOVERSION ${ENTITYX_MAJOR_VERSION}
+        FOLDER entityx)
     list(APPEND install_libs entityx_shared)
 endif (ENTITYX_BUILD_SHARED)
 
