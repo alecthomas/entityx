@@ -132,6 +132,7 @@ if (ENTITYX_BUILD_SHARED)
         )
     set_target_properties(entityx_shared PROPERTIES
         OUTPUT_NAME entityx
+        DEBUG_POSTFIX -d
         VERSION ${ENTITYX_VERSION}
         SOVERSION ${ENTITYX_MAJOR_VERSION})
     list(APPEND install_libs entityx_shared)
