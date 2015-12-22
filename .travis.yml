@@ -10,6 +10,9 @@ addons:
       - g++-4.7
       - clang
 
+before_install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.7" CC="gcc-4.7"; fi
+
 language: cpp
 compiler:
   - clang
