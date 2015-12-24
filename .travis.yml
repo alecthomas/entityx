@@ -1,15 +1,38 @@
+# Explicit sudo:false to run on Travis containers (much faster)
+sudo: false
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - jkeiren/ppa
+    packages:
+      - gcc-4.7
+      - g++-4.7
+      - clang
+
+before_install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.7" CC="gcc-4.7"; fi
+
 language: cpp
 compiler:
   - clang
   - gcc
-before_install:
-  - sudo apt-add-repository -y ppa:jkeiren/ppa
-  - if test $CC = gcc; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
-  - sudo apt-get update -qq
-  - if test $CC = gcc; then sudo apt-get install --yes --force-yes gcc-4.7 g++-4.7; fi
-  - if test $CC = gcc; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.7 20; fi
-  - if test $CC = gcc; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.7 20; fi
-  - if test $CC = gcc; then sudo update-alternatives --config gcc; fi
-  - if test $CC = gcc; then sudo update-alternatives --config g++; fi
+
+install:
+  # Install newer version of cmake
+  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+  - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
+  - |
+    if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+      CMAKE_URL="http://www.cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz"
+      mkdir cmake && travis_retry wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+      export PATH=${DEPS_DIR}/cmake/bin:${PATH}
+    else
+      brew install cmake
+    fi
+
+before_script:
+  # Scripts run from build root.
+  - cd ${TRAVIS_BUILD_DIR}
 
 script: ./scripts/travis.sh

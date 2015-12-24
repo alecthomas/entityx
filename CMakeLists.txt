@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 set(ENTITYX_MAJOR_VERSION 1)
 set(ENTITYX_MINOR_VERSION 1)
 set(ENTITYX_PATCH_VERSION 2)
@@ -15,6 +15,8 @@ endif()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 set(ENTITYX_BUILD_TESTING true CACHE BOOL "Enable building of tests.")
 set(ENTITYX_RUN_BENCHMARKS false CACHE BOOL "Run benchmarks (in conjunction with -DENTITYX_BUILD_TESTING=1).")
 set(ENTITYX_MAX_COMPONENTS 64 CACHE STRING "Set the maximum number of components.")
@@ -24,9 +26,15 @@ set(ENTITYX_BUILD_SHARED true CACHE BOOL "Build shared libraries?")
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 include(CheckCXXSourceCompiles)
 
+# Set to new behaviour, we don't mean to expand quoted variables here.
+cmake_policy(SET CMP0054 NEW)
+
 # Default compiler args
 if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|.*Clang)")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=sign-compare -std=c++11")
+	 if (CMAKE_CXX_COMPILER_ID MATCHES "(.*Clang)")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
+	endif()
 	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 	set(CMAKE_CXX_FLAGS_MINSIZEREL "-g -Os -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -DNDEBUG")
@@ -96,6 +104,7 @@ macro(create_test TARGET_NAME SOURCE)
         entityx
         ${ARGN}
         )
+    set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "entityx/tests")
     add_test(${TARGET_NAME} ${TARGET_NAME})
 endmacro()
 
@@ -122,7 +131,7 @@ set(install_libs entityx)
 
 set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
 add_library(entityx STATIC ${sources})
-set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d)
+set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d FOLDER entityx)
 
 if (ENTITYX_BUILD_SHARED)
     message("-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static librarires)")
@@ -134,7 +143,8 @@ if (ENTITYX_BUILD_SHARED)
         OUTPUT_NAME entityx
         DEBUG_POSTFIX -d
         VERSION ${ENTITYX_VERSION}
-        SOVERSION ${ENTITYX_MAJOR_VERSION})
+        SOVERSION ${ENTITYX_MAJOR_VERSION}
+        FOLDER entityx)
     list(APPEND install_libs entityx_shared)
 endif (ENTITYX_BUILD_SHARED)
 
