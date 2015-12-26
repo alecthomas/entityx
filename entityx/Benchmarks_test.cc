@@ -6,11 +6,19 @@
 #include "entityx/help/Timer.h"
 #include "entityx/Entity.h"
 
-using namespace std;
-using namespace entityx;
-
 using std::uint64_t;
+using std::cout;
+using std::endl;
+using std::vector;
 
+using entityx::Receiver;
+using entityx::Component;
+using entityx::ComponentHandle;
+using entityx::Entity;
+using entityx::EntityCreatedEvent;
+using entityx::EntityDestroyedEvent;
+using entityx::EventManager;
+using entityx::EntityManager;
 
 struct AutoTimer {
   ~AutoTimer() {
