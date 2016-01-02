@@ -365,14 +365,7 @@ public:
   }
 
   void update(ex::TimeDelta dt) {
-    systems.update<SpawnSystem>(dt);
-    systems.update<BodySystem>(dt);
-    systems.update<BounceSystem>(dt);
-    systems.update<CollisionSystem>(dt);
-    systems.update<ExplosionSystem>(dt);
-    systems.update<ParticleSystem>(dt);
-    systems.update<RenderSystem>(dt);
-    systems.update<ParticleRenderSystem>(dt);
+    systems.update_all(dt);
   }
 };
 
