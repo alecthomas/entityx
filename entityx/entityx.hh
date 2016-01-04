@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <memory>
 #include <vector>
-#include <list>
 #include <bitset>
 #include <type_traits>
 #include <cassert>

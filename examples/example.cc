@@ -9,10 +9,11 @@
  *
  * - Separation of data via components.
  * - Separation of logic via systems.
+ * - Use of events (colliding bodies trigger a CollisionEvent).
  *
  * Compile with:
  *
- *    c++ -O3 -I.. -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics example.cc -o example
+ *    c++ -I.. -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics -lentityx example.cc -o example
  */
 #include <cmath>
 #include <unordered_set>
@@ -32,13 +33,9 @@ using std::endl;
 
 namespace ex = entityx;
 
+
 float r(int a, float b = 0) {
   return static_cast<float>(std::rand() % (a * 1000) + b * 1000) / 1000.0;
-}
-
-template <typename V>
-std::size_t count(const V &v) {
-  return std::distance(v.begin(), v.end());
 }
 
 
@@ -59,10 +56,12 @@ struct Renderable {
 };
 
 
-struct Fadeable {
-  explicit Fadeable(sf::Uint8 alpha, float duration) : alpha(alpha), d(alpha / duration) {}
+struct Particle {
+  explicit Particle(sf::Color colour, float radius, float duration)
+      : colour(colour), radius(radius), alpha(colour.a), d(colour.a / duration) {}
 
-  float alpha, d;
+  sf::Color colour;
+  float radius, alpha, d;
 };
 
 
@@ -72,7 +71,9 @@ struct Collideable {
   float radius;
 };
 
-typedef ex::EntityX<ex::Components<Body, Renderable, Fadeable, Collideable>> EntityManager;
+
+using Components = entityx::Components<Body, Renderable, Particle, Collideable>;
+using EntityManager = entityx::EntityX<Components>;
 template <typename C> using Component = EntityManager::Component<C>;
 using Entity = EntityManager::Entity;
 
@@ -87,7 +88,6 @@ struct hash<Entity> {
 
 struct System {
   virtual ~System() {}
-
   virtual void update(EntityManager &es, double dt) = 0;
 };
 
@@ -97,13 +97,15 @@ public:
   explicit SpawnSystem(sf::RenderTarget &target, int count) : size(target.getSize()), count(count) {}
 
   void update(EntityManager &es, double dt) override {
-    int c = ::count(es.entities_with_components<Collideable>());
+    int c = 0;
+    Component<Collideable> collideable;
+    for (Entity entity : es.entities_with_components<Collideable>()) { ++c; }
 
     for (int i = 0; i < count - c; i++) {
       Entity entity = es.create();
 
       // Mark as collideable (explosion particles will not be collideable).
-      Component<Collideable> collideable = entity.assign<Collideable>(r(10, 5));
+      collideable = entity.assign<Collideable>(r(10, 5));
 
       // "Physical" attributes.
       entity.assign<Body>(
@@ -124,37 +126,15 @@ private:
 };
 
 
-
-
 // Updates a body's position and rotation.
 struct BodySystem : public System {
   void update(EntityManager &es, double dt) override {
     Component<Body> body;
-    for (Entity entity : es.entities_with_components(body)) {
+    for (Entity entity : es.entities_with_components<Body>(body)) {
       body->position += body->direction * static_cast<float>(dt);
       body->rotation += body->rotationd * dt;
     }
   };
-};
-
-
-// Fades out the alpha value of any Renderable and Fadeable entity. Once the
-// object has completely faded out it is destroyed.
-struct FadeOutSystem : public System {
-  void update(EntityManager &es, double dt) override {
-    Component<Fadeable> fade;
-    Component<Renderable> renderable;
-    for (Entity entity : es.entities_with_components(fade, renderable)) {
-      fade->alpha -= fade->d * dt;
-      if (fade->alpha <= 0) {
-        entity.destroy();
-      } else {
-        sf::Color color = renderable->shape->getFillColor();
-        color.a = fade->alpha;
-        renderable->shape->setFillColor(color);
-      }
-    }
-  }
 };
 
 
@@ -165,7 +145,7 @@ public:
 
   void update(EntityManager &es, double dt) override {
     Component<Body> body;
-    for (Entity entity : es.entities_with_components(body)) {
+    for (Entity entity : es.entities_with_components<Body>(body)) {
       if (body->position.x + body->direction.x < 0 ||
           body->position.x + body->direction.x >= size.x)
         body->direction.x = -body->direction.x;
@@ -205,18 +185,15 @@ public:
       float rotationd = r(720, 180);
       if (std::rand() % 2 == 0) rotationd = -rotationd;
 
+      float offset = r(collideable->radius, 1);
+      float angle = r(360) * M_PI / 180.0;
       particle.assign<Body>(
-        body->position + sf::Vector2f(r(collideable->radius * 2, -collideable->radius), r(collideable->radius * 2, -collideable->radius)),
-        body->direction + sf::Vector2f(r(50, -25), r(100, -50)),
+        body->position + sf::Vector2f(offset * cos(angle), offset * sin(angle)),
+        body->direction + sf::Vector2f(offset * 2 * cos(angle), offset * 2 * sin(angle)),
         rotationd);
 
       float radius = r(3, 1);
-      std::unique_ptr<sf::Shape> shape(new sf::RectangleShape(sf::Vector2f(radius * 2, radius * 2)));
-      shape->setFillColor(colour);
-      shape->setOrigin(radius, radius);
-      particle.assign<Renderable>(std::move(shape));
-
-      particle.assign<Fadeable>(colour.a, radius / 2);
+      particle.assign<Particle>(colour, radius, radius / 2);
     }
   }
 
@@ -230,7 +207,6 @@ public:
 private:
   std::unordered_set<Entity> collided;
 };
-
 
 
 
@@ -250,38 +226,31 @@ class CollisionSystem : public System {
   };
 
 public:
-  explicit CollisionSystem(sf::RenderTarget &target, ExplosionSystem &explosions) : size(target.getSize()), explosions(explosions) {
+  explicit CollisionSystem(ExplosionSystem *explosions, sf::RenderTarget &target) : explosions(explosions), size(target.getSize()) {
     size.x = size.x / PARTITIONS + 1;
     size.y = size.y / PARTITIONS + 1;
   }
 
-  // Check for collisions every 1/30th of a second.
   void update(EntityManager &es, double dt) override {
-    last_update += dt;
-    if (last_update < 1.0 / 30.0) {
-      return;
-    }
-    last_update = 0;
     reset();
     collect(es);
     collide();
   };
 
 private:
-  double last_update = 0;
+  ExplosionSystem *explosions;
   std::vector<std::vector<Candidate>> grid;
   sf::Vector2u size;
-  ExplosionSystem &explosions;
 
   void reset() {
     grid.clear();
     grid.resize(size.x * size.y);
   }
 
-  void collect(EntityManager &entities) {
+  void collect(EntityManager &es) {
     Component<Body> body;
     Component<Collideable> collideable;
-    for (Entity entity : entities.entities_with_components(body, collideable)) {
+    for (Entity entity : es.entities_with_components(body, collideable)) {
       unsigned int
           left = static_cast<int>(body->position.x - collideable->radius) / PARTITIONS,
           top = static_cast<int>(body->position.y - collideable->radius) / PARTITIONS,
@@ -307,7 +276,7 @@ private:
         for (const Candidate &right : candidates) {
           if (left.entity == right.entity) continue;
           if (collided(left, right))
-            explosions.on_collision(left.entity, right.entity);
+            explosions->on_collision(left.entity, right.entity);
         }
       }
     }
@@ -323,8 +292,46 @@ private:
 };
 
 
+class ParticleSystem : public System {
+public:
+  void update(EntityManager &es, double dt) override {
+    Component<Particle> particle;
+    for (Entity entity : es.entities_with_components(particle)) {
+      particle->alpha -= particle->d * dt;
+      if (particle->alpha <= 0) {
+        entity.destroy();
+      } else {
+        particle->colour.a = particle->alpha;
+      }
+    }
+  }
+};
+
+
+class ParticleRenderSystem : public System {
+public:
+  explicit ParticleRenderSystem(sf::RenderTarget &target) : target(target) {}
+
+  void update(EntityManager &es, double dt) override {
+    sf::VertexArray vertices(sf::Quads);
+    Component<Particle> particle;
+    Component<Body> body;
+    for (Entity entity : es.entities_with_components(particle, body)) {
+      const float r = particle->radius;
+      vertices.append(sf::Vertex(body->position + sf::Vector2f(-r, -r), particle->colour));
+      vertices.append(sf::Vertex(body->position + sf::Vector2f(r, -r), particle->colour));
+      vertices.append(sf::Vertex(body->position + sf::Vector2f(r, r), particle->colour));
+      vertices.append(sf::Vertex(body->position + sf::Vector2f(-r, r), particle->colour));
+    }
+    target.draw(vertices);
+  }
+private:
+  sf::RenderTarget &target;
+};
+
+
 // Render all Renderable entities and draw some informational text.
-class RenderSystem : public System {
+class RenderSystem  :public System {
 public:
   explicit RenderSystem(sf::RenderTarget &target, sf::Font &font) : target(target) {
     text.setFont(font);
@@ -342,17 +349,21 @@ public:
       target.draw(*renderable->shape.get());
     }
     last_update += dt;
+    frame_count++;
     if (last_update >= 0.5) {
       std::ostringstream out;
-      out << es.size() << " entities (" << static_cast<int>(1.0 / dt) << " fps)";
+      const double fps = frame_count / last_update;
+      out << es.size() << " entities (" << static_cast<int>(fps) << " fps)";
       text.setString(out.str());
       last_update = 0.0;
+      frame_count = 0.0;
     }
     target.draw(text);
   }
 
 private:
-  float last_update = 0.0;
+  double last_update = 0.0;
+  double frame_count = 0.0;
   sf::RenderTarget &target;
   sf::Text text;
 };
@@ -361,18 +372,15 @@ private:
 class Application {
 public:
   explicit Application(sf::RenderTarget &target, sf::Font &font) {
-    systems.push_back(new SpawnSystem(target, 200));
+    systems.push_back(new SpawnSystem(target, 500));
     systems.push_back(new BodySystem());
-    systems.push_back(new FadeOutSystem());
     systems.push_back(new BounceSystem(target));
     ExplosionSystem *explosions = new ExplosionSystem();
+    systems.push_back(new CollisionSystem(explosions, target));
     systems.push_back(explosions);
-    systems.push_back(new CollisionSystem(target, *explosions));
+    systems.push_back(new ParticleSystem());
     systems.push_back(new RenderSystem(target, font));
-  }
-
-  ~Application() {
-    for (System *system : systems) delete system;
+    systems.push_back(new ParticleRenderSystem(target));
   }
 
   void update(double dt) {
@@ -390,7 +398,7 @@ private:
 int main() {
   std::srand(std::time(nullptr));
 
-  sf::RenderWindow window(sf::VideoMode(1280, 1024), "EntityX Example");  //, sf::Style::Fullscreen);
+  sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "EntityX Example", sf::Style::Fullscreen);
   sf::Font font;
   if (!font.loadFromFile("LiberationSans-Regular.ttf")) {
     cerr << "error: failed to load LiberationSans-Regular.ttf" << endl;
