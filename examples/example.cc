@@ -251,22 +251,22 @@ private:
     Component<Body> body;
     Component<Collideable> collideable;
     for (Entity entity : es.entities_with_components(body, collideable)) {
-      unsigned int
+      const unsigned int
           left = static_cast<int>(body->position.x - collideable->radius) / PARTITIONS,
           top = static_cast<int>(body->position.y - collideable->radius) / PARTITIONS,
           right = static_cast<int>(body->position.x + collideable->radius) / PARTITIONS,
           bottom = static_cast<int>(body->position.y + collideable->radius) / PARTITIONS;
-        Candidate candidate {body->position, collideable->radius, entity};
-        unsigned int slots[4] = {
-          left + top * size.x,
-          right + top * size.x,
-          left  + bottom * size.x,
-          right + bottom * size.x,
-        };
-        grid[slots[0]].push_back(candidate);
-        if (slots[0] != slots[1]) grid[slots[1]].push_back(candidate);
-        if (slots[1] != slots[2]) grid[slots[2]].push_back(candidate);
-        if (slots[2] != slots[3]) grid[slots[3]].push_back(candidate);
+      Candidate candidate {body->position, collideable->radius, entity};
+      const unsigned int slots[4] = {
+        left + top * size.x,
+        right + top * size.x,
+        left  + bottom * size.x,
+        right + bottom * size.x,
+      };
+      grid[slots[0]].push_back(candidate);
+      if (slots[0] != slots[1]) grid[slots[1]].push_back(candidate);
+      if (slots[1] != slots[2]) grid[slots[2]].push_back(candidate);
+      if (slots[2] != slots[3]) grid[slots[3]].push_back(candidate);
     }
   }
 
@@ -379,8 +379,8 @@ public:
     systems.push_back(new CollisionSystem(explosions, target));
     systems.push_back(explosions);
     systems.push_back(new ParticleSystem());
-    systems.push_back(new RenderSystem(target, font));
     systems.push_back(new ParticleRenderSystem(target));
+    systems.push_back(new RenderSystem(target, font));
   }
 
   void update(double dt) {
