@@ -119,13 +119,13 @@ To that end Components are typically [POD types](http://en.wikipedia.org/wiki/Pl
 As an example, position and direction information might be represented as:
 
 ```c++
-struct Position {
+struct Position : public entityx::Component<Position> {
   Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   float x, y;
 };
 
-struct Direction {
+struct Direction : public entityx::Component<Direction> {
   Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
   float x, y;
@@ -224,7 +224,7 @@ As an example, we might want to implement a very basic collision system using ou
 First, we define the event type, which for our example is simply the two entities that collided:
 
 ```c++
-struct Collision {
+struct Collision : public entityx::Component<Collision> {
   Collision(entityx::Entity left, entityx::Entity right) : left(left), right(right) {}
 
   entityx::Entity left, right;
@@ -290,6 +290,7 @@ Several events are emitted by EntityX itself:
 - Event objects are destroyed after delivery, so references should not be retained.
 - A single class can receive any number of types of events by implementing a ``receive(const EventType &)`` method for each event type.
 - Any class implementing `Receiver` can receive events, but typical usage is to make `System`s also be `Receiver`s.
+- When an `Entity` is destroyed it will cause all of its components to be removed. This triggers `ComponentRemovedEvent`s to be triggered for each of its components. These events are triggered before the `EntityDestroyedEvent`.
 
 ### Manager (tying it all together)
 
