@@ -65,7 +65,7 @@ class BasePool {
   }
 
   virtual void destroy(std::size_t n) = 0;
-  virtual void removeComponent(Entity entity) = 0;
+  virtual void remove_component(Entity entity) = 0;
 
  protected:
   std::vector<char *> blocks_;
@@ -94,7 +94,7 @@ class Pool : public BasePool {
     ptr->~T();
   }
 
-  virtual void removeComponent(Entity entity) override {
+  virtual void remove_component(Entity entity) override {
     entity.remove<T>();
   }
 };
