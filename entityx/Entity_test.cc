@@ -405,6 +405,27 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentRemovedEvent") {
   REQUIRE(!(e.component<Direction>()));
 }
 
+TEST_CASE_METHOD(EntityManagerFixture, "TestComponentRemovedEventOnEntityDestroyed") {
+  struct ComponentRemovedReceiver : public Receiver<ComponentRemovedReceiver> {
+    void receive(const ComponentRemovedEvent<Direction> &event) {
+      removed = true;
+    }
+
+    bool removed = false;
+  };
+
+  ComponentRemovedReceiver receiver;
+  ev.subscribe<ComponentRemovedEvent<Direction>>(receiver);
+
+  REQUIRE(!(receiver.removed));
+
+  Entity e = em.create();
+  e.assign<Direction>(1.0, 2.0);
+  e.destroy();
+
+  REQUIRE(receiver.removed);
+}
+
 TEST_CASE_METHOD(EntityManagerFixture, "TestEntityAssignment") {
   Entity a, b;
   a = em.create();

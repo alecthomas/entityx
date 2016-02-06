@@ -290,6 +290,7 @@ Several events are emitted by EntityX itself:
 - Event objects are destroyed after delivery, so references should not be retained.
 - A single class can receive any number of types of events by implementing a ``receive(const EventType &)`` method for each event type.
 - Any class implementing `Receiver` can receive events, but typical usage is to make `System`s also be `Receiver`s.
+- When an `Entity` is destroyed it will cause all of its components to be removed. This triggers `ComponentRemovedEvent`s to be triggered for each of its components. These events are triggered before the `EntityDestroyedEvent`.
 
 ### Manager (tying it all together)
 
