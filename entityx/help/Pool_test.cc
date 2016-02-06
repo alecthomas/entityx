@@ -15,7 +15,7 @@
 #include "entityx/help/Pool.h"
 #include "entityx/Entity.h"
 
-struct Position : public entityx::Component<Position> {
+struct Position {
   explicit Position(int *ptr = nullptr) : ptr(ptr) {
     if (ptr) (*ptr)++;
   }
