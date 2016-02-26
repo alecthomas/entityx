@@ -384,7 +384,7 @@ class EntityManager : entityx::help::NonCopyable {
     for (size_t i = 0; i < component_pools_.size(); i++) {
       BasePool *pool = component_pools_[i];
       if (pool && mask.test(i)) {
-        pool->remove_component(Entity(this, entity));
+        pool->removeComponent(Entity(this, entity));
         pool->destroy(index);
       }
     }
