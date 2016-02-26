@@ -370,7 +370,7 @@ For gcc-4.7:
 ```bash
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo apt-get update -qq
-sudo apt-get install gcc-4.7 g++4.7
+sudo apt-get install gcc-4.7 g++-4.7
 CC=gcc-4.7 CXX=g++4.7 cmake ...
 ```
 
