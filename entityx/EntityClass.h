@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <bitset>
 #include "entityx/config.h"
 
 namespace entityx {

@@ -381,14 +381,12 @@ class EntityManager : entityx::help::NonCopyable {
     assert_valid(entity);
     uint32_t index = entity.index();
     auto mask = entity_component_mask_[entity.index()];
+    event_manager_.emit<EntityDestroyedEvent>(Entity(this, entity));
     for (size_t i = 0; i < component_pools_.size(); i++) {
       BasePool *pool = component_pools_[i];
-      if (pool && mask.test(i)) {
-        pool->removeComponent(Entity(this, entity));
+      if (pool && mask.test(i))
         pool->destroy(index);
-      }
     }
-    event_manager_.emit<EntityDestroyedEvent>(Entity(this, entity));
     entity_component_mask_[index].reset();
     entity_version_[index]++;
     free_list_.push_back(index);
