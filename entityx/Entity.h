@@ -331,10 +331,15 @@ struct ComponentRemovedEvent : public Event<ComponentRemovedEvent<C>> {
 class BaseComponentHelper {
 public:
   virtual ~BaseComponentHelper() {}
+  virtual void remove_component(Entity e) = 0;
 };
 
 template <typename C>
 class ComponentHelper : public BaseComponentHelper {
+public:
+  void remove_component(Entity e) override {
+    e.remove<C>();
+  }
 };
 
 /**
@@ -569,12 +574,12 @@ class EntityManager : entityx::help::NonCopyable {
     assert_valid(entity);
     uint32_t index = entity.index();
     auto mask = entity_component_mask_[entity.index()];
-    event_manager_.emit<EntityDestroyedEvent>(Entity(this, entity));
-    for (size_t i = 0; i < component_pools_.size(); i++) {
-      BasePool *pool = component_pools_[i];
-      if (pool && mask.test(i))
-        pool->destroy(index);
+    for (size_t i = 0; i < component_helpers_.size(); i++) {
+      BaseComponentHelper *helper = component_helpers_[i];
+      if (helper && mask.test(i))
+        helper->remove_component(Entity(this, entity));
     }
+    event_manager_.emit<EntityDestroyedEvent>(Entity(this, entity));
     entity_component_mask_[index].reset();
     entity_version_[index]++;
     free_list_.push_back(index);
