@@ -325,6 +325,17 @@ struct ComponentRemovedEvent : public Event<ComponentRemovedEvent<C>> {
   ComponentHandle<C> component;
 };
 
+/**
+ * Helper class to perform component operations in a typed manner.
+ */
+class BaseComponentHelper {
+public:
+  virtual ~BaseComponentHelper() {}
+};
+
+template <typename C>
+class ComponentHelper : public BaseComponentHelper {
+};
 
 /**
  * Manages Entity::Id creation and component assignment.
@@ -860,6 +871,13 @@ class EntityManager : entityx::help::NonCopyable {
       pool->expand(index_counter_);
       component_pools_[family] = pool;
     }
+    if (component_helpers_.size() <= family) {
+      component_helpers_.resize(family + 1, nullptr);
+    }
+    if (!component_helpers_[family]) {
+      ComponentHelper<C> *helper = new ComponentHelper<C>();
+      component_helpers_[family] = helper;
+    }
     return static_cast<Pool<C>*>(component_pools_[family]);
   }
 
@@ -870,6 +888,9 @@ class EntityManager : entityx::help::NonCopyable {
   // Each element in component_pools_ corresponds to a Pool for a Component.
   // The index into the vector is the Component::family().
   std::vector<BasePool*> component_pools_;
+  // Each element in component_helpers_ corresponds to a ComponentHelper for a Component type.
+  // The index into the vector is the Component::family().
+  std::vector<BaseComponentHelper*> component_helpers_;
   // Bitmask of components associated with each entity. Index into the vector is the Entity::Id.
   std::vector<ComponentMask> entity_component_mask_;
   // Vector of entity version numbers. Incremented each time an entity is destroyed

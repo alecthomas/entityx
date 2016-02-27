@@ -43,7 +43,11 @@ void EntityManager::reset() {
   for (BasePool *pool : component_pools_) {
     if (pool) delete pool;
   }
+  for (BaseComponentHelper *helper : component_helpers_) {
+    if (helper) delete helper;
+  }
   component_pools_.clear();
+  component_helpers_.clear();
   entity_component_mask_.clear();
   entity_version_.clear();
   free_list_.clear();
