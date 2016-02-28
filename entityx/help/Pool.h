@@ -14,8 +14,6 @@
 #include <cassert>
 #include <vector>
 
-#include "entityx/EntityClass.h"
-
 namespace entityx {
 
 /**
@@ -65,7 +63,6 @@ class BasePool {
   }
 
   virtual void destroy(std::size_t n) = 0;
-  virtual void remove_component(Entity entity) = 0;
 
  protected:
   std::vector<char *> blocks_;
@@ -92,10 +89,6 @@ class Pool : public BasePool {
     assert(n < size_);
     T *ptr = static_cast<T*>(get(n));
     ptr->~T();
-  }
-
-  virtual void remove_component(Entity entity) override {
-    entity.remove<T>();
   }
 };
 
