@@ -501,6 +501,25 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAssignmentFromCopy") {
   REQUIRE(!copy);
 }
 
+TEST_CASE_METHOD(EntityManagerFixture, "TestEntityCreateFromCopy") {
+  Entity a = em.create();
+  a.assign<CopyVerifier>();
+  ComponentHandle<CopyVerifier> original = a.component<CopyVerifier>();
+  ComponentHandle<Position> aPosition = a.assign<Position>(1, 2);
+  Entity b = em.create_from_copy(a);
+  ComponentHandle<CopyVerifier> copy = b.component<CopyVerifier>();
+  ComponentHandle<Position> bPosition = b.component<Position>();
+  REQUIRE(original);
+  REQUIRE(original->copied == false);
+  REQUIRE(copy);
+  REQUIRE(copy->copied == 1);
+  REQUIRE(aPosition->x == bPosition->x);
+  REQUIRE(aPosition->y == bPosition->y);
+  REQUIRE(aPosition.get() != bPosition.get());
+  REQUIRE(a.component_mask() == b.component_mask());
+  REQUIRE(a != b);
+}
+
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenComponentDestroyed") {
   Entity a = em.create();
   ComponentHandle<Position> position = a.assign<Position>(1, 2);
