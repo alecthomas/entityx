@@ -573,7 +573,7 @@ class EntityManager : entityx::help::NonCopyable {
   void destroy(Entity::Id entity) {
     assert_valid(entity);
     uint32_t index = entity.index();
-    auto mask = entity_component_mask_[entity.index()];
+    auto mask = entity_component_mask_[index];
     for (size_t i = 0; i < component_helpers_.size(); i++) {
       BaseComponentHelper *helper = component_helpers_[i];
       if (helper && mask.test(i))
