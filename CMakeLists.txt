@@ -129,14 +129,17 @@ message("-- Checking misc features")
 require(HAVE_STDINT_H "stdint.h")
 
 # Things to install
-set(install_libs entityx)
+
 
 set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
-add_library(entityx STATIC ${sources})
-set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d FOLDER entityx)
 
 if (ENTITYX_BUILD_SHARED)
     message("-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static librarires)")
+	
+	# enable dll exporting public symbols (check config.h.in / config.h)
+	add_definitions(-DENTITYX_DLL_EXPORTS)
+	add_definitions(-DENTITYX_DLL)
+	
     add_library(entityx_shared SHARED ${sources})
     target_link_libraries(
         entityx_shared
@@ -147,7 +150,11 @@ if (ENTITYX_BUILD_SHARED)
         VERSION ${ENTITYX_VERSION}
         SOVERSION ${ENTITYX_MAJOR_VERSION}
         FOLDER entityx)
-    list(APPEND install_libs entityx_shared)
+	set(install_libs entityx_shared)
+else()
+	add_library(entityx STATIC ${sources})
+	set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d FOLDER entityx)
+	set(install_libs entityx)
 endif (ENTITYX_BUILD_SHARED)
 
 if (ENTITYX_BUILD_TESTING)
@@ -197,4 +204,5 @@ install(
     TARGETS ${install_libs}
     LIBRARY DESTINATION "${libdir}"
     ARCHIVE DESTINATION "${libdir}"
+	RUNTIME DESTINATION "bin"
     )
