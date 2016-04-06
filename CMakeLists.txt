@@ -137,6 +137,11 @@ set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d FOLDER entityx)
 
 if (ENTITYX_BUILD_SHARED)
     message("-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static librarires)")
+	
+	# enable dll exporting public symbols (check config.h.in / config.h)
+	add_definitions(-DENTITYX_DLL_EXPORTS)
+	add_definitions(-DENTITYX_DLL)
+	
     add_library(entityx_shared SHARED ${sources})
     target_link_libraries(
         entityx_shared

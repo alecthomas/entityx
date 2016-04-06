@@ -3,6 +3,42 @@
 #include <cstdint>
 #include <cstddef>
 
+
+// Generic helper definitions for shared library support
+// More info: https://gcc.gnu.org/wiki/Visibility
+
+#if defined _WIN32 || defined __CYGWIN__
+  #define ENTITYX_HELPER_DLL_IMPORT __declspec(dllimport)
+  #define ENTITYX_HELPER_DLL_EXPORT __declspec(dllexport)
+  #define ENTITYX_HELPER_DLL_LOCAL
+#else
+  #if __GNUC__ >= 4
+    #define ENTITYX_HELPER_DLL_IMPORT __attribute__ ((visibility ("default")))
+    #define ENTITYX_HELPER_DLL_EXPORT __attribute__ ((visibility ("default")))
+    #define ENTITYX_HELPER_DLL_LOCAL  __attribute__ ((visibility ("hidden")))
+  #else
+    #define ENTITYX_HELPER_DLL_IMPORT
+    #define ENTITYX_HELPER_DLL_EXPORT
+    #define ENTITYX_HELPER_DLL_LOCAL
+  #endif
+#endif
+
+// Now we use the generic helper definitions above to define ENTITYX_API and ENTITYX_LOCAL.
+// ENTITYX_API is used for the public API symbols. It either DLL imports or DLL exports (or does nothing for static build)
+// ENTITYX_LOCAL is used for non-api symbols.
+
+#ifdef ENTITYX_DLL // defined if ENTITYX is compiled as a DLL
+  #ifdef ENTITYX_DLL_EXPORTS // defined if we are building the ENTITYX DLL (instead of using it)
+    #define ENTITYX_API ENTITYX_HELPER_DLL_EXPORT
+  #else
+    #define ENTITYX_API ENTITYX_HELPER_DLL_IMPORT
+  #endif // ENTITYX_DLL_EXPORTS
+  #define ENTITYX_LOCAL ENTITYX_HELPER_DLL_LOCAL
+#else // ENTITYX_DLL is not defined: this means ENTITYX is a static lib.
+  #define ENTITYX_API
+  #define ENTITYX_LOCAL
+#endif // ENTITYX_DLL
+
 namespace entityx {
 
 static const size_t MAX_COMPONENTS = @ENTITYX_MAX_COMPONENTS@;
