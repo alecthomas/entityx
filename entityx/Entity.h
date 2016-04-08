@@ -332,6 +332,7 @@ class BaseComponentHelper {
 public:
   virtual ~BaseComponentHelper() {}
   virtual void remove_component(Entity e) = 0;
+  virtual void copy_component_to(Entity source, Entity target) = 0;
 };
 
 template <typename C>
@@ -339,6 +340,9 @@ class ComponentHelper : public BaseComponentHelper {
 public:
   void remove_component(Entity e) override {
     e.remove<C>();
+  }
+  void copy_component_to(Entity source, Entity target) override {
+    target.assign_from_copy<C>(*(source.component<C>().get()));
   }
 };
 
@@ -564,6 +568,24 @@ class EntityManager : entityx::help::NonCopyable {
     event_manager_.emit<EntityCreatedEvent>(entity);
     return entity;
   }
+
+  /**
+   * Create a new Entity by copying another. Copy-constructs each component.
+   *
+   * Emits EntityCreatedEvent.
+   */
+  Entity create_from_copy(Entity original) {
+    assert(original.valid());
+    auto clone = create();
+    auto mask = original.component_mask();
+    for (size_t i = 0; i < component_helpers_.size(); i++) {
+      BaseComponentHelper *helper = component_helpers_[i];
+      if (helper && mask.test(i))
+        helper->copy_component_to(original, clone);
+    }
+    return clone;
+  }
+
 
   /**
    * Destroy an existing Entity::Id and its associated Components.
