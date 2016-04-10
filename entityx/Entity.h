@@ -1044,7 +1044,7 @@ inline void ComponentHandle<C, EM>::remove() {
 template <typename C, typename EM>
 inline Entity ComponentHandle<C, EM>::entity() {
   assert(valid());
-  return manager_->template get(id_);
+  return manager_->get(id_);
 }
 
 
