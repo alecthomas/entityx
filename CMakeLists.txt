@@ -147,9 +147,9 @@ if (ENTITYX_BUILD_SHARED)
         FOLDER entityx)
 	set(install_libs entityx_shared)
 else()
-	add_library(entityx STATIC ${sources})
-	set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d FOLDER entityx)
-	set(install_libs entityx)
+    add_library(entityx STATIC ${sources})
+    set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d FOLDER entityx)
+    set(install_libs entityx)
 endif (ENTITYX_BUILD_SHARED)
 
 if (ENTITYX_BUILD_TESTING)
@@ -199,5 +199,5 @@ install(
     TARGETS ${install_libs}
     LIBRARY DESTINATION "${libdir}"
     ARCHIVE DESTINATION "${libdir}"
-	RUNTIME DESTINATION "bin"
+    RUNTIME DESTINATION "bin"
     )
