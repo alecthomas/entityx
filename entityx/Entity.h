@@ -201,6 +201,11 @@ public:
    */
   void remove();
 
+  /**
+   * Returns the Entity associated with the component
+   */
+  Entity entity();
+
   bool operator == (const ComponentHandle<C> &other) const {
     return manager_ == other.manager_ && id_ == other.id_;
   }
@@ -1056,6 +1061,12 @@ template <typename C, typename EM>
 inline void ComponentHandle<C, EM>::remove() {
   assert(valid());
   manager_->template remove<C>(id_);
+}
+
+template <typename C, typename EM>
+inline Entity ComponentHandle<C, EM>::entity() {
+  assert(valid());
+  return manager_->get(id_);
 }
 
 
