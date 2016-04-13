@@ -91,14 +91,15 @@ macro(require FEATURE_NAME MESSAGE_STRING)
     endif()
 endmacro(require)
 
-macro(create_test TARGET_NAME SOURCE)
+macro(create_test TARGET_NAME SOURCE DEPENDENCIES)
     add_executable(${TARGET_NAME} ${SOURCE})
+    set_target_properties(${TARGET_NAME} PROPERTIES DEBUG_POSTFIX -d)
+    set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "entityx/tests")
     target_link_libraries(
         ${TARGET_NAME}
-        entityx
+        ${DEPENDENCIES}
         ${ARGN}
         )
-    set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "entityx/tests")
 
     # Special case for benchmark tests
     if (${TARGET_NAME} MATCHES .*benchmark.*)
@@ -136,9 +137,7 @@ set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Ti
 if (ENTITYX_BUILD_SHARED)
     message("-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static librarires)")
     add_library(entityx_shared SHARED ${sources})
-    target_link_libraries(
-        entityx_shared
-        )
+
     set_target_properties(entityx_shared PROPERTIES
         OUTPUT_NAME entityx
         DEBUG_POSTFIX -d
@@ -154,13 +153,13 @@ endif (ENTITYX_BUILD_SHARED)
 
 if (ENTITYX_BUILD_TESTING)
     enable_testing()
-    create_test(pool_test entityx/help/Pool_test.cc)
-    create_test(entity_test entityx/Entity_test.cc)
-    create_test(event_test entityx/Event_test.cc)
-    create_test(system_test entityx/System_test.cc)
-    create_test(tags_component_test entityx/tags/TagsComponent_test.cc)
-    create_test(dependencies_test entityx/deps/Dependencies_test.cc)
-    create_test(benchmarks_test entityx/Benchmarks_test.cc)
+    create_test(pool_test entityx/help/Pool_test.cc ${install_libs})
+    create_test(entity_test entityx/Entity_test.cc ${install_libs})
+    create_test(event_test entityx/Event_test.cc ${install_libs})
+    create_test(system_test entityx/System_test.cc ${install_libs})
+    create_test(tags_component_test entityx/tags/TagsComponent_test.cc ${install_libs})
+    create_test(dependencies_test entityx/deps/Dependencies_test.cc ${install_libs})
+    create_test(benchmarks_test entityx/Benchmarks_test.cc ${install_libs})
     if (ENTITYX_RUN_BENCHMARKS)
         message("-- Running benchmarks")
     else ()
