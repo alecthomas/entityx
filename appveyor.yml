@@ -1,0 +1,10 @@
+version: 1.0.{build}
+image: Visual Studio 2015 CTP 6
+build_script:
+- cmd: >-
+    cmake -DENTITYX_BUILD_TESTING=1 -DENTITYX_BUILD_SHARED=0
+
+    cmake --build . --target ALL_BUILD --config Release
+
+    cmake --build . --target RUN_TESTS --config Release
+
