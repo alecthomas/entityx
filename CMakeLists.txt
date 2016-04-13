@@ -93,7 +93,6 @@ endmacro(require)
 
 macro(create_test TARGET_NAME SOURCE DEPENDENCIES)
     add_executable(${TARGET_NAME} ${SOURCE})
-    set_target_properties(${TARGET_NAME} PROPERTIES DEBUG_POSTFIX -d)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "entityx/tests")
     target_link_libraries(
         ${TARGET_NAME}
