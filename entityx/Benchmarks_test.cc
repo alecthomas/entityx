@@ -94,8 +94,8 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntitiesWithListener") {
     entities.push_back(em.create());
   }
 
-  REQUIRE(entities.size() == count);
-  REQUIRE(listen.created == count);
+  REQUIRE( (entities.size() == count) );
+  REQUIRE( (listen.created == count) );
 }
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntitiesWithListener") {
@@ -115,8 +115,8 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntitiesWithListener") {
     e.destroy();
   }
 
-  REQUIRE(entities.size() == count);
-  REQUIRE(listen.destroyed == count);
+  REQUIRE( (entities.size() == count) );
+  REQUIRE( (listen.destroyed == count) );
 }
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIteration") {
