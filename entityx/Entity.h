@@ -1079,5 +1079,11 @@ template <> struct hash<entityx::Entity> {
     return static_cast<std::size_t>(entity.id().index() ^ entity.id().version());
   }
 };
+
+template <> struct hash<const entityx::Entity> {
+  std::size_t operator () (const entityx::Entity &entity) const {
+    return static_cast<std::size_t>(entity.id().index() ^ entity.id().version());
+  }
+};
 }
 
