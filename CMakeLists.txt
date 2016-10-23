@@ -143,11 +143,15 @@ if (ENTITYX_BUILD_SHARED)
         VERSION ${ENTITYX_VERSION}
         SOVERSION ${ENTITYX_MAJOR_VERSION}
         FOLDER entityx)
-	set(install_libs entityx_shared)
+    set(install_libs entityx_shared)
+    set_property(TARGET entityx_shared APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 else()
     add_library(entityx STATIC ${sources})
     set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d FOLDER entityx)
     set(install_libs entityx)
+    set_property(TARGET entityx APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 endif (ENTITYX_BUILD_SHARED)
 
 if (ENTITYX_BUILD_TESTING)
