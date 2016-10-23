@@ -134,7 +134,7 @@ require(HAVE_STDINT_H "stdint.h")
 set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
 
 if (ENTITYX_BUILD_SHARED)
-    message("-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static librarires)")
+    message("-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static libraries)")
     add_library(entityx_shared SHARED ${sources})
 
     set_target_properties(entityx_shared PROPERTIES
