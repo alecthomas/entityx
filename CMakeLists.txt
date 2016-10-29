@@ -6,7 +6,7 @@ set(ENTITYX_VERSION ${ENTITYX_MAJOR_VERSION}.${ENTITYX_MINOR_VERSION}.${ENTITYX_
 
 project(EntityX)
 
-message("EntityX version ${ENTITYX_VERSION}")
+message(STATUS "EntityX version ${ENTITYX_VERSION}")
 
 if(NOT DEFINED CMAKE_MACOSX_RPATH)
   set(CMAKE_MACOSX_RPATH 0)
@@ -73,10 +73,10 @@ ENTITYX_HAVE_CXX11_STDLIB
 )
 
 if (NOT ENTITYX_HAVE_CXX11_STDLIB)
-    message("-- Not using -stdlib=libc++ (test failed to build)")
+    message(STATUS "-- Not using -stdlib=libc++ (test failed to build)")
     set(CMAKE_CXX_FLAGS "${OLD_CMAKE_CXX_FLAGS}")
 else ()
-    message("-- Using -stdlib=libc++")
+    message(STATUS "-- Using -stdlib=libc++")
 endif ()
 
 
@@ -87,7 +87,7 @@ macro(require FEATURE_NAME MESSAGE_STRING)
     if (NOT ${${FEATURE_NAME}})
         message(FATAL_ERROR "${MESSAGE_STRING} required -- ${${FEATURE_NAME}}")
     else()
-        message("--   ${MESSAGE_STRING} found")
+        message(STATUS "--   ${MESSAGE_STRING} found")
     endif()
 endmacro(require)
 
@@ -111,11 +111,11 @@ macro(create_test TARGET_NAME SOURCE DEPENDENCIES)
 endmacro()
 
 if (NOT CMAKE_BUILD_TYPE)
-    message("-- Defaulting to release build (use -DCMAKE_BUILD_TYPE:STRING=Debug for debug build)")
+    message(STATUS "-- Defaulting to release build (use -DCMAKE_BUILD_TYPE:STRING=Debug for debug build)")
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-message("-- Checking C++ features")
+message(STATUS "-- Checking C++ features")
 require(HAS_CXX11_AUTO "C++11 auto support")
 require(HAS_CXX11_NULLPTR "C++11 nullptr support")
 require(HAS_CXX11_RVALUE_REFERENCES "C++11 rvalue reference support")
@@ -125,7 +125,7 @@ require(HAS_CXX11_RVALUE_REFERENCES "C++11 rvalue references")
 require(HAS_CXX11_LONG_LONG "C++11 long long")
 require(HAS_CXX11_LONG_LONG "C++11 lambdas")
 
-message("-- Checking misc features")
+message(STATUS "-- Checking misc features")
 require(HAVE_STDINT_H "stdint.h")
 
 # Things to install
@@ -134,7 +134,7 @@ require(HAVE_STDINT_H "stdint.h")
 set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
 
 if (ENTITYX_BUILD_SHARED)
-    message("-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static libraries)")
+    message(STATUS "-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static libraries)")
     add_library(entityx_shared SHARED ${sources})
 
     set_target_properties(entityx_shared PROPERTIES
@@ -164,9 +164,9 @@ if (ENTITYX_BUILD_TESTING)
     create_test(dependencies_test entityx/deps/Dependencies_test.cc ${install_libs})
     create_test(benchmarks_test entityx/Benchmarks_test.cc ${install_libs})
     if (ENTITYX_RUN_BENCHMARKS)
-        message("-- Running benchmarks")
+        message(STATUS "-- Running benchmarks")
     else ()
-        message("-- Not running benchmarks (use -DENTITYX_RUN_BENCHMARKS=1 to enable)")
+        message(STATUS "-- Not running benchmarks (use -DENTITYX_RUN_BENCHMARKS=1 to enable)")
     endif ()
 endif (ENTITYX_BUILD_TESTING)
 
