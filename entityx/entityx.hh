@@ -694,7 +694,7 @@ public:
   /**
    * Return true if the given entity ID is still valid.
    */
-  bool valid(Id id);
+  bool valid(Id id) const;
 
 
   /**
@@ -1081,7 +1081,7 @@ void EntityX<Components, Storage, Features>::reset() {
 
 
 template <class Components, class Storage, std::size_t Features>
-bool EntityX<Components, Storage, Features>::valid(Id id) {
+bool EntityX<Components, Storage, Features>::valid(Id id) const {
   return id.index() < entity_version_.size() && entity_version_[id.index()] == id.version();
 }
 
