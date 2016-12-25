@@ -3504,7 +3504,7 @@ namespace Clara {
             }
             // !TBD: Need to include workarounds to be able to declare this
             // destructor as able to throw exceptions
-            ~ArgBinder() /* noexcept(false) */ {
+            ~ArgBinder() noexcept(false) {
                 if( m_cl && !std::uncaught_exception() ) {
                     m_arg.validate();
                     if( m_arg.isFixedPositional() ) {
