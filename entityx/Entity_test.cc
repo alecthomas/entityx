@@ -668,3 +668,13 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestViewEach") {
   });
   REQUIRE(count == 1);
 }
+
+TEST_CASE_METHOD(EntityManagerFixture, "TestComponentDereference") {
+  Entity a = em.create();
+  a.assign<Position>(10, 5);
+  auto& positionRef = *a.component<Position>();
+  REQUIRE(positionRef.x == 10);
+  REQUIRE(positionRef.y == 5);
+  positionRef.y = 20;
+  REQUIRE(a.component<Position>()->y == 20);
+}

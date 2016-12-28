@@ -193,6 +193,9 @@ public:
   C *operator -> ();
   const C *operator -> () const;
 
+  C &operator * ();
+  const C &operator * () const;
+
   C *get();
   const C *get() const;
 
@@ -1043,6 +1046,18 @@ template <typename C, typename EM>
 inline const C *ComponentHandle<C, EM>::operator -> () const {
   assert(valid());
   return manager_->template get_component_ptr<C>(id_);
+}
+
+template <typename C, typename EM>
+inline C &ComponentHandle<C, EM>::operator * () {
+  assert(valid());
+  return *manager_->template get_component_ptr<C>(id_);
+}
+
+template <typename C, typename EM>
+inline const C &ComponentHandle<C, EM>::operator * () const {
+  assert(valid());
+  return *manager_->template get_component_ptr<C>(id_);
 }
 
 template <typename C, typename EM>
