@@ -54,6 +54,13 @@ int main() {
   position.remove();
   printf("has position = %d\n", bool(a.component<Position>()));
 
+  // Iterate over all components, in all entities that have a position component (good for serialization) ...
+  for (auto & entity : entities.entities_with_components<Position>()) {
+		entity.for_each_component([&entity](auto & component) {
+			// .... Do serialization...
+            // component.serialize();
+		});
+	}
 }
 ```
 
