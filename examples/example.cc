@@ -48,13 +48,7 @@ struct Body {
   float rotation = 0.0, rotationd;
 };
 
-
-struct Renderable {
-  explicit Renderable(std::unique_ptr<sf::Shape> shape) : shape(std::move(shape)) {}
-
-  std::unique_ptr<sf::Shape> shape;
-};
-
+using Renderable = std::shared_ptr<sf::Shape>;
 
 struct Particle {
   explicit Particle(sf::Color colour, float radius, float duration)
@@ -101,10 +95,10 @@ public:
         sf::Vector2f(r(100, -50), r(100, -50)));
 
       // Shape to apply to entity.
-      std::unique_ptr<sf::Shape> shape(new sf::CircleShape(collideable->radius));
+      Renderable shape(new sf::CircleShape(collideable->radius));
       shape->setFillColor(sf::Color(r(128, 127), r(128, 127), r(128, 127)));
       shape->setOrigin(collideable->radius, collideable->radius);
-      entity.assign<Renderable>(std::move(shape));
+      entity.assign<Renderable>(shape);
     }
   }
 
@@ -279,7 +273,7 @@ public:
     ex::ComponentHandle<Body> body = entity.component<Body>();
     ex::ComponentHandle<Renderable> renderable = entity.component<Renderable>();
     ex::ComponentHandle<Collideable> collideable = entity.component<Collideable>();
-    sf::Color colour = renderable->shape->getFillColor();
+    sf::Color colour = (*renderable)->getFillColor();
     colour.a = 200;
 
     float area = (M_PI * collideable->radius * collideable->radius) / 3.0;
@@ -325,9 +319,9 @@ public:
 
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
     es.each<Body, Renderable>([this](ex::Entity entity, Body &body, Renderable &renderable) {
-      renderable.shape->setPosition(body.position);
-      renderable.shape->setRotation(body.rotation);
-      target.draw(*renderable.shape.get());
+      renderable->setPosition(body.position);
+      renderable->setRotation(body.rotation);
+      target.draw(*renderable.get());
     });
     last_update += dt;
     frame_count++;
