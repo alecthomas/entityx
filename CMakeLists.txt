@@ -54,9 +54,6 @@ if(NOT DEFINED CMAKE_INSTALL_LIBDIR)
 endif(NOT DEFINED CMAKE_INSTALL_LIBDIR)
 set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 
-# C++11 feature checks
-include(CheckCXX11Features.cmake)
-
 set(OLD_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 if ((MAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
@@ -115,16 +112,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-message(STATUS "-- Checking C++ features")
-require(HAS_CXX11_AUTO "C++11 auto support")
-require(HAS_CXX11_NULLPTR "C++11 nullptr support")
-require(HAS_CXX11_RVALUE_REFERENCES "C++11 rvalue reference support")
-#require(HAS_CXX11_CSTDINT_H "C++11 stdint support")
-require(HAS_CXX11_VARIADIC_TEMPLATES "C++11 variadic templates")
-require(HAS_CXX11_RVALUE_REFERENCES "C++11 rvalue references")
-require(HAS_CXX11_LONG_LONG "C++11 long long")
-require(HAS_CXX11_LAMBDA "C++11 lambdas")
-
 message(STATUS "-- Checking misc features")
 require(HAVE_STDINT_H "stdint.h")
 
@@ -135,16 +122,16 @@ set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Ti
 
 if (ENTITYX_BUILD_SHARED)
     message(STATUS "-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static libraries)")
-    add_library(entityx_shared SHARED ${sources})
+    add_library(entityx SHARED ${sources})
 
-    set_target_properties(entityx_shared PROPERTIES
+    set_target_properties(entityx PROPERTIES
         OUTPUT_NAME entityx
         DEBUG_POSTFIX -d
         VERSION ${ENTITYX_VERSION}
         SOVERSION ${ENTITYX_MAJOR_VERSION}
         FOLDER entityx)
-    set(install_libs entityx_shared)
-    set_property(TARGET entityx_shared APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+    set(install_libs entityx)
+    set_property(TARGET entityx APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 else()
     add_library(entityx STATIC ${sources})
@@ -153,6 +140,19 @@ else()
     set_property(TARGET entityx APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 endif (ENTITYX_BUILD_SHARED)
+
+# Make sure C++11 features are available
+target_compile_features(entityx PUBLIC cxx_auto_type)
+target_compile_features(entityx PUBLIC cxx_nullptr)
+target_compile_features(entityx PUBLIC cxx_static_assert)
+target_compile_features(entityx PUBLIC cxx_decltype)
+target_compile_features(entityx PUBLIC cxx_constexpr)
+target_compile_features(entityx PUBLIC cxx_sizeof_member)
+target_compile_features(entityx PUBLIC cxx_variadic_templates)
+target_compile_features(entityx PUBLIC cxx_rvalue_references)
+target_compile_features(entityx PUBLIC cxx_long_long_type)
+target_compile_features(entityx PUBLIC cxx_lambdas)
+target_compile_features(entityx PUBLIC cxx_func_identifier)
 
 if (ENTITYX_BUILD_TESTING)
     enable_testing()
