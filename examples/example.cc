@@ -13,7 +13,7 @@
  *
  * Compile with:
  *
- *    c++ -I.. -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics -lentityx example.cc -o example
+ *    c++ -I.. -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics example.cc -o example
  */
 #include <cmath>
 #include <unordered_set>
@@ -99,7 +99,7 @@ public:
   void update(EntityManager &es, double dt) override {
     int c = 0;
     Component<Collideable> collideable;
-    for (Entity entity : es.entities_with_components<Collideable>()) { ++c; }
+    for (Entity entity : es.entities_with_components<Collideable>()) { (void)entity; ++c; }
 
     for (int i = 0; i < count - c; i++) {
       Entity entity = es.create();
@@ -131,6 +131,7 @@ struct BodySystem : public System {
   void update(EntityManager &es, double dt) override {
     Component<Body> body;
     for (Entity entity : es.entities_with_components<Body>(body)) {
+      (void)entity;
       body->position += body->direction * static_cast<float>(dt);
       body->rotation += body->rotationd * dt;
     }
@@ -146,6 +147,7 @@ public:
   void update(EntityManager &es, double dt) override {
     Component<Body> body;
     for (Entity entity : es.entities_with_components<Body>(body)) {
+      (void)entity;
       if (body->position.x + body->direction.x < 0 ||
           body->position.x + body->direction.x >= size.x)
         body->direction.x = -body->direction.x;
@@ -317,6 +319,7 @@ public:
     Component<Particle> particle;
     Component<Body> body;
     for (Entity entity : es.entities_with_components(particle, body)) {
+      (void)entity;
       const float r = particle->radius;
       vertices.append(sf::Vertex(body->position + sf::Vector2f(-r, -r), particle->colour));
       vertices.append(sf::Vertex(body->position + sf::Vector2f(r, -r), particle->colour));
@@ -344,6 +347,7 @@ public:
     Component<Body> body;
     Component<Renderable> renderable;
     for (Entity entity : es.entities_with_components(body, renderable)) {
+      (void)entity;
       renderable->shape->setPosition(body->position);
       renderable->shape->setRotation(body->rotation);
       target.draw(*renderable->shape.get());
