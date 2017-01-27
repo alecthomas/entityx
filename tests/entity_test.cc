@@ -111,7 +111,7 @@ struct Test {
 
 
 typedef Components<Position, Direction, Tag, CopyVerifier, Test> GameComponents;
-typedef EntityX<GameComponents, ContiguousStorage<GameComponents, 10000000L>, true> EntityManager;
+typedef EntityX<GameComponents, ContiguousStorage<GameComponents, 10000000L>, OBSERVABLE> EntityManager;
 template <typename C> using Component = EntityManager::Component<C>;
 using Entity = EntityManager::Entity;
 
@@ -280,7 +280,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestIterateAllEntitiesSkipsDestroyed") {
 
   b.destroy();
 
-  auto entities = em.entities_for_debugging();
+  auto entities = em.all_entities();
   auto it = entities.begin();
   REQUIRE(a.id() == (*it).id());
   ++it;
@@ -549,4 +549,17 @@ TEST_CASE("TestComponentDestructorCalledWhenEntityDestroyed") {
   REQUIRE(freed == false);
   test.destroy();
   REQUIRE(freed == true);
+}
+
+TEST_CASE("TestEntityManagerDestructorCallsDestroyedEvent") {
+  int destroyed = 0;
+  {
+    EntityManager e;
+    e.on_entity_destroyed([&](Entity entity) {
+      destroyed++;
+    });
+    e.create();
+    e.create().destroy();
+  }
+  REQUIRE(destroyed == 2);
 }
