@@ -5,11 +5,13 @@ compiler:
 before_install:
   - sudo apt-add-repository -y ppa:jkeiren/ppa
   - if test $CC = gcc; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+  - sudo add-apt-repository -y ppa:george-edison55/precise-backports
   - sudo apt-get update -qq
   - if test $CC = gcc; then sudo apt-get install --yes --force-yes gcc-4.7 g++-4.7; fi
   - if test $CC = gcc; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.7 20; fi
   - if test $CC = gcc; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.7 20; fi
   - if test $CC = gcc; then sudo update-alternatives --config gcc; fi
   - if test $CC = gcc; then sudo update-alternatives --config g++; fi
+  - sudo apt-get install --yes --force-yes cmake cmake-data
 
 script: ./scripts/travis.sh
