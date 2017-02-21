@@ -22,9 +22,13 @@ See [below](#installation) for installation instructions.
 
 ## Contact
 
-EntityX now has a mailing list! Send a mail to [entityx@librelist.com](mailto:entityx@librelist.com) to subscribe. Instructions will follow.
+Feel free to jump on my [Gitter channel](https://gitter.im/alecthomas/Lobby) if you have any questions/comments. This is a single channel for all of my projects, so please mention you're asking about EntityX to avoid (my) confusion.
 
 You can also contact me directly via [email](mailto:alec@swapoff.org) or [Twitter](https://twitter.com/alecthomas).
+
+## Benchmarks / Comparisons
+
+EntityX includes its own benchmarks, but @abeimler has created [a benchmark suite](https://github.com/abeimler/ecs_benchmark/blob/master/doc/BenchmarkResultDetails2.md) testing up to 2M entities in EntityX, the EntityX compile-time branch, Anax, and Artemis C++.
 
 ## Recent Notable Changes
 
