@@ -27,6 +27,9 @@ set(ENTITYX_BUILD_SHARED true CACHE BOOL "Build shared libraries?")
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 include(CheckCXXSourceCompiles)
 
+# Set to new behaviour, we don't mean to expand quoted variables here.
+cmake_policy(SET CMP0054 NEW)
+
 # Default compiler args
 if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|.*Clang)")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=sign-compare")
