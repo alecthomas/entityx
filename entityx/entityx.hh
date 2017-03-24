@@ -249,6 +249,7 @@ struct Components {
 private:
   template <class C>
   static void init_sizes(std::vector<std::size_t> &sizes, std::size_t index = 0) {
+    (void)index;
     sizes.push_back(sizeof(C));
   }
 
@@ -566,7 +567,9 @@ public:
         ViewIterator<Iterator, All>::next();
       }
 
-      void next_entity(Entity &entity) {}
+      void next_entity(Entity &entity) {
+        (void)entity;
+      }
     };
 
 
