@@ -327,7 +327,7 @@ private:
 public:
   typedef std::bitset<Components::component_count> ComponentMask;
 
-
+  class Entity;
   /**
    * A Component<C> is a wrapper around an instance of a component.
    *
@@ -358,6 +358,10 @@ public:
 
     bool operator == (const Component<C> &other) const { return manager_ == other.manager_ && id_ == other.id_; }
     bool operator != (const Component<C> &other) const { return !(*this == other); }
+
+    Entity entity() {
+      return {manager_, id_};
+    }
 
   private:
     friend class EntityX;

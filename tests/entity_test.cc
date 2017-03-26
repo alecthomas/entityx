@@ -180,6 +180,12 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentConstruction") {
   REQUIRE(2.0 == Approx(cp->y));
 }
 
+TEST_CASE_METHOD(EntityManagerFixture, "TestEntityFromComponent") {
+  auto e = em.create();
+  auto p = e.assign<Position>(1, 2);
+  REQUIRE(p.entity() ==  e);
+}
+
 TEST_CASE_METHOD(EntityManagerFixture, "TestDestroyEntity") {
   Entity e = em.create();
   Entity f = em.create();
