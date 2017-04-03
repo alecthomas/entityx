@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.1)
+
 set(ENTITYX_MAJOR_VERSION 1)
 set(ENTITYX_MINOR_VERSION 1)
 set(ENTITYX_PATCH_VERSION 2)
 set(ENTITYX_VERSION ${ENTITYX_MAJOR_VERSION}.${ENTITYX_MINOR_VERSION}.${ENTITYX_PATCH_VERSION})
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 project(EntityX)
 
@@ -23,6 +25,9 @@ set(ENTITYX_RUN_BENCHMARKS false CACHE BOOL "Run benchmarks (in conjunction with
 set(ENTITYX_MAX_COMPONENTS 64 CACHE STRING "Set the maximum number of components.")
 set(ENTITYX_DT_TYPE double CACHE STRING "The type used for delta time in EntityX update methods.")
 set(ENTITYX_BUILD_SHARED true CACHE BOOL "Build shared libraries?")
+if(MSVC AND ENTITYX_BUILD_SHARED AND ${CMAKE_VERSION} VERSION_LESS "3.4")
+    message(FATAL_ERROR "A shared build using MSVC and CMake < 3.4 will not result in a working library.")
+endif()
 
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 include(CheckCXXSourceCompiles)
