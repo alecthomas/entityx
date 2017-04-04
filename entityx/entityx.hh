@@ -358,6 +358,7 @@ public:
 
     bool operator == (const Component<C> &other) const { return manager_ == other.manager_ && id_ == other.id_; }
     bool operator != (const Component<C> &other) const { return !(*this == other); }
+    bool operator < (const Component<C> &other) const { return (id_ < other.id_); }
 
   private:
     friend class EntityX;
