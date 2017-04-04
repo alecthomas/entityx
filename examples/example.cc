@@ -93,19 +93,20 @@ struct System {
 
 
 class SpawnSystem : public System {
+  constexpr static const float DENSITY = 0.0001;
+
 public:
-  explicit SpawnSystem(sf::RenderTarget &target, int count) : size(target.getSize()), count(count) {}
+  explicit SpawnSystem(sf::RenderTarget &target) : size(target.getSize()), count(size.x * size.y * DENSITY) {}
 
   void update(EntityManager &es, double dt) override {
     int c = 0;
-    Component<Collideable> collideable;
-    for (Entity entity : es.entities_with_components<Collideable>()) { (void)entity; ++c; }
+    es.for_each<Collideable>([&](Entity, Collideable) { c++; });
 
     for (int i = 0; i < count - c; i++) {
       Entity entity = es.create();
 
       // Mark as collideable (explosion particles will not be collideable).
-      collideable = entity.assign<Collideable>(r(10, 5));
+      Component<Collideable> collideable = entity.assign<Collideable>(r(10, 5));
 
       // "Physical" attributes.
       entity.assign<Body>(
@@ -129,12 +130,10 @@ private:
 // Updates a body's position and rotation.
 struct BodySystem : public System {
   void update(EntityManager &es, double dt) override {
-    Component<Body> body;
-    for (Entity entity : es.entities_with_components<Body>(body)) {
-      (void)entity;
-      body->position += body->direction * static_cast<float>(dt);
-      body->rotation += body->rotationd * dt;
-    }
+    es.for_each<Body>([&](Entity, Body &body) {
+      body.position += body.direction * static_cast<float>(dt);
+      body.rotation += body.rotationd * dt;
+    });
   };
 };
 
@@ -145,17 +144,15 @@ public:
   explicit BounceSystem(sf::RenderTarget &target) : size(target.getSize()) {}
 
   void update(EntityManager &es, double dt) override {
-    Component<Body> body;
-    for (Entity entity : es.entities_with_components<Body>(body)) {
-      (void)entity;
-      if (body->position.x + body->direction.x < 0 ||
-          body->position.x + body->direction.x >= size.x)
-        body->direction.x = -body->direction.x;
-      if (body->position.y + body->direction.y < 0 ||
-          body->position.y + body->direction.y >= size.y)
-        body->direction.y = -body->direction.y;
+    es.for_each<Body>([&](Entity, Body &body) {
+      if (body.position.x + body.direction.x < 0 ||
+          body.position.x + body.direction.x >= size.x)
+        body.direction.x = -body.direction.x;
+      if (body.position.y + body.direction.y < 0 ||
+          body.position.y + body.direction.y >= size.y)
+        body.direction.y = -body.direction.y;
+    });
     }
-  }
 
 private:
   sf::Vector2u size;
@@ -250,15 +247,13 @@ private:
   }
 
   void collect(EntityManager &es) {
-    Component<Body> body;
-    Component<Collideable> collideable;
-    for (Entity entity : es.entities_with_components(body, collideable)) {
+    es.for_each<Body, Collideable>([&](Entity entity, Body &body, Collideable &collideable) {
       const unsigned int
-          left = static_cast<int>(body->position.x - collideable->radius) / PARTITIONS,
-          top = static_cast<int>(body->position.y - collideable->radius) / PARTITIONS,
-          right = static_cast<int>(body->position.x + collideable->radius) / PARTITIONS,
-          bottom = static_cast<int>(body->position.y + collideable->radius) / PARTITIONS;
-      Candidate candidate {body->position, collideable->radius, entity};
+          left = static_cast<int>(body.position.x - collideable.radius) / PARTITIONS,
+          top = static_cast<int>(body.position.y - collideable.radius) / PARTITIONS,
+          right = static_cast<int>(body.position.x + collideable.radius) / PARTITIONS,
+          bottom = static_cast<int>(body.position.y + collideable.radius) / PARTITIONS;
+      Candidate candidate {body.position, collideable.radius, entity};
       const unsigned int slots[4] = {
         left + top * size.x,
         right + top * size.x,
@@ -269,7 +264,7 @@ private:
       if (slots[0] != slots[1]) grid[slots[1]].push_back(candidate);
       if (slots[1] != slots[2]) grid[slots[2]].push_back(candidate);
       if (slots[2] != slots[3]) grid[slots[3]].push_back(candidate);
-    }
+    });
   }
 
   void collide() {
@@ -297,15 +292,14 @@ private:
 class ParticleSystem : public System {
 public:
   void update(EntityManager &es, double dt) override {
-    Component<Particle> particle;
-    for (Entity entity : es.entities_with_components(particle)) {
-      particle->alpha -= particle->d * dt;
-      if (particle->alpha <= 0) {
+    es.for_each<Particle>([&](Entity entity, Particle &particle) {
+      particle.alpha -= particle.d * dt;
+      if (particle.alpha <= 0) {
         entity.destroy();
       } else {
-        particle->colour.a = particle->alpha;
+        particle.colour.a = particle.alpha;
       }
-    }
+    });
   }
 };
 
@@ -316,16 +310,14 @@ public:
 
   void update(EntityManager &es, double dt) override {
     sf::VertexArray vertices(sf::Quads);
-    Component<Particle> particle;
-    Component<Body> body;
-    for (Entity entity : es.entities_with_components(particle, body)) {
+    es.for_each<Particle, Body>([&](Entity entity, Particle &particle, Body &body) {
       (void)entity;
-      const float r = particle->radius;
-      vertices.append(sf::Vertex(body->position + sf::Vector2f(-r, -r), particle->colour));
-      vertices.append(sf::Vertex(body->position + sf::Vector2f(r, -r), particle->colour));
-      vertices.append(sf::Vertex(body->position + sf::Vector2f(r, r), particle->colour));
-      vertices.append(sf::Vertex(body->position + sf::Vector2f(-r, r), particle->colour));
-    }
+      const float r = particle.radius;
+      vertices.append(sf::Vertex(body.position + sf::Vector2f(-r, -r), particle.colour));
+      vertices.append(sf::Vertex(body.position + sf::Vector2f(r, -r), particle.colour));
+      vertices.append(sf::Vertex(body.position + sf::Vector2f(r, r), particle.colour));
+      vertices.append(sf::Vertex(body.position + sf::Vector2f(-r, r), particle.colour));
+    });
     target.draw(vertices);
   }
 private:
@@ -344,14 +336,12 @@ public:
   }
 
   void update(EntityManager &es, double dt) override {
-    Component<Body> body;
-    Component<Renderable> renderable;
-    for (Entity entity : es.entities_with_components(body, renderable)) {
+    es.for_each<Body, Renderable>([&](Entity entity, Body &body, Renderable &renderable) {
       (void)entity;
-      renderable->shape->setPosition(body->position);
-      renderable->shape->setRotation(body->rotation);
-      target.draw(*renderable->shape.get());
-    }
+      renderable.shape->setPosition(body.position);
+      renderable.shape->setRotation(body.rotation);
+      target.draw(*renderable.shape.get());
+    });
     last_update += dt;
     frame_count++;
     if (last_update >= 0.5) {
@@ -376,7 +366,7 @@ private:
 class Application {
 public:
   explicit Application(sf::RenderTarget &target, sf::Font &font) {
-    systems.push_back(new SpawnSystem(target, 500));
+    systems.push_back(new SpawnSystem(target));
     systems.push_back(new BodySystem());
     systems.push_back(new BounceSystem(target));
     ExplosionSystem *explosions = new ExplosionSystem();

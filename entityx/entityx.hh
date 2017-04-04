@@ -595,28 +595,28 @@ public:
   template <typename ... ComponentsToUnpack>
   class UnpackingView {
    public:
-  struct Unpacker {
-    explicit Unpacker(Component<ComponentsToUnpack> & ... handles) :
-        handles(std::tuple<Component<ComponentsToUnpack> & ...>(handles...)) {}
+    struct Unpacker {
+      explicit Unpacker(Component<ComponentsToUnpack> & ... handles) :
+          handles(std::tuple<Component<ComponentsToUnpack> & ...>(handles...)) {}
 
-    void unpack(Entity &entity) const {
-      unpack_<0, ComponentsToUnpack...>(entity);
-    }
+      void unpack(Entity &entity) const {
+        unpack_<0, ComponentsToUnpack...>(entity);
+      }
 
-  private:
-    template <int N, typename C>
-    void unpack_(Entity &entity) const {
-      std::get<N>(handles) = entity.template component<C>();
-    }
+    private:
+      template <int N, typename C>
+      void unpack_(Entity &entity) const {
+        std::get<N>(handles) = entity.template component<C>();
+      }
 
-    template <int N, typename C0, typename C1, typename ... Cn>
-    void unpack_(Entity &entity) const {
-      std::get<N>(handles) = entity.template component<C0>();
-      unpack_<N + 1, C1, Cn...>(entity);
-    }
+      template <int N, typename C0, typename C1, typename ... Cn>
+      void unpack_(Entity &entity) const {
+        std::get<N>(handles) = entity.template component<C0>();
+        unpack_<N + 1, C1, Cn...>(entity);
+      }
 
-    std::tuple<Component<ComponentsToUnpack> & ...> handles;
-  };
+      std::tuple<Component<ComponentsToUnpack> & ...> handles;
+    };
 
 
     class Iterator : public ViewIterator<Iterator> {
@@ -842,6 +842,16 @@ public:
     return UnpackingView<ComponentsToFilter...>(this, mask, components...);
   }
 
+  template <typename T> struct identity { typedef T type; };
+
+  template <typename ... ComponentsToFilter>
+  void for_each(typename identity<std::function<void(Entity, ComponentsToFilter&...)>>::type f) {
+    for (auto entity : entities_with_components<ComponentsToFilter...>())
+      f(entity, *(entity.template component<ComponentsToFilter>().get())...);
+  }
+
+
+
   /**
    * Iterate over all *valid* entities (ie. not in the free list). Not fast,
    * so should generally only be used for debugging.
@@ -893,12 +903,12 @@ private:
   template <bool FeatureMask = Features> typename std::enable_if<FeatureMask & OBSERVABLE>::type
   entity_created_(Entity entity) { if (on_entity_created_) on_entity_created_(entity); }
   template <bool FeatureMask = Features> typename std::enable_if<!FeatureMask>::type
-  entity_created_(Entity entity) {}
+  entity_created_(Entity) {}
 
   template <bool FeatureMask = Features> typename std::enable_if<FeatureMask & OBSERVABLE>::type
   entity_destroyed_(Entity entity) { if (on_entity_destroyed_) on_entity_destroyed_(entity); }
   template <bool FeatureMask = Features> typename std::enable_if<!FeatureMask>::type
-  entity_destroyed_(Entity entity) {}
+  entity_destroyed_(Entity) {}
 
   template <class C, bool FeatureMask = Features> typename std::enable_if<FeatureMask & OBSERVABLE>::type
   component_added_(Entity entity, Component<C> component) {
@@ -906,7 +916,7 @@ private:
       on_component_added_[component_index<C>::value](entity, reinterpret_cast<void*>(&component));
   }
   template <class C, bool FeatureMask = Features> typename std::enable_if<!FeatureMask>::type
-  component_added_(Entity entity, Component<C> component) {}
+  component_added_(Entity, Component<C>) {}
 
   template <class C, bool FeatureMask = Features> typename std::enable_if<FeatureMask & OBSERVABLE>::type
   component_removed_(Entity entity, Component<C> component) {
@@ -914,7 +924,7 @@ private:
       on_component_removed_[component_index<C>::value](entity, reinterpret_cast<void*>(&component));
   }
   template <class C, bool FeatureMask = Features> typename std::enable_if<!FeatureMask>::type
-  component_removed_(Entity entity, Component<C> component) {}
+  component_removed_(Entity, Component<C>) {}
 
   template <typename C>
   ComponentMask component_mask() {
