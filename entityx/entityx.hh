@@ -78,6 +78,39 @@ struct get_component_size_sum<T, Ts...> :
 }  // namespace details
 
 
+/**
+ * Storage interface.
+ */
+struct Storage {
+  // A hint that the backend should be capable of storing this number of entities.
+  void resize(std::size_t entities);
+
+  // Retrieve component C from entity or return nullptr.
+  template <typename C> C *get(std::uint32_t entity);
+
+  // Create component C on entity with the given constructor arguments.
+  template <typename C, typename ... Args> C *create(std::uint32_t entity, Args && ... args);
+
+  // Call the destructor for the component C of entity.
+  template <typename C> void destroy(std::uint32_t entity);
+
+  // Free all underlying storage.
+  void reset();
+};
+
+
+
+/**template <typename ... Components>
+class PackedStorage {
+public:
+private:
+  template <typename C>
+  struct Component {
+    std::vector<std::uint32_t> ids;
+    std::vector<C> components;
+  };
+  std::tuple<Component<Components...>> components_;
+};*/
 
 
 
@@ -270,7 +303,14 @@ private:
 
 
 
+/**
+ * A bitmask of features togglable at compile time.
+ */
 enum FeatureFlags {
+  /**
+   * If provided, various observer methods will be available:
+   * on_component_added/removed, on_entity_created/destroyed.
+   */
   OBSERVABLE = 1
 };
 
@@ -306,6 +346,7 @@ private:
  * @tparam Components The Components template parameter must be a realised
  *                    type instance of Components<C...>.
  * @tparam Storage A type that implements the storage interface.
+ * @tparam Features A bitmask of features to enable. See FeatureFlags.
  */
 template <class Components, class Storage = ColumnStorage<Components>, std::size_t Features = 0>
 class EntityX {
@@ -784,28 +825,28 @@ public:
   }
 
   // Called whenever an entity is created.
-  template <bool IS_OBSERVABLE = Features & OBSERVABLE>
-  typename std::enable_if<IS_OBSERVABLE>::type on_entity_created(std::function<void(Entity)> callback) {
+  template <typename = std::enable_if<Features & OBSERVABLE>>
+  void on_entity_created(std::function<void(Entity)> callback) {
     on_entity_created_ = callback;
   }
 
   // Called whenever an entity is destroyed.
-  template <bool IS_OBSERVABLE = Features & OBSERVABLE>
-  typename std::enable_if<IS_OBSERVABLE>::type on_entity_destroyed(std::function<void(Entity)> callback) {
+  template <typename = std::enable_if<Features & OBSERVABLE>>
+  void on_entity_destroyed(std::function<void(Entity)> callback) {
     on_entity_destroyed_ = callback;
   }
 
   // Called whenever a component of type Component is added to an entity.
-  template <typename C, bool IS_OBSERVABLE = Features & OBSERVABLE>
-  typename std::enable_if<IS_OBSERVABLE && is_component<C>::value>::type on_component_added(std::function<void(Entity, Component<C>)> callback) {
+  template <typename C, typename = std::enable_if<Features & OBSERVABLE && is_component<C>::value>>
+  void on_component_added(std::function<void(Entity, Component<C>)> callback) {
     on_component_added_[component_index<C>::value] = [callback](Entity entity, void *ptr) {
       callback(entity, *reinterpret_cast<Component<C>*>(ptr));
     };
   }
 
   // Called whenever a component of type Component is removed from an entity.
-  template <typename C, bool IS_OBSERVABLE = Features & OBSERVABLE>
-  typename std::enable_if<IS_OBSERVABLE && is_component<C>::value>::type on_component_removed(std::function<void(Entity, Component<C>)> callback) {
+  template <typename C, typename = std::enable_if<Features & OBSERVABLE && is_component<C>::value>>
+  void on_component_removed(std::function<void(Entity, Component<C>)> callback) {
     on_component_removed_[component_index<C>::value] = [callback](Entity entity, void *ptr) {
       callback(entity, *reinterpret_cast<Component<C>*>(ptr));
     };
@@ -847,10 +888,17 @@ public:
     return UnpackingView<ComponentsToFilter...>(this, mask, components...);
   }
 
-  template <typename T> struct identity { typedef T type; };
-
-  template <typename ... ComponentsToFilter>
-  void for_each(typename identity<std::function<void(Entity, ComponentsToFilter&...)>>::type f) {
+  /**
+   * Call function with (Entity, ComponentsToFilter&...).
+   *
+   * @code
+   * entity_manager.for_each([&](Entity entity, Body &body, Position &position) {
+   *    // ...
+   * })
+   * @endcode
+   */
+  template <typename ... ComponentsToFilter, typename F>
+  void for_each(F f) {
     for (auto entity : entities_with_components<ComponentsToFilter...>())
       f(entity, *(entity.template component<ComponentsToFilter>().get())...);
   }

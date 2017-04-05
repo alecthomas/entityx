@@ -100,7 +100,7 @@ public:
 
   void update(EntityManager &es, double dt) override {
     int c = 0;
-    es.for_each<Collideable>([&](Entity, Collideable) { c++; });
+    es.for_each<Collideable>([&](Entity, Collideable&) { c++; });
 
     for (int i = 0; i < count - c; i++) {
       Entity entity = es.create();
@@ -332,7 +332,7 @@ public:
     text.setFont(font);
     text.setPosition(sf::Vector2f(2, 2));
     text.setCharacterSize(18);
-    text.setColor(sf::Color::White);
+    text.setFillColor(sf::Color::White);
   }
 
   void update(EntityManager &es, double dt) override {
