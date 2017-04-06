@@ -31,7 +31,7 @@ struct Direction {
 
 // Convenience types for our entity system.
 using GameComponents = Components<Position, Health, Direction>;
-using EntityManager = EntityX<GameComponents, ColumnStorage<GameComponents>>;
+using EntityManager = EntityX<GameComponents>;
 template <typename C>
 using Component = EntityManager::Component<C>;
 using Entity = EntityManager::Entity;

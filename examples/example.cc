@@ -460,17 +460,17 @@ private:
 
 class Application {
 public:
-  explicit Application(sf::RenderWindow &window, sf::Font &font) : window(window) {
-    systems.push_back(new SpawnSystem(window));
+  explicit Application(sf::RenderTarget &target, sf::Font &font) {
+    systems.push_back(new SpawnSystem(target));
     systems.push_back(new BodySystem());
-    systems.push_back(new BounceSystem(window));
+    systems.push_back(new BounceSystem(target));
     ExplosionSystem *explosions = new ExplosionSystem();
-    systems.push_back(new CollisionSystem(explosions, window));
+    systems.push_back(new CollisionSystem(explosions, target));
     systems.push_back(explosions);
     systems.push_back(new ParticleSystem());
-    systems.push_back(new ParticleRenderSystem(window));
-    systems.push_back(new RenderSystem(window, font));
-    auto input_system = new CursorInputSystem(window, entities);
+    systems.push_back(new ParticleRenderSystem(target));
+    systems.push_back(new RenderSystem(target, font));
+    auto input_system = new CursorInputSystem(target, entities);
     event_receivers.push_back(input_system);
     systems.push_back(input_system);
     systems.push_back(new CursorPushSystem(input_system->get_cursor_entity()));
@@ -485,7 +485,7 @@ public:
     switch (event.type) {
       case sf::Event::Closed:
       case sf::Event::KeyPressed:
-        window.close();
+        running_ = false;
         break;
 
       default:
@@ -499,8 +499,12 @@ public:
     return entities.size();
   }
 
+  bool running() {
+    return running_;
+  }
+
 private:
-  sf::RenderWindow &window;
+  bool running_ = true;
   EntityManager entities;
   std::vector<EventReceiver*> event_receivers;
   std::vector<System*> systems;
@@ -508,7 +512,7 @@ private:
 
 
 
-int main() {
+int main(int argc, const char **argv) {
   std::srand(std::time(nullptr));
 
   sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "EntityX Example", sf::Style::Fullscreen);
@@ -526,9 +530,9 @@ int main() {
   float frames = 0;
   std::int64_t entities = 0;
   sf::Clock clock;
-  while (window.isOpen()) {
+  while (app.running()) {
     sf::Event event;
-    while (window.pollEvent(event)) app.event(event);
+    while (window.pollEvent(event))app.event(event);
 
     window.clear();
     sf::Time elapsed = clock.restart();

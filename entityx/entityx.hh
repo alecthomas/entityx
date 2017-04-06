@@ -100,136 +100,54 @@ struct Storage {
 
 
 
-/**template <typename ... Components>
-class PackedStorage {
-public:
-private:
-  template <typename C>
-  struct Component {
-    std::vector<std::uint32_t> ids;
-    std::vector<C> components;
-  };
-  std::tuple<Component<Components...>> components_;
-};*/
-
-
-
 /**
- * ContiguousStorage is a storage engine for EntityX that uses a single contiguous
- * block of memory for holding all components for all entities.
+ * ContiguousStorage is a storage engine for EntityX that uses semi-contiguous
+ * blocks of memory for holding all components for all entities.
  */
-template <class Components, std::size_t INITIAL_CAPACITY = 1024>
+template <class Components, int CHUNK_SIZE = 8192, int INITIAL_CHUNKS = 8>
 class ContiguousStorage {
 public:
   ContiguousStorage() {
-    components_.reserve(INITIAL_CAPACITY);
+    resize(CHUNK_SIZE * INITIAL_CHUNKS);
   }
   ContiguousStorage(const ContiguousStorage &) = delete;
-  ContiguousStorage(ContiguousStorage &&other) = delete;
-  ContiguousStorage &operator = (const ContiguousStorage &) const = delete;
 
-  void resize(std::size_t entities) {
-    std::size_t size = components_.size();
-    if (entities < size)
-      return;
-    components_.resize(entities);
-  }
-
-  template <typename C>
-  C *get(std::uint32_t entity) {
-    return static_cast<C*>(static_cast<void*>(components_[entity].block + Components::template component_offset<C>::value));
-  }
-
-  template <typename C, typename ... Args>
-  C *create(std::uint32_t entity, Args && ... args) {
-    return new(get<C>(entity)) C(std::forward<Args>(args) ...);
-  }
-
-  template <typename C>
-  void destroy(std::uint32_t entity) {
-    get<C>(entity)->~C();
-  }
-
-  void reset() {
-    components_.resize(0);
-  }
-
-private:
-  struct ComponentBlock { std::uint8_t block[Components::component_size_sum]; };
-  std::vector<ComponentBlock> components_;
-};
-
-
-
-
-
-/**
- * An EntityX storage class where each component is stored in its own
- * contiguous block of memory.
- *
- * Memory is managed by malloc/free/realloc.
- */
-template <class Components, std::size_t INITIAL_CAPACITY = 1024>
-class ColumnStorage {
-public:
-  ColumnStorage() : sizes_(Components::component_sizes()), size_(0), capacity_(0) {
-    for (std::size_t i = 0; i < sizes_.size(); i++)
-      columns_[i] = nullptr;
-    reserve(INITIAL_CAPACITY);
-  }
-  ~ColumnStorage() {
-    for (std::size_t i = 0; i < sizes_.size(); i++)
-      std::free(columns_[i]);
-  }
-  ColumnStorage(const ColumnStorage &) = delete;
-  ColumnStorage(ColumnStorage &&other) = delete;
-  ColumnStorage &operator = (const ColumnStorage &) const = delete;
-
-  void resize(std::size_t entities) {
-    if (entities < size_)
-      return;
-    reserve(entities);
-    size_ = entities;
-  }
-
-  template <typename C>
-  C *get(std::uint32_t entity) {
-    return static_cast<C*>(static_cast<void*>(
-      columns_[Components::template component_index<C>::value] +
-      entity * Components::template component_size<C>::value));
-  }
-
-  template <typename C, typename ... Args>
-  C *create(std::uint32_t entity, Args && ... args) {
-    return new(get<C>(entity)) C(std::forward<Args>(args) ...);
-  }
-
-  template <typename C>
-  void destroy(std::uint32_t entity) {
-    get<C>(entity)->~C();
-  }
-
-  void reset() {
-    size_ = 0;
-  }
-
-private:
-  void reserve(std::size_t capacity) {
-    if (capacity < capacity_)
-      return;
-    if (capacity_ == 0)
-      capacity_ = capacity;
-    else
-      while (capacity_ < capacity)
-        capacity_ *= 2;
-    for (std::size_t i = 0; i < sizes_.size(); i++) {
-      columns_[i] = static_cast<std::uint8_t*>(std::realloc(columns_[i], capacity_ * sizes_[i]));
+  void resize(std::size_t n) {
+    while (n > blocks_.size() * CHUNK_SIZE) {
+      char *block = new char[CHUNK_SIZE * Components::component_size_sum];
+      blocks_.push_back(block);
     }
   }
 
-  std::vector<std::size_t> sizes_;
-  std::size_t size_, capacity_;
-  std::uint8_t *columns_[Components::component_count];
+  template <typename C>
+  C *get(std::uint32_t entity) {
+    assert(entity < blocks_.size() * CHUNK_SIZE);
+    return static_cast<C*>(static_cast<void*>(
+      blocks_[entity / CHUNK_SIZE]
+      + (entity % CHUNK_SIZE)
+      + Components::template component_offset<C>::value
+    ));
+  }
+
+  template <typename C, typename ... Args>
+  C *create(std::uint32_t entity, Args && ... args) {
+    assert(entity < blocks_.size() * CHUNK_SIZE);
+    return new(get<C>(entity)) C(std::forward<Args>(args) ...);
+  }
+
+  template <typename C>
+  void destroy(std::uint32_t entity) {
+    assert(entity < blocks_.size() * CHUNK_SIZE);
+    get<C>(entity)->~C();
+  }
+
+  void reset() {
+    for (char *block : blocks_) delete [] block;
+    blocks_.resize(0);
+  }
+
+private:
+  std::vector<char*> blocks_;
 };
 
 
@@ -349,7 +267,7 @@ private:
  * @tparam Storage A type that implements the storage interface.
  * @tparam Features A bitmask of features to enable. See FeatureFlags.
  */
-template <class Components, class Storage = ColumnStorage<Components>, std::size_t Features = 0>
+template <class Components, class Storage = ContiguousStorage<Components>, std::size_t Features = 0>
 class EntityX {
 private:
   template <typename T>
