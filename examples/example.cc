@@ -97,7 +97,7 @@ struct hash<Entity> {
 
 struct System {
   virtual ~System() {}
-  virtual void update(EntityManager &es, double dt) = 0;
+  virtual void update(EntityManager &es, float dt) = 0;
 };
 
 
@@ -131,7 +131,7 @@ public:
   }
 
   // Pulse the cursor.
-  void update(EntityManager &es, double dt) override {
+  void update(EntityManager &es, float dt) override {
     const double radius = 16 + std::sin(time * 10.0) * 4;
 
     sf::CircleShape &circle = static_cast<sf::CircleShape&>(**entity.component<Renderable>());
@@ -162,7 +162,7 @@ class CursorPushSystem : public System {
 public:
   explicit CursorPushSystem(Entity cursor) : cursor(cursor) {}
 
-  void update(EntityManager &es, double dt) override {
+  void update(EntityManager &es, float dt) override {
     assert(cursor);
     sf::Vector2f cursor_position = cursor.component<Body>()->position;
     es.for_each<Body>([&](Entity entity, Body &body) {
@@ -170,7 +170,7 @@ public:
       sf::Vector2f direction = body.position - cursor_position;
       float distance = length(direction);
       if (distance < 100.0) {
-        body.direction += direction / distance * 2.0f;
+        body.direction += direction / distance * 2.0f * dt * 200.0f;
       }
     });
   }
@@ -187,7 +187,7 @@ class SpawnSystem : public System {
 public:
   explicit SpawnSystem(sf::RenderTarget &target) : size(target.getSize()), count(size.x * size.y * DENSITY) {}
 
-  void update(EntityManager &es, double dt) override {
+  void update(EntityManager &es, float dt) override {
     int c = 0;
     es.for_each<Collideable>([&](Entity, Collideable&) { c++; });
 
@@ -218,8 +218,8 @@ private:
 
 // Updates a body's position and rotation.
 struct BodySystem : public System {
-  void update(EntityManager &es, double dt) override {
-    const float fdt = static_cast<float>(dt);
+  void update(EntityManager &es, float dt) override {
+    const float fdt = dt;
     es.for_each<Body>([&](Entity, Body &body) {
       body.position += body.direction * fdt;
       body.rotation += body.rotationd * dt;
@@ -234,7 +234,7 @@ class BounceSystem : public System {
 public:
   explicit BounceSystem(sf::RenderTarget &target) : size(target.getSize()) {}
 
-  void update(EntityManager &es, double dt) override {
+  void update(EntityManager &es, float dt) override {
     es.for_each<Body>([&](Entity, Body &body) {
       if (body.position.x + body.direction.x < 0 ||
           body.position.x + body.direction.x >= size.x)
@@ -253,7 +253,7 @@ private:
 // For any two colliding bodies, destroys the bodies and emits a bunch of bodgy explosion particles.
 class ExplosionSystem : public System {
 public:
-  void update(EntityManager &es, double dt) override {
+  void update(EntityManager &es, float dt) override {
     for (Entity entity : collided) {
       if (!entity.component<Indestructible>()) {
         emit_particles(es, entity);
@@ -323,7 +323,7 @@ public:
     size.y = size.y / PARTITIONS + 1;
   }
 
-  void update(EntityManager &es, double dt) override {
+  void update(EntityManager &es, float dt) override {
     reset();
     collect(es);
     collide();
@@ -385,7 +385,7 @@ private:
 // Fade out and then remove particles.
 class ParticleSystem : public System {
 public:
-  void update(EntityManager &es, double dt) override {
+  void update(EntityManager &es, float dt) override {
     es.for_each<Particle>([&](Entity entity, Particle &particle) {
       particle.alpha -= particle.d * dt;
       if (particle.alpha <= 0) {
@@ -403,7 +403,7 @@ class ParticleRenderSystem : public System {
 public:
   explicit ParticleRenderSystem(sf::RenderTarget &target) : target(target) {}
 
-  void update(EntityManager &es, double dt) override {
+  void update(EntityManager &es, float dt) override {
     sf::VertexArray vertices(sf::Quads);
     es.for_each<Particle, Body>([&](Entity entity, Particle &particle, Body &body) {
       (void)entity;
@@ -433,7 +433,7 @@ public:
     text.setFillColor(sf::Color::White);
   }
 
-  void update(EntityManager &es, double dt) override {
+  void update(EntityManager &es, float dt) override {
     es.for_each<Body, Renderable>([&](Entity, Body &body, Renderable &renderable) {
       sf::Color fillColor = renderable->getFillColor();
       fillColor.a = sf::Uint8(body.alpha * 255);
@@ -481,7 +481,7 @@ public:
     systems.push_back(new CursorPushSystem(input_system->get_cursor_entity()));
   }
 
-  void update(double dt) {
+  void update(float dt) {
     for (System *system : systems)
       system->update(entities, dt);
   }
