@@ -34,11 +34,16 @@ using std::endl;
 namespace ex = entityx;
 
 
+float length(const sf::Vector2f &v) {
+  return std::sqrt(v.x * v.x + v.y * v.y);
+}
+
 float r(int a, float b = 0) {
   return static_cast<float>(std::rand() % (a * 1000) + b * 1000) / 1000.0;
 }
 
 
+// A position, direction, and rotation.
 struct Body {
   Body(const sf::Vector2f &position, const sf::Vector2f &direction, float rotationd = 0.0)
     : position(position), direction(direction), rotationd(rotationd) {}
@@ -49,9 +54,15 @@ struct Body {
 };
 
 
+// An sf::Shape.
 using Renderable = std::shared_ptr<sf::Shape>;
 
 
+// An Indestructible entity can collide but will not be destroyed.
+struct Indestructible {};
+
+
+// A Particle is a coloured object that fades out over a duration.
 struct Particle {
   explicit Particle(sf::Color colour, float radius, float duration)
       : colour(colour), radius(radius), alpha(colour.a), d(colour.a / duration) {}
@@ -61,6 +72,7 @@ struct Particle {
 };
 
 
+// A collision radius.
 struct Collideable {
   explicit Collideable(float radius) : radius(radius) {}
 
@@ -68,7 +80,7 @@ struct Collideable {
 };
 
 
-using Components = entityx::Components<Body, Renderable, Particle, Collideable>;
+using Components = entityx::Components<Body, Renderable, Particle, Collideable, Indestructible>;
 using EntityManager = entityx::EntityX<Components>;
 template <typename C> using Component = EntityManager::Component<C>;
 using Entity = EntityManager::Entity;
@@ -88,6 +100,86 @@ struct System {
 };
 
 
+struct EventReceiver {
+  virtual ~EventReceiver() {}
+  virtual void receive(sf::Event event) = 0;
+};
+
+
+// CursorInputSystem processes user input and applies it to the cursor.
+struct CursorInputSystem : System, EventReceiver {
+public:
+  explicit CursorInputSystem(sf::RenderTarget &target, EntityManager &es) {
+    // Create the cursor.
+    entity = es.create();
+
+    entity.assign<Indestructible>();
+
+    const float radius = 16.0;
+
+    entity.assign<Collideable>(radius);
+
+    entity.assign<Body>(
+      sf::Vector2f(sf::Mouse::getPosition()),
+      sf::Vector2f(0, 0));
+
+    sf::Shape *shape = new sf::CircleShape(radius);
+    shape->setFillColor(sf::Color(255, 255, 255, 128));
+    shape->setOrigin(radius, radius);
+    entity.assign<Renderable>(shape);
+  }
+
+  // Pulse the cursor.
+  void update(EntityManager &es, double dt) override {
+    const double radius = 16 + std::sin(time * 10.0) * 4;
+
+    sf::CircleShape &circle = static_cast<sf::CircleShape&>(**entity.component<Renderable>());
+    entity.component<Collideable>()->radius = radius;
+    circle.setRadius(radius);
+    circle.setOrigin(radius, radius);
+    time += dt;
+  }
+
+  void receive(sf::Event event) override {
+    if (event.type == sf::Event::MouseMoved) {
+      entity.component<Body>()->position = sf::Vector2f(event.mouseMove.x, event.mouseMove.y);
+    }
+  }
+
+  Entity get_cursor_entity() {
+    return entity;
+  }
+
+private:
+  Entity entity;
+  double time = 0;
+};
+
+
+// CursorPushSystem applies momentum to objects surrounding the cursor.
+class CursorPushSystem : public System {
+public:
+  explicit CursorPushSystem(Entity cursor) : cursor(cursor) {}
+
+  void update(EntityManager &es, double dt) override {
+    assert(cursor);
+    sf::Vector2f cursor_position = cursor.component<Body>()->position;
+    es.for_each<Body>([&](Entity entity, Body &body) {
+      if (entity == cursor) return;
+      sf::Vector2f direction = body.position - cursor_position;
+      float distance = length(direction);
+      if (distance < 100.0) {
+        body.direction += direction / distance * 2.0f;
+      }
+    });
+  }
+
+private:
+  Entity cursor;
+};
+
+
+// Ensure that a certain density of balls are present.
 class SpawnSystem : public System {
   constexpr static const float DENSITY = 0.0001;
 
@@ -110,10 +202,10 @@ public:
         sf::Vector2f(r(100, -50), r(100, -50)));
 
       // Shape to apply to entity.
-      std::unique_ptr<sf::Shape> shape(new sf::CircleShape(collideable->radius));
+      sf::Shape *shape = new sf::CircleShape(collideable->radius);
       shape->setFillColor(sf::Color(r(128, 127), r(128, 127), r(128, 127), 0));
       shape->setOrigin(collideable->radius, collideable->radius);
-      entity.assign<Renderable>(std::move(shape));
+      entity.assign<Renderable>(shape);
     }
   }
 
@@ -150,7 +242,7 @@ public:
           body.position.y + body.direction.y >= size.y)
         body.direction.y = -body.direction.y;
     });
-    }
+  }
 
 private:
   sf::Vector2u size;
@@ -162,8 +254,10 @@ class ExplosionSystem : public System {
 public:
   void update(EntityManager &es, double dt) override {
     for (Entity entity : collided) {
-      emit_particles(es, entity);
-      entity.destroy();
+      if (!entity.component<Indestructible>()) {
+        emit_particles(es, entity);
+        entity.destroy();
+      }
     }
     collided.clear();
   }
@@ -277,10 +371,6 @@ private:
     }
   }
 
-  float length(const sf::Vector2f &v) {
-    return std::sqrt(v.x * v.x + v.y * v.y);
-  }
-
   bool collided(const Candidate &left, const Candidate &right) {
     return length(left.position - right.position) < left.radius + right.radius;
   }
@@ -303,6 +393,7 @@ public:
 };
 
 
+// Render all particles in one giant vertex array.
 class ParticleRenderSystem : public System {
 public:
   explicit ParticleRenderSystem(sf::RenderTarget &target) : target(target) {}
@@ -369,16 +460,20 @@ private:
 
 class Application {
 public:
-  explicit Application(sf::RenderTarget &target, sf::Font &font) {
-    systems.push_back(new SpawnSystem(target));
+  explicit Application(sf::RenderWindow &window, sf::Font &font) : window(window) {
+    systems.push_back(new SpawnSystem(window));
     systems.push_back(new BodySystem());
-    systems.push_back(new BounceSystem(target));
+    systems.push_back(new BounceSystem(window));
     ExplosionSystem *explosions = new ExplosionSystem();
-    systems.push_back(new CollisionSystem(explosions, target));
+    systems.push_back(new CollisionSystem(explosions, window));
     systems.push_back(explosions);
     systems.push_back(new ParticleSystem());
-    systems.push_back(new ParticleRenderSystem(target));
-    systems.push_back(new RenderSystem(target, font));
+    systems.push_back(new ParticleRenderSystem(window));
+    systems.push_back(new RenderSystem(window, font));
+    auto input_system = new CursorInputSystem(window, entities);
+    event_receivers.push_back(input_system);
+    systems.push_back(input_system);
+    systems.push_back(new CursorPushSystem(input_system->get_cursor_entity()));
   }
 
   void update(double dt) {
@@ -386,8 +481,28 @@ public:
       system->update(entities, dt);
   }
 
+  void event(sf::Event event) {
+    switch (event.type) {
+      case sf::Event::Closed:
+      case sf::Event::KeyPressed:
+        window.close();
+        break;
+
+      default:
+        break;
+    }
+    for (auto receiver : event_receivers)
+      receiver->receive(event);
+  }
+
+  int count() const {
+    return entities.size();
+  }
+
 private:
+  sf::RenderWindow &window;
   EntityManager entities;
+  std::vector<EventReceiver*> event_receivers;
   std::vector<System*> systems;
 };
 
@@ -397,6 +512,8 @@ int main() {
   std::srand(std::time(nullptr));
 
   sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "EntityX Example", sf::Style::Fullscreen);
+  window.setMouseCursorVisible(false);
+
   sf::Font font;
   if (!font.loadFromFile("LiberationSans-Regular.ttf")) {
     cerr << "error: failed to load LiberationSans-Regular.ttf" << endl;
@@ -405,24 +522,22 @@ int main() {
 
   Application app(window, font);
 
+  sf::Clock total;
+  float frames = 0;
+  std::int64_t entities = 0;
   sf::Clock clock;
   while (window.isOpen()) {
     sf::Event event;
-    while (window.pollEvent(event)) {
-      switch (event.type) {
-        case sf::Event::Closed:
-        case sf::Event::KeyPressed:
-          window.close();
-          break;
-
-        default:
-          break;
-      }
-    }
+    while (window.pollEvent(event)) app.event(event);
 
     window.clear();
     sf::Time elapsed = clock.restart();
     app.update(elapsed.asSeconds());
     window.display();
+    frames++;
+    entities += app.count();
   }
+  float elapsed = total.restart().asSeconds();
+  cout << elapsed << " seconds, " << frames << " total frames, " << frames / elapsed << " fps " << endl;
+  cout << entities / frames << " average entities per frame, " << std::int64_t(entities / elapsed) << " entities per second" << endl;
 }
