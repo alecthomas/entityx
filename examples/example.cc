@@ -98,17 +98,12 @@ struct hash<Entity> {
 struct System {
   virtual ~System() {}
   virtual void update(EntityManager &es, float dt) = 0;
-};
-
-
-struct EventReceiver {
-  virtual ~EventReceiver() {}
-  virtual void receive(sf::Event event) = 0;
+  virtual void receive(sf::Event event) {}
 };
 
 
 // CursorInputSystem processes user input and applies it to the cursor.
-struct CursorInputSystem : System, EventReceiver {
+struct CursorInputSystem : System {
 public:
   explicit CursorInputSystem(sf::RenderTarget &target, EntityManager &es) {
     // Create the cursor.
@@ -475,8 +470,7 @@ public:
     systems.push_back(new ParticleSystem());
     systems.push_back(new ParticleRenderSystem(target));
     systems.push_back(new RenderSystem(target, font));
-    auto input_system = new CursorInputSystem(target, entities);
-    event_receivers.push_back(input_system);
+    CursorInputSystem *input_system = new CursorInputSystem(target, entities);
     systems.push_back(input_system);
     systems.push_back(new CursorPushSystem(input_system->get_cursor_entity()));
   }
@@ -496,7 +490,7 @@ public:
       default:
         break;
     }
-    for (auto receiver : event_receivers)
+    for (auto receiver : systems)
       receiver->receive(event);
   }
 
@@ -511,7 +505,6 @@ public:
 private:
   bool running_ = true;
   EntityManager entities;
-  std::vector<EventReceiver*> event_receivers;
   std::vector<System*> systems;
 };
 
