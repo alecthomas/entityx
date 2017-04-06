@@ -111,7 +111,7 @@ struct Test {
 
 
 typedef Components<Position, Direction, Tag, CopyVerifier, Test> GameComponents;
-typedef EntityX<GameComponents, ContiguousStorage<GameComponents, 10000000L>, OBSERVABLE> EntityManager;
+typedef EntityX<GameComponents, ContiguousStorage<GameComponents>, OBSERVABLE> EntityManager;
 template <typename C> using Component = EntityManager::Component<C>;
 using Entity = EntityManager::Entity;
 
@@ -568,4 +568,18 @@ TEST_CASE("TestEntityManagerDestructorCallsDestroyedEvent") {
     e.create().destroy();
   }
   REQUIRE(destroyed == 2);
+}
+
+TEST_CASE("TestContiguousStorage") {
+  using Components = entityx::Components<Position>;
+  using Storage = ContiguousStorage<Components, 10, 10>;
+
+  Storage storage;
+  for (int i = 0; i < 200; i++)
+    storage.create<Position>(i, i, -i);
+  for (int i = 0; i < 200; i++) {
+    Position *position = storage.get<Position>(i);
+    REQUIRE(position->x == i);
+    REQUIRE(position->y == -i);
+  }
 }

@@ -15,6 +15,7 @@
  *
  *    c++ -I.. -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics example.cc -o example
  */
+#include <algorithm>
 #include <cmath>
 #include <unordered_set>
 #include <sstream>
@@ -263,24 +264,24 @@ public:
   }
 
   void emit_particles(EntityManager &es, Entity entity) {
-    Component<Body> body = entity.component<Body>();
-    Component<Renderable> renderable = entity.component<Renderable>();
-    Component<Collideable> collideable = entity.component<Collideable>();
-    sf::Color colour = (*renderable)->getFillColor();
+    const Body &body = *entity.component<Body>();
+    const Renderable &renderable = *entity.component<Renderable>();
+    const Collideable &collideable = *entity.component<Collideable>();
+    sf::Color colour = renderable->getFillColor();
     colour.a = 200;
 
-    float area = (M_PI * collideable->radius * collideable->radius) / 3.0;
+    float area = (M_PI * collideable.radius * collideable.radius) / 3.0;
     for (int i = 0; i < area; i++) {
       Entity particle = es.create();
 
       float rotationd = r(720, 180);
       if (std::rand() % 2 == 0) rotationd = -rotationd;
 
-      float offset = r(collideable->radius, 1);
+      float offset = r(collideable.radius, 1);
       float angle = r(360) * M_PI / 180.0;
       particle.assign<Body>(
-        body->position + sf::Vector2f(offset * cos(angle), offset * sin(angle)),
-        body->direction + sf::Vector2f(offset * 2 * cos(angle), offset * 2 * sin(angle)),
+        body.position + sf::Vector2f(offset * cos(angle), offset * sin(angle)),
+        body.direction + sf::Vector2f(offset * 2 * cos(angle), offset * 2 * sin(angle)),
         rotationd);
 
       float radius = r(3, 1);
@@ -341,22 +342,26 @@ private:
   void collect(EntityManager &es) {
     es.for_each<Body, Collideable>([&](Entity entity, Body &body, Collideable &collideable) {
       const unsigned int
-          left = static_cast<int>(body.position.x - collideable.radius) / PARTITIONS,
-          top = static_cast<int>(body.position.y - collideable.radius) / PARTITIONS,
-          right = static_cast<int>(body.position.x + collideable.radius) / PARTITIONS,
-          bottom = static_cast<int>(body.position.y + collideable.radius) / PARTITIONS;
+        left = static_cast<int>(body.position.x - collideable.radius) / PARTITIONS,
+        top = static_cast<int>(body.position.y - collideable.radius) / PARTITIONS,
+        right = static_cast<int>(body.position.x + collideable.radius) / PARTITIONS,
+        bottom = static_cast<int>(body.position.y + collideable.radius) / PARTITIONS;
       Candidate candidate {body.position, collideable.radius, entity};
       const unsigned int slots[4] = {
-        left + top * size.x,
-        right + top * size.x,
-        left  + bottom * size.x,
-        right + bottom * size.x,
+        clamp(left + top * size.x),
+        clamp(right + top * size.x),
+        clamp(left  + bottom * size.x),
+        clamp(right + bottom * size.x),
       };
       grid[slots[0]].push_back(candidate);
       if (slots[0] != slots[1]) grid[slots[1]].push_back(candidate);
       if (slots[1] != slots[2]) grid[slots[2]].push_back(candidate);
       if (slots[2] != slots[3]) grid[slots[3]].push_back(candidate);
     });
+  }
+
+  inline unsigned int clamp(unsigned int i) const {
+    return std::min(std::max(i, 0U), static_cast<unsigned int>(grid.size()) - 1U);
   }
 
   void collide() {
@@ -419,7 +424,7 @@ private:
 
 
 // Render all Renderable entities and draw some informational text.
-class RenderSystem  :public System {
+class RenderSystem : public System {
 public:
   explicit RenderSystem(sf::RenderTarget &target, sf::Font &font) : target(target) {
     text.setFont(font);

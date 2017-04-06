@@ -124,7 +124,7 @@ public:
     assert(entity < blocks_.size() * CHUNK_SIZE);
     return static_cast<C*>(static_cast<void*>(
       blocks_[entity / CHUNK_SIZE]
-      + (entity % CHUNK_SIZE)
+      + (entity % CHUNK_SIZE) * Components::component_size_sum
       + Components::template component_offset<C>::value
     ));
   }
@@ -171,7 +171,9 @@ struct Components {
   template <typename C>
   struct component_offset : details::get_component_offset<C, Cs...> {};
 
+  // Number of components in the set.
   static const std::size_t component_count = sizeof...(Cs);
+  // sizeof() sum of all components.
   static const std::size_t component_size_sum = details::get_component_size_sum<Cs...>::value;
 
   static std::vector<std::size_t> component_sizes() {
@@ -188,7 +190,6 @@ struct Components {
   template <class Storage, class C>
   static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::size_t index) {
     if (mask.test(component_index<C>::value)) {
-
       storage.template destroy<C>(index);
     }
   }
@@ -310,14 +311,23 @@ public:
     C *operator -> () { return get(); }
     const C *operator -> () const { return get(); }
 
-    C *get() { return manager_->template component_ptr_<C>(id_); }
-    const C *get() const { return manager_->template component_ptr_<C>(id_); }
+    C *get() {
+      assert(manager_ && "manager is null");
+      return manager_->template component_ptr_<C>(id_);
+    }
+    const C *get() const {
+      assert(manager_ && "manager is null");
+      return manager_->template component_ptr_<C>(id_);
+    }
 
     C &operator * () { return *get(); }
     const C &operator * () const { return *get(); }
 
     /** Remove the component from its entity and destroy it. */
-    void remove() { manager_->template remove<C>(id_); }
+    void remove() {
+      assert(manager_ && "manager is null");
+      manager_->template remove<C>(id_);
+    }
 
     bool operator == (const Component<C> &other) const { return manager_ == other.manager_ && id_ == other.id_; }
     bool operator != (const Component<C> &other) const { return !(*this == other); }
