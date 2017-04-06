@@ -270,6 +270,7 @@ struct Components {
   template <class Storage, class C>
   static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::size_t index) {
     if (mask.test(component_index<C>::value)) {
+
       storage.template destroy<C>(index);
     }
   }
@@ -393,6 +394,9 @@ public:
 
     C *get() { return manager_->template component_ptr_<C>(id_); }
     const C *get() const { return manager_->template component_ptr_<C>(id_); }
+
+    C &operator * () { return *get(); }
+    const C &operator * () const { return *get(); }
 
     /** Remove the component from its entity and destroy it. */
     void remove() { manager_->template remove<C>(id_); }
@@ -953,30 +957,38 @@ public:
 private:
   // These proxy functions are nooped at compile time .
 
-  template <bool FeatureMask = Features> typename std::enable_if<FeatureMask & OBSERVABLE>::type
+  template <bool FeatureMask = Features>
+  typename std::enable_if<FeatureMask & OBSERVABLE>::type
   entity_created_(Entity entity) { if (on_entity_created_) on_entity_created_(entity); }
-  template <bool FeatureMask = Features> typename std::enable_if<!FeatureMask>::type
+  template <bool FeatureMask = Features>
+  typename std::enable_if<!(FeatureMask & OBSERVABLE)>::type
   entity_created_(Entity) {}
 
-  template <bool FeatureMask = Features> typename std::enable_if<FeatureMask & OBSERVABLE>::type
+  template <bool FeatureMask = Features>
+  typename std::enable_if<FeatureMask & OBSERVABLE>::type
   entity_destroyed_(Entity entity) { if (on_entity_destroyed_) on_entity_destroyed_(entity); }
-  template <bool FeatureMask = Features> typename std::enable_if<!FeatureMask>::type
+  template <bool FeatureMask = Features>
+  typename std::enable_if<!(FeatureMask & OBSERVABLE)>::type
   entity_destroyed_(Entity) {}
 
-  template <class C, bool FeatureMask = Features> typename std::enable_if<FeatureMask & OBSERVABLE>::type
+  template <class C, bool FeatureMask = Features>
+  typename std::enable_if<FeatureMask & OBSERVABLE>::type
   component_added_(Entity entity, Component<C> component) {
     if (on_component_added_[component_index<C>::value])
       on_component_added_[component_index<C>::value](entity, reinterpret_cast<void*>(&component));
   }
-  template <class C, bool FeatureMask = Features> typename std::enable_if<!FeatureMask>::type
+  template <class C, bool FeatureMask = Features>
+  typename std::enable_if<!(FeatureMask & OBSERVABLE)>::type
   component_added_(Entity, Component<C>) {}
 
-  template <class C, bool FeatureMask = Features> typename std::enable_if<FeatureMask & OBSERVABLE>::type
+  template <class C, bool FeatureMask = Features>
+  typename std::enable_if<FeatureMask & OBSERVABLE>::type
   component_removed_(Entity entity, Component<C> component) {
     if (on_component_removed_[component_index<C>::value])
       on_component_removed_[component_index<C>::value](entity, reinterpret_cast<void*>(&component));
   }
-  template <class C, bool FeatureMask = Features> typename std::enable_if<!FeatureMask>::type
+  template <class C, bool FeatureMask = Features>
+  typename std::enable_if<!(FeatureMask & OBSERVABLE)>::type
   component_removed_(Entity, Component<C>) {}
 
   template <typename C>
@@ -1118,10 +1130,11 @@ EntityX<Components, Storage, Features>::create_many(std::size_t count) {
 
 
 template <class Components, class Storage, std::size_t Features>
-inline void EntityX<Components, Storage, Features>::destroy(Id entity) {
-  assert_valid(entity);
-  entity_destroyed_(Entity(this, entity));
-  const std::uint32_t index = entity.index();
+inline void EntityX<Components, Storage, Features>::destroy(Id id) {
+  assert_valid(id);
+  Entity entity(this, id);
+  entity_destroyed_(entity);
+  const std::uint32_t index = id.index();
   ComponentMask mask = entity_component_mask_[index];
   Components::template destroy<Storage>(storage_, mask, index);
   entity_component_mask_[index].reset();

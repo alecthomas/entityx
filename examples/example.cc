@@ -45,15 +45,11 @@ struct Body {
 
   sf::Vector2f position;
   sf::Vector2f direction;
-  float rotation = 0.0, rotationd;
+  float rotation = 0.0, rotationd, alpha = 0.0;
 };
 
 
-struct Renderable {
-  explicit Renderable(std::unique_ptr<sf::Shape> shape) : shape(std::move(shape)) {}
-
-  std::unique_ptr<sf::Shape> shape;
-};
+using Renderable = std::shared_ptr<sf::Shape>;
 
 
 struct Particle {
@@ -115,7 +111,7 @@ public:
 
       // Shape to apply to entity.
       std::unique_ptr<sf::Shape> shape(new sf::CircleShape(collideable->radius));
-      shape->setFillColor(sf::Color(r(128, 127), r(128, 127), r(128, 127)));
+      shape->setFillColor(sf::Color(r(128, 127), r(128, 127), r(128, 127), 0));
       shape->setOrigin(collideable->radius, collideable->radius);
       entity.assign<Renderable>(std::move(shape));
     }
@@ -130,9 +126,11 @@ private:
 // Updates a body's position and rotation.
 struct BodySystem : public System {
   void update(EntityManager &es, double dt) override {
+    const float fdt = static_cast<float>(dt);
     es.for_each<Body>([&](Entity, Body &body) {
-      body.position += body.direction * static_cast<float>(dt);
+      body.position += body.direction * fdt;
       body.rotation += body.rotationd * dt;
+      body.alpha = std::min(1.0f, body.alpha + fdt);
     });
   };
 };
@@ -174,7 +172,7 @@ public:
     Component<Body> body = entity.component<Body>();
     Component<Renderable> renderable = entity.component<Renderable>();
     Component<Collideable> collideable = entity.component<Collideable>();
-    sf::Color colour = renderable->shape->getFillColor();
+    sf::Color colour = (*renderable)->getFillColor();
     colour.a = 200;
 
     float area = (M_PI * collideable->radius * collideable->radius) / 3.0;
@@ -289,6 +287,7 @@ private:
 };
 
 
+// Fade out and then remove particles.
 class ParticleSystem : public System {
 public:
   void update(EntityManager &es, double dt) override {
@@ -313,10 +312,13 @@ public:
     es.for_each<Particle, Body>([&](Entity entity, Particle &particle, Body &body) {
       (void)entity;
       const float r = particle.radius;
-      vertices.append(sf::Vertex(body.position + sf::Vector2f(-r, -r), particle.colour));
-      vertices.append(sf::Vertex(body.position + sf::Vector2f(r, -r), particle.colour));
-      vertices.append(sf::Vertex(body.position + sf::Vector2f(r, r), particle.colour));
-      vertices.append(sf::Vertex(body.position + sf::Vector2f(-r, r), particle.colour));
+      // Spin the particles.
+      sf::Transform transform;
+      transform.rotate(body.rotation);
+      vertices.append(sf::Vertex(body.position + transform.transformPoint(sf::Vector2f(-r, -r)), particle.colour));
+      vertices.append(sf::Vertex(body.position + transform.transformPoint(sf::Vector2f(r, -r)), particle.colour));
+      vertices.append(sf::Vertex(body.position + transform.transformPoint(sf::Vector2f(r, r)), particle.colour));
+      vertices.append(sf::Vertex(body.position + transform.transformPoint(sf::Vector2f(-r, r)), particle.colour));
     });
     target.draw(vertices);
   }
@@ -336,11 +338,13 @@ public:
   }
 
   void update(EntityManager &es, double dt) override {
-    es.for_each<Body, Renderable>([&](Entity entity, Body &body, Renderable &renderable) {
-      (void)entity;
-      renderable.shape->setPosition(body.position);
-      renderable.shape->setRotation(body.rotation);
-      target.draw(*renderable.shape.get());
+    es.for_each<Body, Renderable>([&](Entity, Body &body, Renderable &renderable) {
+      sf::Color fillColor = renderable->getFillColor();
+      fillColor.a = sf::Uint8(body.alpha * 255);
+      renderable->setFillColor(fillColor);
+      renderable->setPosition(body.position);
+      renderable->setRotation(body.rotation);
+      target.draw(*renderable);
     });
     last_update += dt;
     frame_count++;
