@@ -194,6 +194,18 @@ struct Components {
     }
   }
 
+  template <class Storage, class F>
+  static void each(Storage &storage, const std::bitset<component_count> &mask, std::size_t index, F action) {
+	  Components::each<Storage, F, Cs...>(storage, mask, index, action);
+  }
+
+  template <class Storage, class F, class C>
+  static void each(Storage &storage, const std::bitset<component_count> &mask, std::size_t index, F action) {
+	  if (mask.test(component_index<C>::value)) {
+		  action(*storage.template get<C>(index));
+	  }
+  }
+
   template <class Storage, template <typename> class Component, typename ... Components>
   static std::tuple<Component<Cs> & ...> unpack(Storage &storage, std::size_t index, Component<Components> & ... components) {
     return std::forward_as_tuple(storage.template get<Components>(index)...);
@@ -216,6 +228,12 @@ private:
   static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::size_t index) {
     Components::destroy<Storage, C>(storage, mask, index);
     Components::destroy<Storage, C1, Cn...>(storage, mask, index);
+  }
+
+  template <class Storage, class F, class C, class C1, class ... Cn>
+  static void each(Storage &storage, const std::bitset<component_count> &mask, std::size_t index, F action) {
+	  Components::each<Storage, F, C>(storage, mask, index, action);
+	  Components::each<Storage, F, C1, Cn...>(storage, mask, index, action);
   }
 };
 
@@ -463,6 +481,11 @@ public:
       invalidate();
     }
 
+	template<class F>
+	void for_each_component(F action) {
+		manager_->for_each_component(id_, action);
+	}
+
     ComponentMask component_mask() const {
       return manager_->component_mask(id_);
     }
@@ -670,6 +693,14 @@ public:
    * Emits EntityDestroyedEvent.
    */
   void destroy(Id entity);
+
+  /**
+  * iterate over all components of a given entity
+  *
+  * Does this work?
+  */
+  template<class F>
+  void for_each_component(Id entity, F action);
 
   /**
    * Return true if the given entity ID is still valid.
@@ -1053,6 +1084,15 @@ EntityX<Components, Storage, Features>::create_many(std::size_t count) {
   return entities;
 }
 
+
+
+
+template <class Components, class Storage, std::size_t Features>
+template <class F>
+inline void EntityX<Components, Storage, Features>::for_each_component(Id entity, F action) {
+	const std::uint32_t index = entity.index();
+	Components::template each<Storage>(storage_, entity_component_mask_[index], index, action);
+}
 
 
 
