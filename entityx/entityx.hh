@@ -183,37 +183,55 @@ struct Components {
   }
 
   template <class Storage>
-  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::size_t index) {
+  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index) {
     Components::destroy<Storage, Cs...>(storage, mask, index);
   }
 
   template <class Storage, class C>
-  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::size_t index) {
+  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index) {
     if (mask.test(component_index<C>::value)) {
       storage.template destroy<C>(index);
     }
   }
 
   template <class Storage, template <typename> class Component, typename ... Components>
-  static std::tuple<Component<Cs> & ...> unpack(Storage &storage, std::size_t index, Component<Components> & ... components) {
+  static std::tuple<Component<Cs> & ...> unpack(Storage &storage, std::uint32_t index, Component<Components> & ... components) {
     return std::forward_as_tuple(storage.template get<Components>(index)...);
   }
 
+  template <typename Storage, typename Fn>
+  static void apply(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index, Fn fn) {
+    apply_inner<Storage, Fn, Cs...>(storage, mask, index, fn);
+  }
+
 private:
+  template <typename Storage, typename Fn>
+  static void apply_inner(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index, Fn fn) {
+  }
+
+  template <typename Storage, typename Fn, typename C0, typename ... Cn>
+  static void apply_inner(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index, Fn fn) {
+    if (mask.test(component_index<C0>::value)) {
+      fn(*storage.template get<C0>(index));
+    }
+    apply_inner<Storage, Fn, Cn...>(storage, mask, index, fn);
+  }
+
+
   template <class C>
-  static void init_sizes(std::vector<std::size_t> &sizes, std::size_t index = 0) {
+  static void init_sizes(std::vector<std::size_t> &sizes, std::uint32_t index = 0) {
     (void)index;
     sizes.push_back(sizeof(C));
   }
 
   template <class C0, class C1, class ... Cn>
-  static void init_sizes(std::vector<std::size_t> &sizes, std::size_t index = 0) {
+  static void init_sizes(std::vector<std::size_t> &sizes, std::uint32_t index = 0) {
     sizes.push_back(sizeof(C0));
     Components::init_sizes<C1, Cn...>(sizes, index + 1);
   }
 
   template <class Storage, class C, class C1, class ... Cn>
-  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::size_t index) {
+  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index) {
     Components::destroy<Storage, C>(storage, mask, index);
     Components::destroy<Storage, C1, Cn...>(storage, mask, index);
   }
@@ -883,6 +901,19 @@ public:
   void reset();
 
 private:
+  struct on_component_removed_proxy {
+    on_component_removed_proxy(EntityX *em, Entity entity) : em(em), entity(entity) {}
+
+    template <typename C>
+    void operator () (C &component) {
+      em->component_removed_(entity, Component<C>(em, entity.id()));
+    }
+
+  private:
+    EntityX *em;
+    Entity entity;
+  };
+
   // These proxy functions are nooped at compile time .
 
   template <bool FeatureMask = Features>
@@ -1064,6 +1095,7 @@ inline void EntityX<Components, Storage, Features>::destroy(Id id) {
   entity_destroyed_(entity);
   const std::uint32_t index = id.index();
   ComponentMask mask = entity_component_mask_[index];
+  Components::apply(storage_, mask, index, on_component_removed_proxy(this, entity));
   Components::template destroy<Storage>(storage_, mask, index);
   entity_component_mask_[index].reset();
   entity_version_[index]++;

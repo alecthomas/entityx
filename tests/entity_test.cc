@@ -110,8 +110,8 @@ struct Test {
 };
 
 
-typedef Components<Position, Direction, Tag, CopyVerifier, Test> GameComponents;
-typedef EntityX<GameComponents, ContiguousStorage<GameComponents>, OBSERVABLE> EntityManager;
+using GameComponents = Components<Position, Direction, Tag, CopyVerifier, Test>;
+using EntityManager = EntityX<GameComponents, ContiguousStorage<GameComponents>, OBSERVABLE>;
 template <typename C> using Component = EntityManager::Component<C>;
 using Entity = EntityManager::Entity;
 
@@ -572,7 +572,7 @@ TEST_CASE("TestEntityManagerDestructorCallsDestroyedEvent") {
 
 TEST_CASE("TestContiguousStorage") {
   using Components = entityx::Components<Position>;
-  using Storage = ContiguousStorage<Components, 10, 10>;
+  using Storage = ContiguousStorage<Components>;
 
   Storage storage;
   for (int i = 0; i < 200; i++)
@@ -582,4 +582,22 @@ TEST_CASE("TestContiguousStorage") {
     REQUIRE(position->x == i);
     REQUIRE(position->y == -i);
   }
+}
+
+TEST_CASE("TestOnRemoveComponentCalledWhenEntityIsDestroyed") {
+  int on_removed = 0;
+
+  EntityManager em;
+  em.on_component_removed<Position>([&](Entity e, Component<Position> c) {
+    on_removed++;
+  });
+  em.on_component_removed<Direction>([&](Entity e, Component<Direction> c) {
+    on_removed++;
+  });
+  Entity entity = em.create();
+  entity.assign<Position>();
+  entity.assign<Direction>();
+  entity.destroy();
+
+  REQUIRE(on_removed == 2);
 }
