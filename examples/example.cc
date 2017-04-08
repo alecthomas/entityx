@@ -460,7 +460,7 @@ private:
 
 class Application {
 public:
-  explicit Application(sf::RenderTarget &target, sf::Font &font) {
+  explicit Application(sf::RenderTarget &target, sf::Font &font, bool benchmark) {
     systems.push_back(new SpawnSystem(target));
     systems.push_back(new BodySystem());
     systems.push_back(new BounceSystem(target));
@@ -468,11 +468,14 @@ public:
     systems.push_back(new CollisionSystem(explosions, target));
     systems.push_back(explosions);
     systems.push_back(new ParticleSystem());
-    systems.push_back(new ParticleRenderSystem(target));
-    systems.push_back(new RenderSystem(target, font));
     CursorInputSystem *input_system = new CursorInputSystem(target, entities);
     systems.push_back(input_system);
     systems.push_back(new CursorPushSystem(input_system->get_cursor_entity()));
+
+    if (!benchmark) {
+      systems.push_back(new ParticleRenderSystem(target));
+      systems.push_back(new RenderSystem(target, font));
+    }
   }
 
   void update(float dt) {
@@ -513,6 +516,8 @@ private:
 int main(int argc, const char **argv) {
   std::srand(std::time(nullptr));
 
+  const bool benchmark = (argc == 2 && std::string(argv[1]) == "benchmark");
+
   sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "EntityX Example", sf::Style::Fullscreen);
   window.setMouseCursorVisible(false);
 
@@ -522,7 +527,7 @@ int main(int argc, const char **argv) {
     return 1;
   }
 
-  Application app(window, font);
+  Application app(window, font, benchmark);
 
   sf::Clock total;
   float frames = 0;
