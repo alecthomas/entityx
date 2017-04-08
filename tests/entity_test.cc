@@ -572,9 +572,10 @@ TEST_CASE("TestEntityManagerDestructorCallsDestroyedEvent") {
 
 TEST_CASE("TestContiguousStorage") {
   using Components = entityx::Components<Position>;
-  using Storage = ContiguousStorage<Components>;
+  using Storage = ContiguousStorage<Components, 10, 10>;
 
   Storage storage;
+  storage.resize(200);
   for (int i = 0; i < 200; i++)
     storage.create<Position>(i, i, -i);
   for (int i = 0; i < 200; i++) {

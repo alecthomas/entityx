@@ -1092,10 +1092,12 @@ template <class Components, class Storage, std::size_t Features>
 inline void EntityX<Components, Storage, Features>::destroy(Id id) {
   assert_valid(id);
   Entity entity(this, id);
-  entity_destroyed_(entity);
   const std::uint32_t index = id.index();
   ComponentMask mask = entity_component_mask_[index];
+  // Notify on_component_removed() callback.
   Components::apply(storage_, mask, index, on_component_removed_proxy(this, entity));
+  // Notify on_entity_destroyed() callback.
+  entity_destroyed_(entity);
   Components::template destroy<Storage>(storage_, mask, index);
   entity_component_mask_[index].reset();
   entity_version_[index]++;
