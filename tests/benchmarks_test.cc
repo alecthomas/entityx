@@ -42,19 +42,20 @@ private:
 };
 
 struct Position {
+  Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
   float x, y;
 };
 
 
 struct Direction {
+  Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
   float x, y;
 };
 
 
 typedef Components<Position, Direction> GameComponents;
-typedef EntityX<GameComponents, ContiguousStorage<GameComponents>> EntityManager;
-typedef EntityX<GameComponents, ContiguousStorage<GameComponents>, OBSERVABLE> EntityManagerWithListener;
-template <typename C> using Component = EntityManager::Component<C>;
+typedef EntityX<GameComponents> EntityManager;
+typedef EntityX<GameComponents, OBSERVABLE> EntityManagerWithListener;
 using Entity = EntityManager::Entity;
 
 
@@ -153,9 +154,6 @@ TEST_CASE_METHOD(ListenerBenchmarkFixture, "TestDestroyEntitiesWithListener") {
 
   int destroyed = 0;
   em.on_entity_destroyed([&](EntityManagerWithListener::Entity) { destroyed++; });
-  em.on_component_added<Position>([&](EntityManagerWithListener::Entity, EntityManagerWithListener::Component<Position> position) {
-
-  });
 
   AutoTimer t;
   cout << "destroying " << count << " entities while notifying on_entity_destroyed()" << endl;
@@ -178,8 +176,8 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIteration") {
   AutoTimer t;
   cout << "iterating over " << count << " entities, unpacking one component" << endl;
 
-  Component<Position> position;
-  for (auto e : em.entities_with_components(position)) {
+  for (Entity e : em.entities_with_components<Position>()) {
+    Position *position = e.component<Position>();
     (void)e;
   }
 }
@@ -193,8 +191,8 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestEntityCreationIterationDeletionRepeatedl
       Entity e = em.create();
       e.assign<Position>();
     }
-    Component<Position> position;
-    for (auto e : em.entities_with_components(position)) {
+    for (Entity e : em.entities_with_components<Position>()) {
+      Position *position = e.component<Position>();
       if (rand() % 2 == 0) e.destroy();
     }
   }
@@ -204,16 +202,30 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIterationUnpackTwo") {
   int count = 10000000;
   for (int i = 0; i < count; i++) {
     auto e = em.create();
-    e.assign<Position>();
-    e.assign<Direction>();
+    e.assign<Position>(i, i);
+    e.assign<Direction>(i, i);
   }
 
   AutoTimer t;
   cout << "iterating over " << count << " entities, unpacking two components" << endl;
 
-  Component<Position> position;
-  Component<Direction> direction;
-  for (auto e : em.entities_with_components(position, direction)) {
-    (void)e;
+  for (Entity e : em.entities_with_components<Position, Direction>()) {
+    Position *position = e.component<Position>();
+    Direction *direction = e.component<Direction>();
   }
+}
+
+
+TEST_CASE_METHOD(BenchmarkFixture, "TestForEachUnpackTwo") {
+  int count = 10000000;
+  for (int i = 0; i < count; i++) {
+    auto e = em.create();
+    e.assign<Position>(i, i);
+    e.assign<Direction>(i, i);
+  }
+
+  AutoTimer t;
+  cout << "iterating over " << count << " entities, unpacking two components" << endl;
+
+  em.for_each<Position, Direction>([](Entity, Position &, Direction &) {});
 }

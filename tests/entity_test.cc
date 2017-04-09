@@ -31,16 +31,6 @@ using std::pair;
 using std::string;
 
 
-template <typename T>
-int size(const T &t) {
-  int n = 0;
-  for (auto i : t) {
-    ++n;
-    (void)i;  // Unused on purpose, suppress warning
-  }
-  return n;
-}
-
 struct Position {
   explicit Position(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
 
@@ -111,9 +101,13 @@ struct Test {
 
 
 using GameComponents = Components<Position, Direction, Tag, CopyVerifier, Test>;
-using EntityManager = EntityX<GameComponents, ContiguousStorage<GameComponents>, OBSERVABLE>;
-template <typename C> using Component = EntityManager::Component<C>;
+using EntityManager = EntityX<GameComponents, OBSERVABLE>;
 using Entity = EntityManager::Entity;
+
+template <typename T>
+int size(const T &t) {
+  return std::count_if(t.begin(), t.end(), [](const Entity &) { return true; });
+}
 
 
 struct EntityManagerFixture {
@@ -180,12 +174,6 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentConstruction") {
   REQUIRE(2.0 == Approx(cp->y));
 }
 
-TEST_CASE_METHOD(EntityManagerFixture, "TestEntityFromComponent") {
-  auto e = em.create();
-  auto p = e.assign<Position>(1, 2);
-  REQUIRE(p.entity() ==  e);
-}
-
 TEST_CASE_METHOD(EntityManagerFixture, "TestDestroyEntity") {
   Entity e = em.create();
   Entity f = em.create();
@@ -239,7 +227,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithComponentAndUnpacking
   Entity e = em.create();
   Entity f = em.create();
   Entity g = em.create();
-  std::vector<std::pair<Component<Position>, Component<Direction>>> position_directions;
+  std::vector<std::pair<Position*, Direction*>> position_directions;
   position_directions.push_back(std::make_pair(
       e.assign<Position>(1.0f, 2.0f), e.assign<Direction>(3.0f, 4.0f)));
   position_directions.push_back(std::make_pair(
@@ -248,34 +236,23 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithComponentAndUnpacking
   g.assign<Position>(5.0f, 6.0f);
   int i = 0;
 
-  Component<Position> position;
-  REQUIRE(3 ==  size(em.entities_with_components(position)));
+  REQUIRE(3 ==  size(em.entities_with_components<Position>()));
 
-  Component<Direction> direction;
-  for (auto unused_entity : em.entities_with_components(position, direction)) {
-    (void)unused_entity;
-    REQUIRE(position);
-    REQUIRE(direction);
+  em.for_each<Position, Direction>([&](Entity, Position &position, Direction &direction) {
     auto pd = position_directions.at(i);
-    REQUIRE(position ==  pd.first);
-    REQUIRE(direction ==  pd.second);
+    REQUIRE(position ==  *pd.first);
+    REQUIRE(direction ==  *pd.second);
     ++i;
-  }
+  });
   REQUIRE(2 ==  i);
-  Component<Tag> tag;
   i = 0;
-  for (auto unused_entity :
-       em.entities_with_components(position, direction, tag)) {
-    (void)unused_entity;
-    REQUIRE(static_cast<bool>(position));
-    REQUIRE(static_cast<bool>(direction));
-    REQUIRE(static_cast<bool>(tag));
+  em.for_each<Position, Direction, Tag>([&](Entity, Position &position, Direction &direction, Tag &tag) {
     auto pd = position_directions.at(1);
-    REQUIRE(position ==  pd.first);
-    REQUIRE(direction ==  pd.second);
-    REQUIRE(tag ==  thetag);
+    REQUIRE(position ==  *pd.first);
+    REQUIRE(direction ==  *pd.second);
+    REQUIRE(tag == *thetag);
     i++;
-  }
+  });
   REQUIRE(1 ==  i);
 }
 
@@ -299,9 +276,9 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestUnpack") {
   auto d = e.assign<Direction>(3.0, 4.0);
   auto t = e.assign<Tag>("tag");
 
-  Component<Position> up;
-  Component<Direction> ud;
-  Component<Tag> ut;
+  Position *up;
+  Direction *ud;
+  Tag *ut;
   em.unpack(e.id(), up);
   REQUIRE(p ==  up);
   em.unpack(e.id(), up, ud);
@@ -365,14 +342,14 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAddedEvent") {
   int position_events = 0;
   int direction_events = 0;
 
-  auto on_position_added = [&position_events](Entity entity, Component<Position> p) {
+  auto on_position_added = [&position_events](Entity entity, Position *p) {
     float n = static_cast<float>(position_events);
     REQUIRE(p->x ==  n);
     REQUIRE(p->y ==  n);
     position_events++;
   };
 
-  auto on_direction_added = [&direction_events](Entity entity, Component<Direction> p) {
+  auto on_direction_added = [&direction_events](Entity entity, Direction *p) {
     float n = static_cast<float>(direction_events);
     REQUIRE(p->x ==  -n);
     REQUIRE(p->y ==  -n);
@@ -395,9 +372,9 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAddedEvent") {
 
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentRemovedEvent") {
-  Component<Direction> removed;
+  Direction *removed = nullptr;
 
-  auto on_direction_removed = [&](Entity entity, Component<Direction> event) {
+  auto on_direction_removed = [&](Entity entity, Direction *event) {
     removed = event;
   };
 
@@ -405,7 +382,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentRemovedEvent") {
 
   REQUIRE(!(removed));
   Entity e = em.create();
-  Component<Direction> p = e.assign<Direction>(1.0, 2.0);
+  Direction *p = e.assign<Direction>(1.0, 2.0);
   e.remove<Direction>();
   REQUIRE(removed ==  p);
   REQUIRE(!(e.component<Direction>()));
@@ -431,23 +408,17 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityDestroyAll") {
 TEST_CASE_METHOD(EntityManagerFixture, "TestEntityDestroyHole") {
   std::vector<Entity> entities;
 
-  auto count = [this]()->int {
-    auto e = em.entities_with_components<Position>();
-    return std::count_if(e.begin(), e.end(),
-                         [](const Entity &) { return true; });
-  };
-
   for (int i = 0; i < 5000; i++) {
     auto e = em.create();
     e.assign<Position>();
     entities.push_back(e);
   }
 
-  REQUIRE(count() ==  5000);
+  REQUIRE(size(em.entities_with_components<Position>()) ==  5000);
 
   entities[2500].destroy();
 
-  REQUIRE(count() ==  4999);
+  REQUIRE(size(em.entities_with_components<Position>()) ==  4999);
 }
 
 // TODO(alec): Disable this on OSX - it doesn't seem to be possible to catch it?!?
@@ -456,35 +427,22 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityDestroyHole") {
 //   REQUIRE_THROWS_AS(delete position, std::bad_alloc);
 // }
 
-
-TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenEntityDestroyed") {
-  Entity a = em.create();
-  Component<Position> position = a.assign<Position>(1, 2);
-  REQUIRE(position);
-  REQUIRE(position->x == 1);
-  REQUIRE(position->y == 2);
-  a.destroy();
-  REQUIRE(!position);
-}
-
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentAssignmentFromCopy") {
   Entity a = em.create();
   CopyVerifier original;
-  Component<CopyVerifier> copy = a.assign_from_copy(original);
+  CopyVerifier *copy = a.assign_from_copy(original);
   REQUIRE(copy);
   REQUIRE(copy->copied == 1);
-  a.destroy();
-  REQUIRE(!copy);
 }
 
-TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenComponentDestroyed") {
+TEST_CASE_METHOD(EntityManagerFixture, "TestComponentInvalidatedWhenDestroyed") {
   Entity a = em.create();
-  Component<Position> position = a.assign<Position>(1, 2);
+  Position *position = a.assign<Position>(1, 2);
   REQUIRE(position);
   REQUIRE(position->x == 1);
   REQUIRE(position->y == 2);
   a.remove<Position>();
-  REQUIRE(!position);
+  REQUIRE(!a.component<Position>());
 }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestDeleteEntityWithNoComponents") {
@@ -522,7 +480,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityComponentsFromTuple") {
   e.assign<Position>(1, 2);
   e.assign<Direction>(3, 4);
 
-  std::tuple<Component<Position>, Component<Direction>> components = e.components<Position, Direction>();
+  std::tuple<Position*, Direction*> components = e.components<Position, Direction>();
 
   REQUIRE(std::get<0>(components)->x == 1);
   REQUIRE(std::get<0>(components)->y == 2);
@@ -589,10 +547,10 @@ TEST_CASE("TestOnRemoveComponentCalledWhenEntityIsDestroyed") {
   int on_removed = 0;
 
   EntityManager em;
-  em.on_component_removed<Position>([&](Entity e, Component<Position> c) {
+  em.on_component_removed<Position>([&](Entity e, Position *c) {
     on_removed++;
   });
-  em.on_component_removed<Direction>([&](Entity e, Component<Direction> c) {
+  em.on_component_removed<Direction>([&](Entity e, Direction *c) {
     on_removed++;
   });
   Entity entity = em.create();

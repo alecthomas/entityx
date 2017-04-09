@@ -9,9 +9,7 @@ For example, the number of components and their size is known at compile time.
 ## Example code
 
 ```c++
-#include "entityx/entityx.hh"
-
-using namespace entityx;
+#include <entityx/entityx.hh>
 
 struct Position {
   Position(float x, float y) : x(x), y(y) {}
@@ -30,10 +28,8 @@ struct Direction {
 
 
 // Convenience types for our entity system.
-using GameComponents = Components<Position, Health, Direction>;
-using EntityManager = EntityX<GameComponents>;
-template <typename C>
-using Component = EntityManager::Component<C>;
+using Components = entityx::Components<Position, Health, Direction>;
+using EntityManager = entityx::EntityX<Components>;
 using Entity = EntityManager::Entity;
 
 int main() {
@@ -41,11 +37,11 @@ int main() {
   Entity a = entities.create();
   a.assign<Position>(1, 2);
   Entity b = entities.create();
-  Component<Health> health = b.assign<Health>(10);
-  Component<Direction> direction = b.assign<Direction>(3, 4);
+  Health *health = b.assign<Health>(10);
+  Direction *direction = b.assign<Direction>(3, 4);
 
   // Retrieve component.
-  Component<Position> position = a.component<Position>();
+  Position *position = a.component<Position>();
 
   printf("position x = %f, y = %f\n", position->x, position->y);
   printf("has position = %d\n", bool(a.component<Position>()));
@@ -53,7 +49,6 @@ int main() {
   // Remove component from entity.
   position.remove();
   printf("has position = %d\n", bool(a.component<Position>()));
-
 }
 ```
 
@@ -96,3 +91,7 @@ struct Storage {
   void reset()
 };
 ```
+
+## Default storage implementation
+
+The default storage implementation stores components
