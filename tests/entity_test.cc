@@ -20,15 +20,16 @@
 #include "./3rdparty/catch.hh"
 #include "entityx/entityx.hh"
 
-// using namespace std;
-using namespace entityx;
-
 using std::ostream;
 using std::vector;
 using std::set;
 using std::map;
 using std::pair;
 using std::string;
+
+using entityx::EntityX;
+using entityx::DefaultStorage;
+using entityx::ContiguousStorage;
 
 
 struct Position {
@@ -100,8 +101,7 @@ struct Test {
 };
 
 
-using GameComponents = Components<Position, Direction, Tag, CopyVerifier, Test>;
-using EntityManager = EntityX<GameComponents, OBSERVABLE>;
+using EntityManager = EntityX<DefaultStorage, entityx::OBSERVABLE, Position, Direction, Tag, CopyVerifier, Test>;
 using Entity = EntityManager::Entity;
 
 template <typename T>
@@ -529,8 +529,7 @@ TEST_CASE("TestEntityManagerDestructorCallsDestroyedEvent") {
 }
 
 TEST_CASE("TestContiguousStorage") {
-  using Components = entityx::Components<Position>;
-  using Storage = ContiguousStorage<Components, 10, 10>;
+  using Storage = ContiguousStorage<10, 10, Position>;
 
   Storage storage;
   storage.resize(200);

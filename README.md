@@ -40,8 +40,7 @@ struct Direction {
 
 
 // Convenience types for our entity system.
-using Components = entityx::Components<Position, Health, Direction>;
-using EntityManager = entityx::EntityX<Components>;
+using EntityManager = entityx::EntityX<entityx::DefaultStorage, 0, Position, Health, Direction>;
 using Entity = EntityManager::Entity;
 
 int main() {

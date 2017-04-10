@@ -81,8 +81,9 @@ struct Collideable {
 };
 
 
-using Components = entityx::Components<Body, Renderable, Particle, Collideable, Indestructible>;
-using EntityManager = entityx::EntityX<Components, 0, entityx::SOAStorage<Components>>;
+using EntityManager = entityx::EntityX<
+  entityx::DefaultStorage, 0,
+  Body, Renderable, Particle, Collideable, Indestructible>;
 using Entity = EntityManager::Entity;
 
 

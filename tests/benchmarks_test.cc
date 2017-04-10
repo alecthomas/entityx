@@ -53,9 +53,8 @@ struct Direction {
 };
 
 
-typedef Components<Position, Direction> GameComponents;
-typedef EntityX<GameComponents> EntityManager;
-typedef EntityX<GameComponents, OBSERVABLE> EntityManagerWithListener;
+typedef EntityX<DefaultStorage, 0, Position, Direction> EntityManager;
+typedef EntityX<DefaultStorage, OBSERVABLE, Position, Direction> EntityManagerWithListener;
 using Entity = EntityManager::Entity;
 
 

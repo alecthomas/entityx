@@ -79,8 +79,93 @@ struct get_component_size_sum<T, Ts...> :
 
 
 /**
+ * Interaction with a static set of component types.
+ */
+template <typename ... Cs>
+struct ComponentHelper {
+  template <typename T>
+  struct is_component : details::is_valid_component<T, Cs...> {};
+
+  template <typename C>
+  struct component_index : details::get_component_index<C, Cs...> {};
+
+  template <typename C>
+  struct component_size : details::get_component_size<C, Cs...> {};
+
+  template <typename C>
+  struct component_offset : details::get_component_offset<C, Cs...> {};
+
+  // Number of components in the set.
+  static const std::size_t component_count = sizeof...(Cs);
+  // sizeof() sum of all components.
+  static const std::size_t component_size_sum = details::get_component_size_sum<Cs...>::value;
+
+  static std::vector<std::size_t> component_sizes() {
+    std::vector<std::size_t> sizes;
+    ComponentHelper::init_sizes<Cs...>(sizes, 0);
+    return sizes;
+  }
+
+  template <class Storage>
+  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index) {
+    ComponentHelper::destroy<Storage, Cs...>(storage, mask, index);
+  }
+
+  template <class Storage, class C>
+  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index) {
+    if (mask.test(component_index<C>::value)) {
+      storage.template destroy<C>(index);
+    }
+  }
+
+  template <class Storage, typename ... Components>
+  static std::tuple<Components * ...> unpack(Storage &storage, std::uint32_t index, Components & ... components) {
+    return std::forward_as_tuple(storage.template get<Components>(index)...);
+  }
+
+  template <typename Storage, typename Fn>
+  static void apply(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index, Fn fn) {
+    apply_inner<Storage, Fn, Cs...>(storage, mask, index, fn);
+  }
+
+private:
+  template <typename Storage, typename Fn>
+  static void apply_inner(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index, Fn fn) {
+  }
+
+  template <typename Storage, typename Fn, typename C0, typename ... Cn>
+  static void apply_inner(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index, Fn fn) {
+    if (mask.test(component_index<C0>::value)) {
+      fn(storage.template get<C0>(index));
+    }
+    apply_inner<Storage, Fn, Cn...>(storage, mask, index, fn);
+  }
+
+
+  template <class C>
+  static void init_sizes(std::vector<std::size_t> &sizes, std::uint32_t index = 0) {
+    (void)index;
+    sizes.push_back(sizeof(C));
+  }
+
+  template <class C0, class C1, class ... Cn>
+  static void init_sizes(std::vector<std::size_t> &sizes, std::uint32_t index = 0) {
+    sizes.push_back(sizeof(C0));
+    ComponentHelper::init_sizes<C1, Cn...>(sizes, index + 1);
+  }
+
+  template <class Storage, class C, class C1, class ... Cn>
+  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index) {
+    ComponentHelper::destroy<Storage, C>(storage, mask, index);
+    ComponentHelper::destroy<Storage, C1, Cn...>(storage, mask, index);
+  }
+};
+
+
+/**
  * Storage interface.
  */
+template <typename ... Components>
 struct Storage {
   // A hint that the backend should be capable of storing this number of entities.
   void resize(std::size_t entities);
@@ -103,10 +188,18 @@ struct Storage {
 /**
  * ContiguousStorage is a storage engine for EntityX that uses semi-contiguous
  * blocks of memory for holding all components for all entities.
+ *
+ * @code
+ * template <typename ... Components>
+ * using Storage = entityX::ContiguousStorage<8192, 4, Components...>;
+ * using EntityManager = entityx::EntityX<Storage, 0, Position, Direction>;
+ * @endcode
  */
-template <class Components, int CHUNK_SIZE = 8192, int INITIAL_CHUNKS = 8>
+template <int CHUNK_SIZE, int INITIAL_CHUNKS, typename ... Cs>
 class ContiguousStorage {
 public:
+  using Components = ComponentHelper<Cs...>;
+
   ContiguousStorage() {
     resize(CHUNK_SIZE * INITIAL_CHUNKS);
   }
@@ -150,94 +243,9 @@ private:
   std::vector<char*> blocks_;
 };
 
-
-
-
-
-/**
- * Interaction with a static set of component types.
- */
-template <typename ... Cs>
-struct Components {
-  template <typename T>
-  struct is_component : details::is_valid_component<T, Cs...> {};
-
-  template <typename C>
-  struct component_index : details::get_component_index<C, Cs...> {};
-
-  template <typename C>
-  struct component_size : details::get_component_size<C, Cs...> {};
-
-  template <typename C>
-  struct component_offset : details::get_component_offset<C, Cs...> {};
-
-  // Number of components in the set.
-  static const std::size_t component_count = sizeof...(Cs);
-  // sizeof() sum of all components.
-  static const std::size_t component_size_sum = details::get_component_size_sum<Cs...>::value;
-
-  static std::vector<std::size_t> component_sizes() {
-    std::vector<std::size_t> sizes;
-    Components::init_sizes<Cs...>(sizes, 0);
-    return sizes;
-  }
-
-  template <class Storage>
-  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index) {
-    Components::destroy<Storage, Cs...>(storage, mask, index);
-  }
-
-  template <class Storage, class C>
-  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index) {
-    if (mask.test(component_index<C>::value)) {
-      storage.template destroy<C>(index);
-    }
-  }
-
-  template <class Storage, typename ... Components>
-  static std::tuple<Components * ...> unpack(Storage &storage, std::uint32_t index, Components & ... components) {
-    return std::forward_as_tuple(storage.template get<Components>(index)...);
-  }
-
-  template <typename Storage, typename Fn>
-  static void apply(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index, Fn fn) {
-    apply_inner<Storage, Fn, Cs...>(storage, mask, index, fn);
-  }
-
-private:
-  template <typename Storage, typename Fn>
-  static void apply_inner(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index, Fn fn) {
-  }
-
-  template <typename Storage, typename Fn, typename C0, typename ... Cn>
-  static void apply_inner(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index, Fn fn) {
-    if (mask.test(component_index<C0>::value)) {
-      fn(storage.template get<C0>(index));
-    }
-    apply_inner<Storage, Fn, Cn...>(storage, mask, index, fn);
-  }
-
-
-  template <class C>
-  static void init_sizes(std::vector<std::size_t> &sizes, std::uint32_t index = 0) {
-    (void)index;
-    sizes.push_back(sizeof(C));
-  }
-
-  template <class C0, class C1, class ... Cn>
-  static void init_sizes(std::vector<std::size_t> &sizes, std::uint32_t index = 0) {
-    sizes.push_back(sizeof(C0));
-    Components::init_sizes<C1, Cn...>(sizes, index + 1);
-  }
-
-  template <class Storage, class C, class C1, class ... Cn>
-  static void destroy(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index) {
-    Components::destroy<Storage, C>(storage, mask, index);
-    Components::destroy<Storage, C1, Cn...>(storage, mask, index);
-  }
-};
-
-
+/** Default Storage implementation. */
+template <typename ... Components>
+using DefaultStorage = ContiguousStorage<8192, 4, Components...>;
 
 
 
@@ -245,7 +253,6 @@ private:
  * A bitmask of features togglable at compile time.
  */
 enum FeatureFlags {
-  NONE = 0,
   /**
    * If provided, various observer methods will be available:
    * on_component_added/removed, on_entity_created/destroyed.
@@ -282,14 +289,16 @@ private:
 /**
  * The main entity management class.
  *
- * @tparam Components The Components template parameter must be a realised
- *                    type instance of Components<C...>.
- * @tparam Storage A type that implements the storage interface.
- * @tparam Features A bitmask of features to enable. See FeatureFlags.
+ * @tparam StorageType A type that implements the storage interface.
+ * @tparam Features A bitmask of features to enable. See FeatureFlags for symbolic values.
+ * @tparam Cs... Component types.
  */
-template <class Components, std::size_t Features = 0, class Storage = ContiguousStorage<Components>>
+template <template <typename ... Cs> class StorageType, std::size_t Features = 0, typename ... Cs>
 class EntityX {
 private:
+  using Components = ComponentHelper<Cs...>;
+  using Storage = StorageType<Cs...>;
+
   template <typename T>
   struct is_component : Components::template is_component<T> {};
 
@@ -877,8 +886,8 @@ private:
 
 
 
-template <class Components, std::size_t Features, class Storage>
-inline void EntityX<Components, Features, Storage>::accomodate_entity_(std::uint32_t index) {
+template <template <typename ... Cs> class StorageType, std::size_t Features, class ... Cs>
+inline void EntityX<StorageType, Features, Cs...>::accomodate_entity_(std::uint32_t index) {
   if (entity_component_mask_.size() <= index) {
     entity_component_mask_.resize(index + 1);
     entity_version_.resize(index + 1);
@@ -889,9 +898,9 @@ inline void EntityX<Components, Features, Storage>::accomodate_entity_(std::uint
 
 
 
-template <class Components, std::size_t Features, class Storage>
-inline typename EntityX<Components, Features, Storage>::Entity
-EntityX<Components, Features, Storage>::create() {
+template <template <typename ... Cs> class StorageType, std::size_t Features, class ... Cs>
+inline typename EntityX<StorageType, Features, Cs...>::Entity
+EntityX<StorageType, Features, Cs...>::create() {
   std::uint32_t index, version;
   if (free_list_.empty()) {
     index = index_counter_++;
@@ -911,9 +920,9 @@ EntityX<Components, Features, Storage>::create() {
 
 
 
-template <class Components, std::size_t Features, class Storage>
-std::vector<typename EntityX<Components, Features, Storage>::Entity>
-EntityX<Components, Features, Storage>::create_many(std::size_t count) {
+template <template <typename ... Cs> class StorageType, std::size_t Features, class ... Cs>
+std::vector<typename EntityX<StorageType, Features, Cs...>::Entity>
+EntityX<StorageType, Features, Cs...>::create_many(std::size_t count) {
   std::vector<Entity> entities;
   entities.reserve(count);
   std::uint32_t index, version;
@@ -946,8 +955,8 @@ EntityX<Components, Features, Storage>::create_many(std::size_t count) {
 
 
 
-template <class Components, std::size_t Features, class Storage>
-inline void EntityX<Components, Features, Storage>::destroy(Id id) {
+template <template <typename ... Cs> class StorageType, std::size_t Features, class ... Cs>
+inline void EntityX<StorageType, Features, Cs...>::destroy(Id id) {
   assert_valid(id);
   Entity entity(this, id);
   // Notify on_entity_destroyed() callback.
@@ -965,8 +974,8 @@ inline void EntityX<Components, Features, Storage>::destroy(Id id) {
 
 
 
-template <class Components, std::size_t Features, class Storage>
-void EntityX<Components, Features, Storage>::reset() {
+template <template <typename ... Cs> class StorageType, std::size_t Features, class ... Cs>
+void EntityX<StorageType, Features, Cs...>::reset() {
   for (Entity entity : all_entities()) entity.destroy();
   storage_.reset();
   entity_component_mask_.clear();
@@ -978,14 +987,14 @@ void EntityX<Components, Features, Storage>::reset() {
 
 
 
-template <class Components, std::size_t Features, class Storage>
-bool EntityX<Components, Features, Storage>::valid(Id id) const {
+template <template <typename ... Cs> class StorageType, std::size_t Features, class ... Cs>
+bool EntityX<StorageType, Features, Cs...>::valid(Id id) const {
   return id.index() < entity_version_.size() && entity_version_[id.index()] == id.version();
 }
 
 
-template <class Components, std::size_t Features, class Storage>
-const Id EntityX<Components, Features, Storage>::Entity::INVALID = Id();
+template <template <typename ... Cs> class StorageType, std::size_t Features, class ... Cs>
+const Id EntityX<StorageType, Features, Cs...>::Entity::INVALID = Id();
 
 
 
