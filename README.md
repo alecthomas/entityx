@@ -1,12 +1,24 @@
 # EntityX - A fast, idiomatic C++11 Entity-Component System
 
+Entity Component Systems (ECS) are a form of decomposition that completely
+decouples entity logic and data from the entity "objects" themselves. The
+[Evolve your Hierarchy](http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/)
+article provides a solid overview of EC systems and why you should use them.
+
+EntityX is an EC system that uses C++11 features to provide type-safe
+component management, event delivery, etc. It was built during the creation of
+a 2D space shooter.
+
 This version of EntityX is header-only and utilizes a bunch of template
 metaprogramming to provide compile-time component access. It also provides
 support for alternative storage engines for component data (see [below](#storage-interface)).
 
 For example, the number of components and their size is known at compile time.
 
-## Example code
+## Example
+
+An illustrative example is included below, but for a full working demo please see the
+[examples directory](examples/example.cc).
 
 ```c++
 #include <entityx/entityx.hh>
@@ -46,6 +58,11 @@ int main() {
   printf("position x = %f, y = %f\n", position->x, position->y);
   printf("has position = %d\n", bool(a.component<Position>()));
 
+  // Iterate over all entities containing position and direction.
+  entities.for_each<Position, Direction>([&](Entity entity, Position &position, Direction &direction) {
+    // ...
+  });
+
   // Remove component from entity.
   position.remove();
   printf("has position = %d\n", bool(a.component<Position>()));
@@ -68,7 +85,7 @@ This version of EntityX is (generally) 2-5x faster than the previous version, de
 | Iterating over 10M entities, unpacking two components | 0.093078s | 0.07617s | **1.2x** |
 
 
-# Storage interface
+## Storage implementation
 
 To write custom storage backends for EntityX you will need to create a
 template class that satisfies the following interface:
@@ -92,6 +109,12 @@ struct Storage {
 };
 ```
 
-## Default storage implementation
+### Default storage implementation
 
-The default storage implementation stores components
+The layout of components in memory is highly dependent
+
+The default storage implementation (effectively) stores components as an array-of-structures. That is,
+equivalent to `std::vector<std::tuple<C0, C1, ...>>`. It will never move components in memory.
+
+This will be sufficiently for most use cases, but for more efficient data
+layout a custom Storage implementation may be necessary.

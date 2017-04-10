@@ -245,6 +245,7 @@ private:
  * A bitmask of features togglable at compile time.
  */
 enum FeatureFlags {
+  NONE = 0,
   /**
    * If provided, various observer methods will be available:
    * on_component_added/removed, on_entity_created/destroyed.
@@ -304,7 +305,7 @@ private:
   using enable_if_component = typename std::enable_if<is_component<C>::value, R>::type;
 
 public:
-  typedef std::bitset<Components::component_count> ComponentMask;
+  using ComponentMask = std::bitset<Components::component_count>;
 
   /**
    * A convenience handle around an Id.
@@ -527,16 +528,15 @@ public:
     ComponentMask mask_;
   };
 
-  typedef BaseView<false> View;
-  typedef BaseView<true> AllView;
+  using View = BaseView<false>;
+  using AllView = BaseView<true>;
 
+  /** Create a new Entity manager with default-constructed Storage. */
   EntityX() : owned_storage_(new Storage()), storage_(*owned_storage_.get()) {}
+  /** Create a new EntityX with the given Storage implementation instance. */
   explicit EntityX(Storage &storage) : storage_(storage) {}
-  ~EntityX() {
-    for (Entity entity : all_entities()) entity.destroy();
-  }
-
   EntityX(const EntityX &) = delete;
+  ~EntityX() { reset(); }
 
   /**
    * Number of assigned entities.
