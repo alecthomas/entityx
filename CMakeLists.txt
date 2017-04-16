@@ -123,3 +123,7 @@ install(
     DESTINATION "include"
     FILES_MATCHING PATTERN "*.hh"
     )
+
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif(BUILD_EXAMPLES)
