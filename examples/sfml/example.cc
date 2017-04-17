@@ -539,7 +539,6 @@ int main(int argc, const char **argv) {
 
     window.clear();
     sf::Time elapsed = clock.restart();
-    cout << elapsed.asSeconds() << endl;
     app.update(elapsed.asSeconds());
     window.display();
     frames++;
