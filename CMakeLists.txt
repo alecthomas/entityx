@@ -123,3 +123,7 @@ install(
     DESTINATION "include"
     FILES_MATCHING PATTERN "*.hh"
     )
+
+if(ENTITYX_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif(ENTITYX_BUILD_EXAMPLES)
