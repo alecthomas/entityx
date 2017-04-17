@@ -119,8 +119,82 @@ struct hash<Entity> {
 struct System {
     virtual ~System() {}
     virtual void update(EntityManager &es, float dt) = 0;
-    virtual void receive(QEvent event) {}
+    virtual void receive(QEvent *event) { Q_UNUSED(event) }
 };
+
+
+// CursorInputSystem processes user input and applies it to the cursor.
+struct CursorInputSystem : System {
+public:
+    explicit CursorInputSystem(QQuickView *view, EntityManager &es) : m_view(view) {
+        // Create the cursor.
+        entity = es.create();
+
+        entity.assign<Indestructible>();
+
+        const float radius = 16.0;
+
+        entity.assign<Collideable>(radius);
+
+        entity.assign<Body>(
+                    QVector2D(0, 0),
+                    QVector2D(0, 0));
+
+        entity.assign<Renderable>(radius,
+                                  QColor(r(128, 127), r(128, 127), r(128, 127), 255),
+                                  QPointF(radius, radius));
+    }
+
+    // Pulse the cursor.
+    void update(EntityManager &es, float dt) override {
+        const double radius = 16 + std::sin(time * 10.0) * 4;
+
+        entity.component<Collideable>()->radius = radius;
+        entity.component<Renderable>()->radius = radius;
+        time += dt;
+    }
+
+    void receive(QEvent *event) override {
+        if (event->type() == QEvent::MouseMove) {
+            entity.component<Body>()->position.setX(static_cast<QMouseEvent*>(event)->pos().x());
+            entity.component<Body>()->position.setY(static_cast<QMouseEvent*>(event)->pos().y());
+        }
+    }
+
+    Entity get_cursor_entity() {
+        return entity;
+    }
+
+private:
+    QQuickItem *m_cursorItem;
+    QQuickView *m_view;
+    Entity entity;
+    double time = 0;
+};
+
+
+// CursorPushSystem applies momentum to objects surrounding the cursor.
+class CursorPushSystem : public System {
+public:
+    explicit CursorPushSystem(Entity cursor) : cursor(cursor) {}
+
+    void update(EntityManager &es, float dt) override {
+        assert(cursor);
+        QVector2D cursor_position = cursor.component<Body>()->position;
+        es.for_each<Body>([&](Entity entity, Body &body) {
+            if (entity == cursor) return;
+            QVector2D direction = body.position - cursor_position;
+            float distance = direction.length();
+            if (distance < 100.0) {
+                body.direction += direction / distance * 2.0f * dt * 200.0f;
+            }
+        });
+    }
+
+private:
+    Entity cursor;
+};
+
 
 // Ensure that a certain density of balls are present.
 class SpawnSystem : public System {
@@ -170,7 +244,7 @@ struct BodySystem : public System {
             body.rotation += body.rotationd * dt;
             body.alpha = std::min(1.0f, body.alpha + fdt);
         });
-    };
+    }
 };
 
 
@@ -460,9 +534,9 @@ public:
         m_systems.push_back(new CollisionSystem(explosions, m_cfg));
         m_systems.push_back(explosions);
         m_systems.push_back(new ParticleSystem());
-        //        CursorInputSystem *input_system = new CursorInputSystem(target, entities);
-        //        systems.push_back(input_system);
-        //        systems.push_back(new CursorPushSystem(input_system->get_cursor_entity()));
+        CursorInputSystem *input_system = new CursorInputSystem(m_view, m_entities);
+        m_systems.push_back(input_system);
+        m_systems.push_back(new CursorPushSystem(input_system->get_cursor_entity()));
         m_systems.push_back(new ParticleRenderSystem(m_view));
         m_systems.push_back(new RenderSystem(m_view));
     }
@@ -478,6 +552,11 @@ public:
         }
         entityCountChanged();
         framesChanged();
+    }
+
+    void sendEvent(QEvent *event) {
+      for (auto receiver : m_systems)
+        receiver->receive(event);
     }
 
     Entity cfgEntity() {
@@ -532,6 +611,14 @@ signals:
     void fpsChanged(int fps);
     void runningChanged(bool running);
 
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) {
+        if (event->type() == QEvent::MouseMove) {
+            sendEvent(event);
+        }
+        return QObject::eventFilter(obj, event);
+    }
+
 private:
     bool m_running = true;
     EntityManager m_entities;
@@ -541,7 +628,6 @@ private:
     int m_fps = 60;
     QQuickView *m_view;
 };
-
 
 
 int main(int argc, char **argv) {
@@ -589,6 +675,8 @@ int main(int argc, char **argv) {
             engineTimer.stop();
         }
     });
+
+    qApp->installEventFilter(&engine);
 
     if(engine.running()) {
         engineTimer.start();
