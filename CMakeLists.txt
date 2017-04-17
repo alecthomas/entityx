@@ -124,6 +124,6 @@ install(
     FILES_MATCHING PATTERN "*.hh"
     )
 
-if(BUILD_EXAMPLES)
+if(ENTITYX_BUILD_EXAMPLES)
     add_subdirectory(examples)
-endif(BUILD_EXAMPLES)
+endif(ENTITYX_BUILD_EXAMPLES)
