@@ -204,6 +204,9 @@ public:
     resize(CHUNK_SIZE * INITIAL_CHUNKS);
   }
   ContiguousStorage(const ContiguousStorage &) = delete;
+  ~ContiguousStorage() {
+    reset();
+  }
 
   void resize(std::size_t n) {
     while (n > blocks_.size() * CHUNK_SIZE) {
