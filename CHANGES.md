@@ -2,7 +2,7 @@
 
 ## 2014-03-02 - 1.0.0alpha1 - Cache coherence + breaking changes
 
-EntityX has switched to a more cache-friendly memory layout for components. This is achieved by requiring the use of `assign<Component>(arg0, arg1, ...)` and removing `assign(component)`. This allows EntityX to explicitly control the layout of components. The current lyout algorithm reserves space for components in chunks (8192 by default).
+EntityX has switched to a more cache-friendly memory layout for components. This is achieved by requiring the use of `assign<Component>(arg0, arg1, ...)` and removing `assign(component)`. This allows EntityX to explicitly control the layout of components. The current layout algorithm reserves space for components in chunks (8192 by default).
 
 This change also necessitated a move away from the use of `shared_ptr<>` for components, which I had never been that pleased with anyway. Replacing it is a very lightweight `ComponentHandle<C>` smart pointer. This checks for validity of the entity associated with the component, and validity of the component itself. It also allows future iterations of EntityX to do even more interesting things with memory layout if desirable.
 
