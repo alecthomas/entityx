@@ -403,7 +403,7 @@ public:
 
     template <typename ... Cn>
     std::tuple<const Cn*...> components() const {
-      return manager_->components<Cn...>();
+      return manager_->components<Cn...>(id_);
     }
 
     template <typename C, typename ... Args>

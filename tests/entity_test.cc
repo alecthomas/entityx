@@ -488,6 +488,21 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityComponentsFromTuple") {
   REQUIRE(std::get<1>(components)->y == 4);
 }
 
+TEST_CASE_METHOD(EntityManagerFixture, "TestConstEntityComponentsFromTuple") {
+  Entity e = em.create();
+  e.assign<Position>(1,2);
+  e.assign<Direction>(3, 4);
+
+  const Entity& cref = e;
+
+  std::tuple<const Position*, const Direction*> components = cref.components<Position, Direction>();
+
+  REQUIRE(std::get<0>(components)->x == 1);
+  REQUIRE(std::get<0>(components)->y == 2);
+  REQUIRE(std::get<1>(components)->x == 3);
+  REQUIRE(std::get<1>(components)->y == 4);
+}
+
 TEST_CASE("TestComponentDestructorCalledWhenManagerDestroyed") {
   bool freed = false;
   {
