@@ -31,6 +31,7 @@ Item {
         }
     }
     ColumnLayout {
+        z: 1
         anchors.top: parent.top
         width: parent.width - 10
         RowLayout {
@@ -67,6 +68,10 @@ Item {
                 Layout.preferredWidth: 60
                 text: engine.fps
                 onAccepted: engine.fps = text
+            }
+            Label {
+                Layout.preferredWidth: 80
+                text: "Real: " + engine.realFps.toFixed(1)
             }
         }
         Label {

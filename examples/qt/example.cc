@@ -44,7 +44,7 @@ using std::endl;
 namespace ex = entityx;
 
 float r(int a, float b = 0) {
-    return static_cast<float>(std::rand() % (a * 1000) + b * 1000) / 1000.0;
+    return (static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX)) * a + b;
 }
 
 // A position, direction, and rotation.
@@ -502,7 +502,6 @@ public:
             Q_ASSERT(rmv);
         }
     }
-
 private:
     QQuickView *m_view;
     QStandardItemModel m_items;
@@ -513,12 +512,12 @@ private:
     QMap<entityx::Id, QStandardItem*> m_itemMap;
 };
 
-
 class Engine : public QObject {
     Q_OBJECT
 
     Q_PROPERTY(size_t entityCount READ entityCount NOTIFY entityCountChanged)
     Q_PROPERTY(int fps READ fps WRITE setFps NOTIFY fpsChanged)
+    Q_PROPERTY(float realFps READ realFps NOTIFY realFpsChanged)
     Q_PROPERTY(int frames READ frames NOTIFY framesChanged)
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
 
@@ -552,6 +551,13 @@ public:
         }
         entityCountChanged();
         framesChanged();
+        m_fpsWindow.prepend(1000./(m_t.elapsed() + 1));
+        m_realFps = std::accumulate(m_fpsWindow.begin(), m_fpsWindow.end(), 0.0) / m_fpsWindow.size();;
+        if(m_fpsWindow.size() > (m_fps/2 + 1)) {
+            m_fpsWindow.resize(m_fps/2 + 1);
+        }
+        m_t.restart();
+        realFpsChanged();
     }
 
     void sendEvent(QEvent *event) {
@@ -582,6 +588,11 @@ public:
         return m_fps;
     }
 
+    float realFps() const
+    {
+        return m_realFps;
+    }
+
 public slots:
     void step(float stepSize) {
         update(stepSize);
@@ -608,6 +619,7 @@ public slots:
 signals:
     void entityCountChanged();
     void framesChanged();
+    void realFpsChanged();
     void fpsChanged(int fps);
     void runningChanged(bool running);
 
@@ -627,6 +639,9 @@ private:
     int m_frames = 0;
     int m_fps = 60;
     QQuickView *m_view;
+    float m_realFps = m_fps;
+    QTime m_t;
+    QVector<float> m_fpsWindow;
 };
 
 
@@ -665,7 +680,7 @@ int main(int argc, char **argv) {
     });
 
     QObject::connect(&engineTimer, &QTimer::timeout, [&engine, &engineTimer](){
-        engine.update(engineTimer.interval()/1000.);
+        engine.update(1./engine.fps());
     });
 
     QObject::connect(&engine, &Engine::runningChanged, [&engineTimer](bool running){
