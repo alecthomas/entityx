@@ -142,6 +142,12 @@ else()
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 endif (ENTITYX_BUILD_SHARED)
 
+target_include_directories (entityx
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/entityx>
+        $<INSTALL_INTERFACE:include>
+    )
+
 # Make sure C++11 features are available
 target_compile_features(entityx PUBLIC cxx_auto_type)
 target_compile_features(entityx PUBLIC cxx_nullptr)
@@ -192,15 +198,31 @@ if (NOT WINDOWS OR CYGWIN)
         )
 endif()
 
+install (TARGETS ${install_libs} EXPORT EntityXTargets
+    LIBRARY DESTINATION "${libdir}"
+    ARCHIVE DESTINATION "${libdir}"
+    RUNTIME DESTINATION "bin"
+    INCLUDES DESTINATION include
+    )
+
+install(EXPORT EntityXTargets
+    FILE EntityXTargets.cmake
+    NAMESPACE EntityX::
+    DESTINATION lib/cmake/EntityX
+    )
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file ("EntityXConfigVersion.cmake"
+    VERSION ${ENTITYX_VERSION}
+    COMPATIBILITY SameMajorVersion
+    )
+
+ install(FILES "cmake/EntityXConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/EntityXConfigVersion.cmake"
+    DESTINATION lib/cmake/EntityX
+    )
+
 install(
     DIRECTORY "entityx"
     DESTINATION "include"
     FILES_MATCHING PATTERN "*.h"
-    )
-
-install(
-    TARGETS ${install_libs}
-    LIBRARY DESTINATION "${libdir}"
-    ARCHIVE DESTINATION "${libdir}"
-    RUNTIME DESTINATION "bin"
     )
