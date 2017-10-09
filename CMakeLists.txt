@@ -34,7 +34,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|.*Clang)")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "-g -Os -DNDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -DNDEBUG")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL 'MSVC')
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # /Zi - Produces a program database (PDB) that contains type information and symbolic debugging information for use with the debugger.
     # /FS - Allows multiple cl.exe processes to write to the same .pdb file
     # /DEBUG - Enable debug during linking
