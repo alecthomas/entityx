@@ -93,9 +93,6 @@ macro(create_test TARGET_NAME SOURCE DEPENDENCIES)
         ${DEPENDENCIES}
         ${ARGN}
         )
-    target_include_directories (${TARGET_NAME}
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-    )
 
     # Special case for benchmark tests
     if (${TARGET_NAME} MATCHES .*benchmark.*)
