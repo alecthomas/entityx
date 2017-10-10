@@ -4,7 +4,7 @@ set(ENTITYX_MINOR_VERSION 1)
 set(ENTITYX_PATCH_VERSION 2)
 set(ENTITYX_VERSION ${ENTITYX_MAJOR_VERSION}.${ENTITYX_MINOR_VERSION}.${ENTITYX_PATCH_VERSION})
 set(CMAKE_CXX_EXTENSIONS OFF)
-
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 project(EntityX)
 
 message(STATUS "EntityX version ${ENTITYX_VERSION}")
@@ -12,9 +12,6 @@ message(STATUS "EntityX version ${ENTITYX_VERSION}")
 if(NOT DEFINED CMAKE_MACOSX_RPATH)
   set(CMAKE_MACOSX_RPATH 0)
 endif()
-
-
-include_directories(${CMAKE_CURRENT_LIST_DIR})
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -53,7 +50,6 @@ endif()
 if(NOT DEFINED CMAKE_INSTALL_LIBDIR)
     set(CMAKE_INSTALL_LIBDIR lib)
 endif(NOT DEFINED CMAKE_INSTALL_LIBDIR)
-set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 
 set(OLD_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 if ((MAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
@@ -97,6 +93,9 @@ macro(create_test TARGET_NAME SOURCE DEPENDENCIES)
         ${DEPENDENCIES}
         ${ARGN}
         )
+    target_include_directories (${TARGET_NAME}
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+    )
 
     # Special case for benchmark tests
     if (${TARGET_NAME} MATCHES .*benchmark.*)
@@ -117,34 +116,25 @@ message(STATUS "-- Checking misc features")
 require(HAVE_STDINT_H "stdint.h")
 
 # Things to install
-
-
 set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
+set(install_libs entityx)
 
 if (ENTITYX_BUILD_SHARED)
     message(STATUS "-- Building shared libraries (-DENTITYX_BUILD_SHARED=0 to only build static libraries)")
     add_library(entityx SHARED ${sources})
-
-    set_target_properties(entityx PROPERTIES
-        OUTPUT_NAME entityx
-        DEBUG_POSTFIX -d
-        VERSION ${ENTITYX_VERSION}
-        SOVERSION ${ENTITYX_MAJOR_VERSION}
-        FOLDER entityx)
-    set(install_libs entityx)
-    set_property(TARGET entityx APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 else()
     add_library(entityx STATIC ${sources})
-    set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d FOLDER entityx)
-    set(install_libs entityx)
-    set_property(TARGET entityx APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 endif (ENTITYX_BUILD_SHARED)
 
+set_target_properties(entityx
+    PROPERTIES
+        VERSION ${ENTITYX_VERSION}
+        SOVERSION ${ENTITYX_MAJOR_VERSION}
+        DEBUG_POSTFIX -d
+    )
+
 target_include_directories (entityx
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/entityx>
+    INTERFACE
         $<INSTALL_INTERFACE:include>
     )
 
@@ -194,35 +184,55 @@ if (NOT WINDOWS OR CYGWIN)
 
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/entityx.pc
-        DESTINATION "${libdir}/pkgconfig"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
         )
 endif()
 
-install (TARGETS ${install_libs} EXPORT EntityXTargets
-    LIBRARY DESTINATION "${libdir}"
-    ARCHIVE DESTINATION "${libdir}"
-    RUNTIME DESTINATION "bin"
+# Installation
+# https://cmake.org/cmake/help/v3.9/manual/cmake-packages.7.html#creating-packages
+install(TARGETS entityx EXPORT EntityXTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION bin
     INCLUDES DESTINATION include
     )
 
-install(EXPORT EntityXTargets
-    FILE EntityXTargets.cmake
-    NAMESPACE EntityX::
-    DESTINATION lib/cmake/EntityX
+install(
+    DIRECTORY entityx
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.h"
     )
 
 include(CMakePackageConfigHelpers)
-write_basic_package_version_file ("EntityXConfigVersion.cmake"
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/EntityX/EntityXConfigVersion.cmake"
     VERSION ${ENTITYX_VERSION}
-    COMPATIBILITY SameMajorVersion
+    COMPATIBILITY AnyNewerVersion
     )
 
- install(FILES "cmake/EntityXConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/EntityXConfigVersion.cmake"
-    DESTINATION lib/cmake/EntityX
+export(EXPORT EntityXTargets
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/EntityX/EntityXTargets.cmake"
+    NAMESPACE EntityX::
+    )
+configure_file(cmake/EntityXConfig.cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/EntityX/EntityXConfig.cmake"
+    COPYONLY
     )
 
+set(ConfigPackageLocation lib/cmake/EntityX)
+install(EXPORT EntityXTargets
+    FILE
+        EntityXTargets.cmake
+    NAMESPACE
+        EntityX::
+    DESTINATION
+        ${ConfigPackageLocation}
+    )
 install(
-    DIRECTORY "entityx"
-    DESTINATION "include"
-    FILES_MATCHING PATTERN "*.h"
+    FILES
+        cmake/EntityXConfig.cmake
+        "${CMAKE_CURRENT_BINARY_DIR}/EntityX/EntityXConfigVersion.cmake"
+    DESTINATION
+        ${ConfigPackageLocation}
     )
+
