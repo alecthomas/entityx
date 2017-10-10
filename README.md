@@ -408,4 +408,6 @@ make
 make install
 ```
 
+To use the library simply add the directory to `EntityXTargets.cmake` (default in `<install_dir>/lib/cmake/EntityX`) to your `CMAKE_PREFIX_PATH` or set `EntityX_DIR` to that path. Then in your project you use `find_package` as usual, and link against `EntityX::entityx`, which should resolve libraries and includes automatically.
+
 EntityX has currently only been tested on Mac OSX (Lion and Mountain Lion), and Linux Debian 12.04. Reports and patches for builds on other platforms are welcome.
