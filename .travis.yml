@@ -2,6 +2,7 @@ language: cpp
 compiler:
   - clang
   - gcc
+sudo: required
 dist: precise
 before_install:
   - sudo apt-add-repository -y ppa:jkeiren/ppa
