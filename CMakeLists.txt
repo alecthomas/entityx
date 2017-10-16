@@ -211,7 +211,7 @@ export(EXPORT EntityXTargets
     FILE "${CMAKE_CURRENT_BINARY_DIR}/EntityX/EntityXTargets.cmake"
     NAMESPACE EntityX::
     )
-configure_file(cmake/EntityXConfig.cmake
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/EntityXConfig.cmake
     "${CMAKE_CURRENT_BINARY_DIR}/EntityX/EntityXConfig.cmake"
     COPYONLY
     )
