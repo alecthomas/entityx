@@ -2,6 +2,7 @@ language: cpp
 compiler:
   - clang
   - gcc
+dist: precise
 before_install:
   - sudo apt-add-repository -y ppa:jkeiren/ppa
   - if test $CC = gcc; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
