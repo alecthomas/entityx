@@ -227,7 +227,7 @@ install(EXPORT EntityXTargets
     )
 install(
     FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/EntityXConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/EntityX/EntityXConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/EntityX/EntityXConfigVersion.cmake"
     DESTINATION
         ${ConfigPackageLocation}
