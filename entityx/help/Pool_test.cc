@@ -64,8 +64,6 @@ TEST_CASE("TestPoolPointers") {
   REQUIRE(extrapolated_p16 !=  static_cast<void*>(p16));
   void *extrapolated_p24 = p16 + 8 * sizeof(Position);
   REQUIRE(extrapolated_p24 !=  static_cast<void*>(p24));
-
-  for (auto ptr : ptrs) delete[] ptr;
 }
 
 TEST_CASE("TestDeconstruct") {
