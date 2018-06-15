@@ -142,7 +142,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityReuse") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentConstruction") {
   auto e = em.create();
-  auto p = e.assign<Position>(1.f, 2.f);
+  auto p = e.assign<Position>(1, 2);
   auto cp = e.component<Position>();
   REQUIRE(p ==  cp);
   REQUIRE(1.0 == Approx(cp->x));
@@ -257,8 +257,8 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestIterateAllEntitiesSkipsDestroyed") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestUnpack") {
   Entity e = em.create();
-  auto p = e.assign<Position>(1.f, 2.f);
-  auto d = e.assign<Direction>(3.f, 4.f);
+  auto p = e.assign<Position>(1.0, 2.0);
+  auto d = e.assign<Direction>(3.0, 4.0);
   auto t = e.assign<Tag>("tag");
 
   ComponentHandle<Position> up;
@@ -399,7 +399,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentRemovedEvent") {
 
   REQUIRE(!(receiver.removed));
   Entity e = em.create();
-  ComponentHandle<Direction> p = e.assign<Direction>(1.f, 2.f);
+  ComponentHandle<Direction> p = e.assign<Direction>(1.0, 2.0);
   e.remove<Direction>();
   REQUIRE(receiver.removed ==  p);
   REQUIRE(!(e.component<Direction>()));
@@ -420,7 +420,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentRemovedEventOnEntityDestroy
   REQUIRE(!(receiver.removed));
 
   Entity e = em.create();
-  e.assign<Direction>(1.f, 2.f);
+  e.assign<Direction>(1.0, 2.0);
   e.destroy();
 
   REQUIRE(receiver.removed);
@@ -474,7 +474,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityDestroyHole") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenEntityDestroyed") {
   Entity a = em.create();
-  ComponentHandle<Position> position = a.assign<Position>(1.f, 2.f);
+  ComponentHandle<Position> position = a.assign<Position>(1, 2);
   REQUIRE(position);
   REQUIRE(position->x == 1);
   REQUIRE(position->y == 2);
@@ -505,7 +505,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityCreateFromCopy") {
   Entity a = em.create();
   a.assign<CopyVerifier>();
   ComponentHandle<CopyVerifier> original = a.component<CopyVerifier>();
-  ComponentHandle<Position> aPosition = a.assign<Position>(1.f, 2.f);
+  ComponentHandle<Position> aPosition = a.assign<Position>(1, 2);
   Entity b = em.create_from_copy(a);
   ComponentHandle<CopyVerifier> copy = b.component<CopyVerifier>();
   ComponentHandle<Position> bPosition = b.component<Position>();
@@ -522,7 +522,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityCreateFromCopy") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenComponentDestroyed") {
   Entity a = em.create();
-  ComponentHandle<Position> position = a.assign<Position>(1.f, 2.f);
+  ComponentHandle<Position> position = a.assign<Position>(1, 2);
   REQUIRE(position);
   REQUIRE(position->x == 1);
   REQUIRE(position->y == 2);
@@ -532,7 +532,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentHandleInvalidatedWhenCompon
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestDeleteEntityWithNoComponents") {
   Entity a = em.create();
-  a.assign<Position>(1.f, 2.f);
+  a.assign<Position>(1, 2);
   Entity b = em.create();
   b.destroy();
 }
@@ -562,8 +562,8 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityInStdMap") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestEntityComponentsFromTuple") {
   Entity e = em.create();
-  e.assign<Position>(1.f, 2.f);
-  e.assign<Direction>(3.f, 4.f);
+  e.assign<Position>(1, 2);
+  e.assign<Direction>(3, 4);
 
   std::tuple<ComponentHandle<Position>, ComponentHandle<Direction>> components = e.components<Position, Direction>();
 
@@ -622,7 +622,7 @@ TEST_CASE("TestComponentDestructorCalledWhenEntityDestroyed") {
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentsRemovedFromReusedEntities") {
   Entity a = em.create();
   Entity::Id aid = a.id();
-  a.assign<Position>(1.f, 2.f);
+  a.assign<Position>(1, 2);
   a.destroy();
 
   Entity b = em.create();
@@ -630,12 +630,12 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentsRemovedFromReusedEntities"
 
   REQUIRE(aid.index() == bid.index());
   REQUIRE(!b.has_component<Position>());
-  b.assign<Position>(3.f, 4.f);
+  b.assign<Position>(3, 4);
 }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestConstComponentsNotInstantiatedTwice") {
   Entity a = em.create();
-  a.assign<Position>(1.f, 2.f);
+  a.assign<Position>(1, 2);
 
   const Entity b = a;
 
@@ -647,7 +647,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestConstComponentsNotInstantiatedTwice"
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestEntityManagerEach") {
   Entity a = em.create();
-  a.assign<Position>(1.f, 2.f);
+  a.assign<Position>(1, 2);
   int count = 0;
   em.each<Position>([&count](Entity entity, Position &position) {
     count++;
@@ -659,7 +659,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestEntityManagerEach") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestViewEach") {
   Entity a = em.create();
-  a.assign<Position>(1.f, 2.f);
+  a.assign<Position>(1, 2);
   int count = 0;
   em.entities_with_components<Position>().each([&count](Entity entity, Position &position) {
     count++;
@@ -671,7 +671,7 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestViewEach") {
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestComponentDereference") {
   Entity a = em.create();
-  a.assign<Position>(10.f, 5.f);
+  a.assign<Position>(10, 5);
   auto& positionRef = *a.component<Position>();
   REQUIRE(positionRef.x == 10);
   REQUIRE(positionRef.y == 5);

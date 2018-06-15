@@ -118,7 +118,7 @@ class SystemManager : entityx::help::NonCopyable {
    */
   template <typename S, typename ... Args>
   std::shared_ptr<S> add(Args && ... args) {
-    std::shared_ptr<S> s(new S{std::forward<Args>(args) ...});
+    std::shared_ptr<S> s(new S(std::forward<Args>(args) ...));
     add(s);
     return s;
   }
