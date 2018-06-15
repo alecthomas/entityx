@@ -34,6 +34,11 @@
 #include "entityx/Event.h"
 #include "entityx/help/NonCopyable.h"
 
+//Included on g++ and clang to demangle type_info::name().
+#if defined(__GNUG__) || defined(__clang__)
+#include <cxxabi.h>
+#endif
+
 namespace entityx {
 
 typedef std::uint32_t uint32_t;
@@ -170,6 +175,7 @@ public:
   Entity::Id id_ = INVALID;
 };
 
+std::ostream &operator << (std::ostream &out, const Entity::Id &id);
 
 /**
  * A ComponentHandle<C> is a wrapper around an instance of a component.
@@ -342,15 +348,41 @@ public:
   virtual void remove_component(Entity e) = 0;
   virtual void copy_component_to(Entity source, Entity target) = 0;
 };
+template <typename C, typename = void>
+class ComponentHelper;
 
 template <typename C>
-class ComponentHelper : public BaseComponentHelper {
+class ComponentHelper<C, std::enable_if_t<std::is_copy_constructible_v<C>>>: public BaseComponentHelper {
 public:
   void remove_component(Entity e) override {
     e.remove<C>();
   }
   void copy_component_to(Entity source, Entity target) override {
     target.assign_from_copy<C>(*(source.component<C>().get()));
+  }
+};
+
+//If C has no copy constructor, we need to not call `assign_from_copy` or it is an error, even if
+//the component is never copied.
+//If copy_component_to is called on C, then we print a helpful error and abort.
+template <typename C>
+class ComponentHelper<C, typename std::enable_if<!std::is_copy_constructible<C>::value>::type>: public BaseComponentHelper {
+public:
+  void remove_component(Entity e) override {
+    e.remove<C>();
+  }
+  void copy_component_to(Entity source, Entity target) override {
+      int status = 0;
+//G++ and clang return mangled symbols in name. VC++ always returns the unmangled symbol directly.
+#if defined(__GNUG__) || defined(__clang__)
+      auto component_name = abi::__cxa_demangle(typeid(C).name(), 0, 0, &status);
+#else
+      auto component_name = typeid(C).name();
+#endif
+      std::cerr << "Error trying to copy a component of type '" << component_name
+          << "' from entity " << source.id() << " to entity " << target.id() << "."
+          << "'" << component_name << "' is not copy constructable.\n";
+      std::abort();
   }
 };
 
