@@ -76,8 +76,8 @@ class EntitiesFixture : public EntityX {
     for (int i = 0; i < 150; ++i) {
       Entity e = entities.create();
       created_entities.push_back(e);
-      if (i % 2 == 0) e.assign<Position>(1, 2);
-      if (i % 3 == 0) e.assign<Direction>(1, 1);
+      if (i % 2 == 0) e.assign<Position>(1.f, 2.f);
+      if (i % 3 == 0) e.assign<Direction>(1.f, 1.f);
 
       e.assign<Counter>(0);
     }
