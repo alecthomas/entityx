@@ -158,7 +158,7 @@ entity components:
 ```c++
 entities.each<Position, Direction>([](Entity entity, Position &position, Direction &direction) {
   // Do things with entity, position and direction.
-};)
+});
 ```
 
 
