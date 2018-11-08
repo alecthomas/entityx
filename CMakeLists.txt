@@ -192,9 +192,13 @@ if (NOT WINDOWS OR CYGWIN)
         )
 endif()
 
+if (NOT CMAKE_INSTALL_INCLUDEDIR)
+    set(CMAKE_INSTALL_INCLUDEDIR "include")
+endif()
+
 install(
     DIRECTORY "entityx"
-    DESTINATION "include"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     FILES_MATCHING PATTERN "*.h"
     )
 
