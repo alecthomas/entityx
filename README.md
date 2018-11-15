@@ -344,11 +344,27 @@ while (true) {
 
 ## Installation
 
-EntityX has the following build and runtime requirements:
+### Arch Linux
 
-- A C++ compiler that supports a basic set of C++11 features (ie. Clang >= 3.1, GCC >= 4.7, and Visual Studio 2015).
-- For Visual C++ support you will need at least [Visual Studio 2015](https://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs.aspx).
-- [CMake](http://cmake.org/)
+    pacman -S entityx
+
+### Windows
+
+Build it manually.
+
+Requirements:
+
+* [Visual Studio 2015](https://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs.aspx) or later, or a C++ compiler that supports a basic set of C++11 features (ie. Clang >= 3.1 or GCC >= 4.7).
+* [CMake](http://cmake.org/)
+
+### Other systems
+
+Build it manually.
+
+Requirements:
+
+* A C++ compiler that supports a basic set of C++11 features (ie. Clang >= 3.1, GCC >= 4.7).
+* [CMake](http://cmake.org/)
 
 ### C++11 compiler and library support
 
@@ -408,4 +424,4 @@ make
 make install
 ```
 
-EntityX has currently only been tested on Mac OSX (Lion and Mountain Lion), and Linux Debian 12.04. Reports and patches for builds on other platforms are welcome.
+EntityX has currently only been tested on Mac OSX (Lion and Mountain Lion), Linux Debian 12.04 and Arch Linux. Reports and patches for builds on other platforms are welcome.
