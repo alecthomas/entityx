@@ -348,6 +348,10 @@ while (true) {
 
     pacman -S entityx
 
+### OSX
+
+    brew install entityx
+
 ### Windows
 
 Build it manually.
@@ -369,18 +373,6 @@ Requirements:
 ### C++11 compiler and library support
 
 C++11 support is quite...raw. To make life more interesting, C++ support really means two things: language features supported by the compiler, and library features. EntityX tries to support the most common options, including the default C++ library for the compiler/platform, and libstdc++.
-
-### Installing on OSX Mountain Lion
-
-On OSX you must use Clang as the GCC version is practically prehistoric.
-
-I use Homebrew, and the following works for me:
-
-For libstdc++:
-
-```bash
-cmake -DENTITYX_BUILD_SHARED=0 -DENTITYX_BUILD_TESTING=1 ..
-```
 
 ### Installing on Ubuntu 12.04
 
