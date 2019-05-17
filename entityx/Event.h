@@ -20,14 +20,13 @@
 #include "entityx/config.h"
 #include "entityx/3rdparty/simplesignal.h"
 #include "entityx/help/NonCopyable.h"
-#include "Platform.h"
 
 
 namespace entityx {
 
 
 /// Used internally by the EventManager.
- class _fireflyExport BaseEvent {
+class BaseEvent {
  public:
   typedef std::size_t Family;
 
