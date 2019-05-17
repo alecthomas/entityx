@@ -19,6 +19,7 @@
 #include "entityx/Entity.h"
 #include "entityx/Event.h"
 #include "entityx/help/NonCopyable.h"
+#include "Platform.h"
 
 
 namespace entityx {
@@ -30,7 +31,7 @@ class SystemManager;
 /**
  * Base System class. Generally should not be directly used, instead see System<Derived>.
  */
-class BaseSystem : entityx::help::NonCopyable {
+ class _fireflyExport BaseSystem : entityx::help::NonCopyable {
  public:
   typedef size_t Family;
 
