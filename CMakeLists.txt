@@ -7,6 +7,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(EntityX)
 
+add_definitions(-DFIREFLY_EXPORTS=1)
+
 message(STATUS "EntityX version ${ENTITYX_VERSION}")
 
 if(NOT DEFINED CMAKE_MACOSX_RPATH)
