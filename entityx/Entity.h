@@ -234,7 +234,7 @@ private:
  *
  * Family is used for registration.
  */
-struct BaseComponent {
+struct _entityxExport BaseComponent {
  public:
   typedef size_t Family;
 
@@ -276,7 +276,7 @@ struct BaseComponent {
  * family() is used for registration.
  */
 template <typename Derived>
-struct Component : public BaseComponent {
+struct _entityxExport Component : public BaseComponent {
  public:
   typedef ComponentHandle<Derived> Handle;
   typedef ComponentHandle<const Derived, const EntityManager> ConstHandle;
