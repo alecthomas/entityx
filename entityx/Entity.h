@@ -276,7 +276,7 @@ struct _entityxExport BaseComponent {
  * family() is used for registration.
  */
 template <typename Derived>
-struct _entityxExport Component : public BaseComponent {
+struct Component : public BaseComponent {
  public:
   typedef ComponentHandle<Derived> Handle;
   typedef ComponentHandle<const Derived, const EntityManager> ConstHandle;
