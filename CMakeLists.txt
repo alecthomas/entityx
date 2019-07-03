@@ -7,7 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(EntityX)
 
-add_definitions(-DFIREFLY_EXPORTS=1)
+
 
 message(STATUS "EntityX version ${ENTITYX_VERSION}")
 
@@ -143,6 +143,11 @@ else()
     set_property(TARGET entityx APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 endif (ENTITYX_BUILD_SHARED)
+
+SET(ENTITYX_PROPERTIES PROPERTIES
+    DEFINE_SYMBOL "ENTITYX_EXPORTS")
+
+set_target_properties (entityx ${ENTITYX_PROPERTIES})
 
 # Make sure C++11 features are available
 target_compile_features(entityx PUBLIC cxx_auto_type)
