@@ -52,7 +52,7 @@ typedef std::weak_ptr<EventSignal> EventSignalWeakPtr;
  * };
  */
 template <typename Derived>
-class _entityxExport Event : public BaseEvent {
+class Event : public BaseEvent {
  public:
   /// Used internally for registration.
   static Family family() {
