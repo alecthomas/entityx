@@ -14,7 +14,7 @@
 #include <cassert>
 #include <vector>
 
-#include "Platform.h"
+#include "../Platform.h"
 
 namespace entityx {
 

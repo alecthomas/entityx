@@ -10,7 +10,7 @@
 #pragma once
 
 #include <chrono>
-#include "Platform.h"
+#include "../Platform.h"
 
 namespace entityx {
 namespace help {
