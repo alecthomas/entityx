@@ -88,7 +88,7 @@ private:
 };
 
 
-class SystemManager : entityx::help::NonCopyable {
+class _entityxExport SystemManager : entityx::help::NonCopyable {
  public:
   SystemManager(EntityManager &entity_manager,
                 EventManager &event_manager) :
