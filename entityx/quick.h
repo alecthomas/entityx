@@ -15,13 +15,15 @@
 #include "entityx/System.h"
 #include "entityx/config.h"
 
+#include "Platform.h"
+
 namespace entityx {
 
 /**
  * A convenience class for instantiating an EventManager, EntityManager and
  * SystemManager.
  */
-class EntityX {
+class _entityxExport EntityX {
  public:
   EntityX() : entities(events), systems(entities, events) {}
 

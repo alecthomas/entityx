@@ -52,7 +52,7 @@ typedef std::weak_ptr<EventSignal> EventSignalWeakPtr;
  * };
  */
 template <typename Derived>
-class Event : public BaseEvent {
+class _entityxExport Event : public BaseEvent {
  public:
   /// Used internally for registration.
   static Family family() {
@@ -102,7 +102,7 @@ class Receiver : public BaseReceiver {
  *
  * Subscriptions are automatically removed when receivers are destroyed..
  */
-class EventManager : entityx::help::NonCopyable {
+class _entityxExport EventManager : entityx::help::NonCopyable {
  public:
   EventManager();
   virtual ~EventManager();

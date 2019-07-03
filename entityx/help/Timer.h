@@ -10,11 +10,12 @@
 #pragma once
 
 #include <chrono>
+#include "Platform.h"
 
 namespace entityx {
 namespace help {
 
-class Timer {
+class _entityxExport Timer {
 public:
   Timer();
   ~Timer();

@@ -33,6 +33,7 @@
 #include "entityx/config.h"
 #include "entityx/Event.h"
 #include "entityx/help/NonCopyable.h"
+#include "Platform.h"
 
 namespace entityx {
 
@@ -56,7 +57,7 @@ class ComponentHandle;
  *
  *     Entity entity = entity_manager->create();
  */
-class Entity {
+class _entityxExport Entity {
 public:
   struct Id {
     Id() : id_(0) {}
@@ -357,7 +358,7 @@ public:
 /**
  * Manages Entity::Id creation and component assignment.
  */
-class EntityManager : entityx::help::NonCopyable {
+class _entityxExport EntityManager : entityx::help::NonCopyable {
  public:
   typedef std::bitset<entityx::MAX_COMPONENTS> ComponentMask;
 

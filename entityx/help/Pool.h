@@ -14,6 +14,8 @@
 #include <cassert>
 #include <vector>
 
+#include "Platform.h"
+
 namespace entityx {
 
 /**
@@ -26,7 +28,7 @@ namespace entityx {
  * Lookups are O(1).
  * Appends are amortized O(1).
  */
-class BasePool {
+class _entityxExport BasePool {
  public:
   explicit BasePool(std::size_t element_size, std::size_t chunk_size = 8192)
       : element_size_(element_size), chunk_size_(chunk_size), capacity_(0) {}
