@@ -4,9 +4,9 @@
 #       define DLL_EXPORT __declspec(dllexport)
 #       define DLL_IMPORT __declspec(dllimport)
 #       if defined ENTITYX_EXPORTS
-#           define _fireflyExport DLL_EXPORT
+#           define _entityxExport DLL_EXPORT
 #       else
-#           define _fireflyExport DLL_IMPORT
+#           define _entityxExport DLL_IMPORT
 #       endif
 #   endif
 

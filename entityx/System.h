@@ -31,7 +31,7 @@ class SystemManager;
 /**
  * Base System class. Generally should not be directly used, instead see System<Derived>.
  */
- class _fireflyExport BaseSystem : entityx::help::NonCopyable {
+ class _entityxExport BaseSystem : entityx::help::NonCopyable {
  public:
   typedef size_t Family;
 

@@ -27,7 +27,7 @@ namespace entityx {
 
 
 /// Used internally by the EventManager.
- class _fireflyExport BaseEvent {
+ class _entityxExport BaseEvent {
  public:
   typedef std::size_t Family;
 
