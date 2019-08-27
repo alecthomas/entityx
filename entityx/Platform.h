@@ -8,5 +8,7 @@
 #       else
 #           define _entityxExport DLL_IMPORT
 #       endif
+#   else
+#       define _entityxExport
 #   endif
 
