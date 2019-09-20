@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/alecthomas/entityx.png)](https://travis-ci.org/alecthomas/entityx) [![Build status](https://ci.appveyor.com/api/projects/status/qc8s0pqb5ci092iv/branch/master)](https://ci.appveyor.com/project/alecthomas/entityx/branch/master) [![Gitter chat](https://badges.gitter.im/alecthomas.png)](https://gitter.im/alecthomas/Lobby)
 
 
-***NOTE: The current stable release 1.0.0 breaks backwards compataibility with < 1.0.0. See the [change log](CHANGES.md) for details.***
+***NOTE: The current stable release 1.0.0 breaks backward compatibility with < 1.0.0. See the [change log](CHANGES.md) for details.***
 
 Entity Component Systems (ECS) are a form of decomposition that completely decouples entity logic and data from the entity "objects" themselves. The [Evolve your Hierarchy](http://cowboyprogramming.com/2007/01/05/evolve-your-heirachy/) article provides a solid overview of EC systems and why you should use them.
 
