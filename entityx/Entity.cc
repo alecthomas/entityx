@@ -31,8 +31,6 @@ std::bitset<entityx::MAX_COMPONENTS> Entity::component_mask() const {
   return manager_->component_mask(id_);
 }
 
-uint32_t EntityManager::index_counter_ = 0;
-
 EntityManager::EntityManager(EventManager &event_manager) : event_manager_(event_manager) {
 }
 

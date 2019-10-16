@@ -360,7 +360,6 @@ public:
  */
 class _entityxExport EntityManager : entityx::help::NonCopyable {
  public:
-  static uint32_t index_counter_;
   typedef std::bitset<entityx::MAX_COMPONENTS> ComponentMask;
 
   explicit EntityManager(EventManager &event_manager);
@@ -566,7 +565,7 @@ class _entityxExport EntityManager : entityx::help::NonCopyable {
   Entity create() {
     uint32_t index, version;
     if (free_list_.empty()) {
-      index = EntityManager::index_counter_++;
+      index = index_counter_++;
       accomodate_entity(index);
       version = entity_version_[index] = 1;
     } else {
@@ -919,6 +918,7 @@ class _entityxExport EntityManager : entityx::help::NonCopyable {
   }
 
 
+  uint32_t index_counter_ = 0;
 
   EventManager &event_manager_;
   // Each element in component_pools_ corresponds to a Pool for a Component.
