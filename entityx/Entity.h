@@ -938,7 +938,7 @@ class _entityxExport EntityManager : entityx::help::NonCopyable {
 
 template <typename C>
 BaseComponent::Family Component<C>::family() {
-  static Family family = family_counter_++;
+  Family family = family_counter_++;
   assert(family < entityx::MAX_COMPONENTS);
   return family;
 }

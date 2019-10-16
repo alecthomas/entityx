@@ -56,7 +56,7 @@ class Event : public BaseEvent {
  public:
   /// Used internally for registration.
   static Family family() {
-    static Family family = family_counter_++;
+    Family family = family_counter_++;
     return family;
   }
 };

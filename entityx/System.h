@@ -82,7 +82,7 @@ private:
   friend class SystemManager;
 
   static Family family() {
-    static Family family = family_counter_++;
+    Family family = family_counter_++;
     return family;
   }
 };
