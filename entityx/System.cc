@@ -12,7 +12,7 @@
 
 namespace entityx {
 
-BaseSystem::Family BaseSystem::family_counter_ = 0;
+BaseSystem::Family BaseSystem::family_counter_;
 
 BaseSystem::~BaseSystem() {
 }
