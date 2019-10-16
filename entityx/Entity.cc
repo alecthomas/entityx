@@ -15,7 +15,9 @@ namespace entityx {
 
 const Entity::Id Entity::INVALID;
 BaseComponent::Family BaseComponent::family_counter_ = 0;
+#if defined( __WIN32__ ) || defined( _WIN32 ) || defined( WIN32 ) || defined( _WINDOWS )
 BaseComponent::TypeMap BaseComponent::typeMap_;
+#endif
 
 void Entity::invalidate() {
   id_ = INVALID;

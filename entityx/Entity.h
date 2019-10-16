@@ -256,8 +256,10 @@ namespace entityx {
         }
 
         static Family family_counter_;
+#if defined( __WIN32__ ) || defined( _WIN32 ) || defined( WIN32 ) || defined( _WINDOWS )
         typedef std::unordered_map<size_t, uint32_t> TypeMap;
         static TypeMap typeMap_;
+#endif
     };
 
 
@@ -943,6 +945,7 @@ namespace entityx {
 
     template <typename C>
     BaseComponent::Family Component<C>::family() {
+#if defined( __WIN32__ ) || defined( _WIN32 ) || defined( WIN32 ) || defined( _WINDOWS )
         auto key = typeid(C).hash_code();
         auto kit = typeMap_.find(key);
         if (kit == typeMap_.end())
@@ -950,6 +953,9 @@ namespace entityx {
         Family family = typeMap_[key];
 #ifndef NDEBUG
         std::cout << "BaseComponent::Family Component<C>::family:" << typeid(C).name() << " counter = " << family << std::endl;
+#endif
+#else
+        static Family family = family_counter_++;
 #endif
         assert(family < entityx::MAX_COMPONENTS);
         return family;
