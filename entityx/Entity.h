@@ -563,21 +563,7 @@ class _entityxExport EntityManager : entityx::help::NonCopyable {
    *
    * Emits EntityCreatedEvent.
    */
-  Entity create() {
-    uint32_t index, version;
-    if (free_list_.empty()) {
-      index = EntityManager::index_counter_++;
-      accomodate_entity(index);
-      version = entity_version_[index] = 1;
-    } else {
-      index = free_list_.back();
-      free_list_.pop_back();
-       version = entity_version_[index];
-    }
-    Entity entity(this, Entity::Id(index, version));
-    event_manager_.emit<EntityCreatedEvent>(entity);
-    return entity;
-  }
+  Entity create();
 
   /**
    * Create a new Entity by copying another. Copy-constructs each component.
