@@ -27,7 +27,9 @@
 #include <utility>
 #include <vector>
 #include <type_traits>
- #include <functional>
+#include <functional>
+#include <unordered_map>
+#include <typeinfo>
 
 #include "entityx/help/Pool.h"
 #include "entityx/config.h"
@@ -254,6 +256,8 @@ struct _entityxExport BaseComponent {
   }
 
   static Family family_counter_;
+  typedef std::unordered_map<char*, uint32_t> TypeMap;
+  static TypeMap typeMap_;
 };
 
 
@@ -938,9 +942,13 @@ class _entityxExport EntityManager : entityx::help::NonCopyable {
 
 template <typename C>
 BaseComponent::Family Component<C>::family() {
-  static Family family = family_counter_++;
-  assert(family < entityx::MAX_COMPONENTS);
-  return family;
+    const char* key = typeid(C).name();
+    if (!typeMap_.contains(key))
+        typeMap_[key] = family_counter_++;
+    Family family = typeMap_[key];
+    std::cout << "BaseComponent::Family Component<C>::family:" << typeid(C).name() << " counter = " << family << std::endl;
+    assert(family < entityx::MAX_COMPONENTS);
+    return family;
 }
 
 

@@ -15,6 +15,7 @@ namespace entityx {
 
 const Entity::Id Entity::INVALID;
 BaseComponent::Family BaseComponent::family_counter_ = 0;
+BaseComponent::TypeMap BaseComponent::typeMap_;
 
 void Entity::invalidate() {
   id_ = INVALID;
