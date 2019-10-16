@@ -359,8 +359,10 @@ public:
  * Manages Entity::Id creation and component assignment.
  */
 class _entityxExport EntityManager : entityx::help::NonCopyable {
- public:
-  static uint32_t index_counter_;
+	private:
+	static uint32_t index_counter_;
+ public:  
+ static uint32_t index_counter();
   typedef std::bitset<entityx::MAX_COMPONENTS> ComponentMask;
 
   explicit EntityManager(EventManager &event_manager);
@@ -891,7 +893,7 @@ class _entityxExport EntityManager : entityx::help::NonCopyable {
     }
     if (!component_pools_[family]) {
       Pool<C> *pool = new Pool<C>();
-      pool->expand(index_counter_);
+      pool->expand(EntityManager::index_counter());
       component_pools_[family] = pool;
     }
     if (component_helpers_.size() <= family) {

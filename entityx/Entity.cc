@@ -73,6 +73,11 @@ Entity EntityManager::create() {
     return entity;
 }
 
+uint32_t EntityManager::index_counter()
+{
+	return index_counter_;
+}
+
 EntityCreatedEvent::~EntityCreatedEvent() {}
 EntityDestroyedEvent::~EntityDestroyedEvent() {}
 
