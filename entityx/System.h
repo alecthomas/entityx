@@ -87,7 +87,7 @@ private:
 
   static Family family() {
 #if defined( __WIN32__ ) || defined( _WIN32 ) || defined( WIN32 ) || defined( _WINDOWS )
-    auto key = typeid(C).hash_code();
+    auto key = typeid(Derived).hash_code();
     auto kit = typeMap_.find(key);
     if (kit == typeMap_.end())
       typeMap_[key] = family_counter_++;
