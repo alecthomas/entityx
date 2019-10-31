@@ -59,6 +59,10 @@ class SystemManager;
   virtual void update(EntityManager &entities, EventManager &events, TimeDelta dt) = 0;
 
   static Family family_counter_;
+#if defined( __WIN32__ ) || defined( _WIN32 ) || defined( WIN32 ) || defined( _WINDOWS )
+  typedef std::unordered_map<size_t, uint32_t> TypeMap;
+  static TypeMap typeMap_;
+#endif
 
  protected:
 };
@@ -82,7 +86,19 @@ private:
   friend class SystemManager;
 
   static Family family() {
+#if defined( __WIN32__ ) || defined( _WIN32 ) || defined( WIN32 ) || defined( _WINDOWS )
+    auto key = typeid(C).hash_code();
+    auto kit = typeMap_.find(key);
+    if (kit == typeMap_.end())
+      typeMap_[key] = family_counter_++;
+    Family family = typeMap_[key];
+#ifndef NDEBUG
+    std::cout << "BaseSystem::Family System<C>::family:" << typeid(C).name() << " counter = " << family << std::endl;
+#endif
+#else
     static Family family = family_counter_++;
+#endif
+    assert(family < entityx::MAX_COMPONENTS);
     return family;
   }
 };
