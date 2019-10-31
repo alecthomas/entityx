@@ -13,6 +13,9 @@
 namespace entityx {
 
 BaseSystem::Family BaseSystem::family_counter_ = 0;
+#if defined( __WIN32__ ) || defined( _WIN32 ) || defined( WIN32 ) || defined( _WINDOWS )
+BaseSystem::TypeMap BaseSystem::typeMap_;
+#endif
 
 BaseSystem::~BaseSystem() {
 }
