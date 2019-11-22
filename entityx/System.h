@@ -91,7 +91,7 @@ private:
     auto kit = typeMap_.find(key);
     if (kit == typeMap_.end())
       typeMap_[key] = family_counter_++;
-    Family family = typeMap_[key];
+    Family family = (uint32_t)typeMap_[key];
 #ifndef NDEBUG
     std::cout << "BaseSystem::Family System<C>::family:" << typeid(C).name() << " counter = " << family << std::endl;
 #endif

@@ -949,7 +949,7 @@ namespace entityx {
         auto key = typeid(C).hash_code();
         auto kit = typeMap_.find(key);
         if (kit == typeMap_.end())
-            typeMap_[key] = family_counter_++;
+            typeMap_[key] = (uint32_t)family_counter_++;
         Family family = typeMap_[key];
 #ifndef NDEBUG
         std::cout << "BaseComponent::Family Component<C>::family:" << typeid(C).name() << " counter = " << family << std::endl;
