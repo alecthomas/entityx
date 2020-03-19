@@ -361,6 +361,18 @@ Requirements:
 * [Visual Studio 2015](https://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs.aspx) or later, or a C++ compiler that supports a basic set of C++11 features (ie. Clang >= 3.1 or GCC >= 4.7).
 * [CMake](http://cmake.org/)
 
+### Building entityx - Using vcpkg
+
+You can download and install entityx using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install entityx
+
+The entityx port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
 ### Other systems
 
 Build it manually.
