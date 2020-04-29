@@ -118,6 +118,9 @@ require(HAVE_STDINT_H "stdint.h")
 
 # Things to install
 
+if (NOT DEFINED CMAKE_DEBUG_POSTFIX)
+  set(CMAKE_DEBUG_POSTFIX "-d")
+endif()
 
 set(sources entityx/System.cc entityx/Event.cc entityx/Entity.cc entityx/help/Timer.cc entityx/help/Pool.cc)
 
@@ -127,7 +130,7 @@ if (ENTITYX_BUILD_SHARED)
 
     set_target_properties(entityx PROPERTIES
         OUTPUT_NAME entityx
-        DEBUG_POSTFIX -d
+        DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}"
         VERSION ${ENTITYX_VERSION}
         SOVERSION ${ENTITYX_MAJOR_VERSION}
         FOLDER entityx)
@@ -136,7 +139,9 @@ if (ENTITYX_BUILD_SHARED)
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 else()
     add_library(entityx STATIC ${sources})
-    set_target_properties(entityx PROPERTIES DEBUG_POSTFIX -d FOLDER entityx)
+    set_target_properties(entityx PROPERTIES 
+        DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}"
+        FOLDER entityx)
     set(install_libs entityx)
     set_property(TARGET entityx APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
