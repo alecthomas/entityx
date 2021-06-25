@@ -27,6 +27,12 @@ set(ENTITYX_BUILD_SHARED true CACHE BOOL "Build shared libraries?")
 include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 include(CheckCXXSourceCompiles)
 
+if(ENTITYX_BUILD_SHARED AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    message(WARNING "\nBuilding as a shared library with MSVC is currently unsupported \
+        and will not function as expected.\
+        \nUse -DENTITYX_BUILD_SHARED=FALSE to build as a static library.")
+endif()
+
 # Default compiler args
 if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|.*Clang)")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=sign-compare")
