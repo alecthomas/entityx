@@ -215,3 +215,27 @@ install(
     ARCHIVE DESTINATION "${libdir}"
     RUNTIME DESTINATION "bin"
     )
+
+
+###########################################################################
+
+# EXAMPLE
+
+option(ENTITYX_ENABLE_EXAMPLE_TARGET "Add target for building the example (will fetch SFML)" OFF)
+if(ENTITYX_ENABLE_EXAMPLE_TARGET)
+    include(FetchContent)
+    set(BUILD_SHARED_LIBS FALSE)
+    FetchContent_Declare(
+            SFML
+            GIT_REPOSITORY https://github.com/SFML/SFML.git
+            GIT_TAG        a21c3c101cd02e41b79ffc515f93c649e230e263 # 2.6.x
+    )
+    FetchContent_MakeAvailable(SFML)
+    add_executable(entityx_example examples/example.cc)
+    target_compile_features(entityx_example PRIVATE cxx_std_11)
+    target_include_directories(entityx_example PRIVATE ${SFML_SOURCE_DIR}/include ${entityx_SOURCE_DIR}/entityx)
+    target_link_libraries(entityx_example PRIVATE entityx sfml-system sfml-window sfml-graphics)
+    add_custom_command(TARGET entityx_example PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/examples/LiberationSans-Regular.ttf ${CMAKE_CURRENT_BINARY_DIR}/LiberationSans-Regular.ttf
+    )
+endif()
