@@ -26,6 +26,7 @@
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 #include <entityx/entityx.h>
+#include <random>
 
 using std::cerr;
 using std::cout;
@@ -37,8 +38,16 @@ namespace ex = entityx;
     #define M_PI 3.14159265358979323846
 #endif
 
+std::mt19937 rng { std::random_device{}() };
 float r(int a, float b = 0) {
-  return static_cast<float>(std::rand() % (a * 1000) + b * 1000) / 1000.0;
+// Define this to use std::rand() for debugging. On my compiler RAND_MAX is 32767 and this seems to break everything. (Is this a Windows thing?)
+// Maybe a * 1000 is bigger than RAND_MAX so we always end up in a tiny corner of the coordinate space?
+#ifdef ENTITYX_EXAMPLE_ENABLE_CRAND_DEBUG
+  if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+    return static_cast<float>(std::rand() % (a * 1000) + b * 1000) / 1000.0;
+#endif
+  auto dist = std::uniform_real_distribution<float>(b, a + b);
+  return dist(rng);
 }
 
 
@@ -293,7 +302,7 @@ public:
       ex::Entity particle = es.create();
 
       float rotationd = r(720, 180);
-      if (std::rand() % 2 == 0) rotationd = -rotationd;
+      if (rng() % 2 == 0) rotationd = -rotationd;
 
       float offset = r(collideable->radius, 1);
       float angle = r(360) * M_PI / 180.0;
@@ -344,6 +353,12 @@ public:
       std::ostringstream out;
       const double fps = frame_count / last_update;
       out << es.size() << " entities (" << static_cast<int>(fps) << " fps)";
+#ifdef ENTITYX_EXAMPLE_ENABLE_CRAND_DEBUG
+      if(sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        out << "\nstd::rand enabled";
+        text.setFillColor(sf::Color::Red);
+      } else text.setFillColor(sf::Color::White);
+#endif
       text.setString(out.str());
       last_update = 0.0;
       frame_count = 0.0;
@@ -381,8 +396,6 @@ public:
 
 
 int main() {
-  std::srand(std::time(nullptr));
-
   sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "EntityX Example", sf::Style::Fullscreen);
   sf::Font font;
   if (!font.loadFromFile("LiberationSans-Regular.ttf")) {
