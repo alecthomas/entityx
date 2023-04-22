@@ -68,6 +68,9 @@ Compile with:
 
     c++ -O3 -std=c++11 -Wall -lsfml-system -lsfml-window -lsfml-graphics -lentityx example.cc -o example
 
+Or enable the CMake option ENTITYX_ENABLE_EXAMPLE_TARGET to enable the 'entityx_example' target which
+fetches SFML and builds the example.
+
 ## Overview
 
 In EntityX data associated with an entity is called a `entityx::Component`. `Systems` encapsulate logic and can use as many component types as necessary. An `entityx::EventManager` allows systems to interact without being tightly coupled. Finally, a `Manager` object ties all of the systems together for convenience.
