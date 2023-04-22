@@ -33,6 +33,9 @@ using std::endl;
 
 namespace ex = entityx;
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
 
 float r(int a, float b = 0) {
   return static_cast<float>(std::rand() % (a * 1000) + b * 1000) / 1000.0;
@@ -323,7 +326,7 @@ public:
     text.setFont(font);
     text.setPosition(sf::Vector2f(2, 2));
     text.setCharacterSize(18);
-    text.setColor(sf::Color::White);
+    text.setFillColor(sf::Color::White);
   }
 
   void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) override {
