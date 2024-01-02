@@ -1,8 +1,9 @@
 #define CATCH_CONFIG_MAIN
 
+#include <chrono>
 #include <iostream>
 #include <vector>
-#include <chrono>
+
 #include "./3rdparty/catch.hh"
 #include "entityx/entityx.hh"
 
@@ -11,31 +12,21 @@ using namespace entityx;
 
 using std::uint64_t;
 
-
 class Timer {
 public:
-  Timer() {
-    restart();
-  }
+  Timer() { restart(); }
   ~Timer() {}
 
-  void restart() {
-    _start = std::chrono::system_clock::now();
-  }
+  void restart() { _start = std::chrono::system_clock::now(); }
 
-  double elapsed() {
-    return std::chrono::duration<double>(std::chrono::system_clock::now() - _start).count();
-  }
+  double elapsed() { return std::chrono::duration<double>(std::chrono::system_clock::now() - _start).count(); }
+
 private:
   std::chrono::time_point<std::chrono::system_clock> _start;
 };
 
-
-
 struct AutoTimer {
-  ~AutoTimer() {
-    cout << timer_.elapsed() << " seconds elapsed" << endl;
-  }
+  ~AutoTimer() { cout << timer_.elapsed() << " seconds elapsed" << endl; }
 
 private:
   Timer timer_;
@@ -46,24 +37,20 @@ struct Position {
   float x, y;
 };
 
-
 struct Direction {
   Direction(float x = 0.0f, float y = 0.0f) : x(x), y(y) {}
   float x, y;
 };
 
-
 typedef EntityX<DefaultStorage, 0, Position, Direction> EntityManager;
 typedef EntityX<DefaultStorage, OBSERVABLE, Position, Direction> EntityManagerWithListener;
 using Entity = EntityManager::Entity;
-
 
 struct BenchmarkFixture {
   BenchmarkFixture() {}
 
   EntityManager em;
 };
-
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntities") {
   {
@@ -77,7 +64,6 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestCreateEntities") {
   }
 }
 
-
 TEST_CASE_METHOD(BenchmarkFixture, "TestCreateManyEntities") {
   {
     AutoTimer t;
@@ -88,7 +74,6 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestCreateManyEntities") {
     em.create_many(count);
   }
 }
-
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestDestroyEntities") {
   uint64_t count = 10000000L;
@@ -109,7 +94,6 @@ struct ListenerBenchmarkFixture {
 
   EntityManagerWithListener em;
 };
-
 
 TEST_CASE_METHOD(ListenerBenchmarkFixture, "TestCreateEntitiesWithListener") {
   int created = 0;
@@ -192,7 +176,8 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestEntityCreationIterationDeletionRepeatedl
     }
     for (Entity e : em.entities_with_components<Position>()) {
       Position *position = e.component<Position>();
-      if (rand() % 2 == 0) e.destroy();
+      if (rand() % 2 == 0)
+        e.destroy();
     }
   }
 }
@@ -213,7 +198,6 @@ TEST_CASE_METHOD(BenchmarkFixture, "TestEntityIterationUnpackTwo") {
     Direction *direction = e.component<Direction>();
   }
 }
-
 
 TEST_CASE_METHOD(BenchmarkFixture, "TestForEachUnpackTwo") {
   int count = 10000000;

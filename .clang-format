@@ -1,0 +1,14 @@
+BasedOnStyle: LLVM
+UseTab: Never
+IndentWidth: 2
+TabWidth: 2
+ColumnLimit: 120
+AlwaysBreakTemplateDeclarations: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '<[[:alnum:].]+>'
+    Priority:        1
+    SortPriority:    1
+  - Regex:           '^".*"'
+    Priority:        2
+    SortPriority:    2

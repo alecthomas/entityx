@@ -8,3 +8,5 @@ Makefile
 html/
 Vagrantfile
 .vagrant
+CMake*
+*.cmake
