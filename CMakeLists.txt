@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 set(CMAKE_CXX_STANDARD 11)
 set(ENTITYX_MAJOR_VERSION 1)
 set(ENTITYX_MINOR_VERSION 1)
